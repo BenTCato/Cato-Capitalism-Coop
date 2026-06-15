@@ -98,6 +98,10 @@
       <div style="font-size:.7rem;color:#B7AEDB;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">World name</div>
       <input id="worldname" class="worldname" value="Class World" maxlength="40" title="Click to rename the world">
     </div>
+    <div>
+      <div style="font-size:.7rem;color:#B7AEDB;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Rank by</div>
+      <select id="rankmode" class="worldname" style="font-size:1rem;max-width:170px;cursor:pointer;"><option value="lifetime">🏆 Lifetime</option></select>
+    </div>
     <div class="stat-pill"><span class="dot-live"></span> <span id="online">0</span> online</div>
     <a class="join-pill" href="/join" target="_blank">📺 Join screen</a>
   </div>
@@ -153,13 +157,21 @@ function esc(t){return String(t==null?'':t).replace(/[<>&]/g,function(c){return{
 
 // ── sorting ──────────────────────────────────────────────────────
 var sortKey='score', sortDir=-1;
+var rankMode='lifetime';
+function gradeRank(g){return {S:5,A:4,B:3,C:2,D:1}[g]||0;}
+// Resolve the grade + score to display for a player under the current rank mode.
+function resolve(p){
+  if(rankMode==='lifetime') return {grade:(p.lifetimeGrade||'—'), score:(p.score==null?null:p.score)};
+  var tg=p.termGrades&&p.termGrades[rankMode];
+  return {grade:(tg?tg.grade:'—'), score:(tg?tg.score:null)};
+}
 function sortVal(p,k){
   if(k==='name') return (p.name||'').toLowerCase();
   if(k==='health') return avg(p.stats);
   if(k==='house') return p.house||0;
   if(k==='vanity') return p.vanity||0;
-  if(k==='grade'){return {S:5,A:4,B:3,C:2,D:1}[p.grade]||0;}
-  return p.score||0;
+  if(k==='grade'){return gradeRank(resolve(p).grade);}
+  var rs=resolve(p).score; return (rs==null?-1:rs);
 }
 document.querySelectorAll('th.sortable').forEach(function(th){
   th.addEventListener('click',function(){
@@ -186,6 +198,17 @@ function render(list){
   document.getElementById('city-count').textContent=list.length;
   document.getElementById('empty').style.display=list.length?'none':'block';
 
+  // build the Rank-by options (Lifetime + every term any student has reached)
+  var maxTerm=0;
+  list.forEach(function(p){ if(p.term&&p.term>maxTerm)maxTerm=p.term;
+    if(p.termGrades) Object.keys(p.termGrades).forEach(function(k){var n=+k; if(n>maxTerm)maxTerm=n;}); });
+  var sel=document.getElementById('rankmode');
+  if(sel && sel.__built!==maxTerm){
+    var opts='<option value="lifetime">🏆 Lifetime</option>';
+    for(var ti=1;ti<=maxTerm;ti++) opts+='<option value="'+ti+'">Term '+ti+'</option>';
+    sel.innerHTML=opts; sel.value=rankMode; sel.__built=maxTerm;
+  }
+
   var sorted=list.slice().sort(function(a,b){
     var va=sortVal(a,sortKey),vb=sortVal(b,sortKey);
     if(va<vb)return -1*sortDir; if(va>vb)return 1*sortDir; return 0;
@@ -194,6 +217,7 @@ function render(list){
   // leaderboard
   var rows=sorted.map(function(p,i){
     var idle=p.idleMs>6000?' idle':'';
+    var r=resolve(p);
     var bars=BARLBL.map(function(b){
       var v=p.stats?p.stats[b[1]]:0;
       return '<div class="barwrap"><div class="lbl">'+b[0]+'</div><div class="track"><div class="fill" style="width:'+v+'%;background:'+hcolor(v)+'"></div></div></div>';
@@ -205,14 +229,15 @@ function render(list){
       '<td><div class="bars">'+bars+'</div></td>'+
       '<td class="house"><span class="ico">'+houseIcon(p.houseName)+'</span>'+esc(p.houseName||'—')+'</td>'+
       '<td class="vanity">'+(p.vanity||0)+'<span class="vt">/'+(p.vanityTotal||0)+'</span></td>'+
-      '<td class="score">⭐ '+(p.score||0).toLocaleString()+'</td>'+
-      '<td>'+(p.grade?'<span class="grade '+p.grade+'">'+p.grade+'</span>':'<span style="color:#B7AEDB;">—</span>')+'</td>'+
+      '<td class="score">'+(r.score==null?'<span style="color:#B7AEDB;">—</span>':'⭐ '+r.score.toLocaleString())+'</td>'+
+      '<td>'+(r.grade&&r.grade!=='—'?'<span class="grade '+r.grade+'">'+r.grade+'</span>':'<span style="color:#B7AEDB;">—</span>')+'</td>'+
     '</tr>';
   }).join('');
   document.getElementById('lb-body').innerHTML=rows;
 
   // city grid (sorted same way)
   var cards=sorted.map(function(p){
+    var r=resolve(p);
     var cb=BARS.map(function(b){
       var v=p.stats?p.stats[b[1]]:0;
       return '<div class="cbar">'+b[0]+'<div class="ct"><div class="fill" style="width:'+v+'%;background:'+hcolor(v)+'"></div></div><b>'+v+'</b></div>';
@@ -223,8 +248,8 @@ function render(list){
         '<div class="meta">'+houseIcon(p.houseName)+' '+esc(p.houseName||'New')+' · Term '+(p.term||1)+'</div></div></div>'+
       '<div class="cbars">'+cb+'</div>'+
       '<div class="foot"><span class="badge-mini">🎩 '+(p.vanity||0)+'/'+(p.vanityTotal||0)+'</span>'+
-        '<span class="score" style="color:'+(p.started?'#ED8B00':'#bbb')+'">⭐ '+(p.score||0).toLocaleString()+'</span>'+
-        (p.grade?'<span class="grade '+p.grade+'">'+p.grade+'</span>':'')+'</div>'+
+        '<span class="score" style="color:'+(p.started?'#ED8B00':'#bbb')+'">'+(r.score==null?'—':'⭐ '+r.score.toLocaleString())+'</span>'+
+        (r.grade&&r.grade!=='—'?'<span class="grade '+r.grade+'">'+r.grade+'</span>':'')+'</div>'+
     '</div>';
   }).join('');
   document.getElementById('grid').innerHTML=cards;
@@ -242,6 +267,8 @@ var wn=document.getElementById('worldname');
 wn.addEventListener('change',function(){
   fetch('/__coop/world',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({world:wn.value})});
 });
+var rm=document.getElementById('rankmode');
+rm.addEventListener('change',function(){ rankMode=rm.value; render(LAST); });
 poll();
 setInterval(poll,1200);
 </script>

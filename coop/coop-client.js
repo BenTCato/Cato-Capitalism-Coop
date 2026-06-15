@@ -35,6 +35,13 @@
                         : null;
     var grade = null;
     if (started) { try { grade = (g('computeGrade'))().letter; } catch (e) {} }
+    var lifeGrade = null;
+    try { var lg = g('lifetimeGrade'); if (lg) lifeGrade = lg().letter; } catch (e) {}
+    var termGrades = {};
+    try {
+      if (P && Array.isArray(P.terms)) P.terms.forEach(function (t) { termGrades[t.term] = { grade: t.grade, score: t.score }; });
+      if (started) termGrades[(S.term || 1)] = { grade: grade, score: (S.score || 0), live: true };
+    } catch (e) {}
     var TIERS = g('HOUSE_TIERS', null);
     var house = P ? (P.house || 0) : 0;
     var houseName = (TIERS && TIERS[house]) ? TIERS[house].name : '';
@@ -47,6 +54,8 @@
       stats: stats,
       score: ((P && P.lifetimeScore) || 0) + ((S && S.score) || 0),
       grade: grade,
+      lifetimeGrade: lifeGrade,
+      termGrades: termGrades,
       term: (S && S.term) || 1,
       house: house,
       houseName: houseName,

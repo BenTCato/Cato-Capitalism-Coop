@@ -2440,6 +2440,18 @@ function computeGrade(){
   if(b>=3)return{letter:'C',medal:'\u{1F949}',note:'You survived, study the evidence below and try for a higher grade.'};
   return{letter:'D',medal:'\u{1F396}️',note:'Your nation made it, barely. The review below shows what the data says.'};
 }
+// Lifetime grade = best-answer ratio across all completed terms + the current one.
+function lifetimeGrade(){
+  var best=((typeof P!=='undefined'&&P&&P.lifetimeBest)||0)+((typeof S!=='undefined'&&S&&S.bestCount)||0);
+  var ans=((typeof P!=='undefined'&&P&&P.lifetimeAnswered)||0)+((typeof S!=='undefined'&&S&&S.answers)?S.answers.length:0);
+  if(ans<=0)return{letter:'—'};
+  var r=best/ans;
+  if(r>=0.9)return{letter:'S'};
+  if(r>=0.7)return{letter:'A'};
+  if(r>=0.5)return{letter:'B'};
+  if(r>=0.3)return{letter:'C'};
+  return{letter:'D'};
+}
 
 function freshState(){
   const st=DIFFS[DIFF_KEY].start;
@@ -2919,7 +2931,7 @@ const SPECIAL_OUTFIT=[
 ];
 
 // ── Profiles ──
-function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0,lifetimeScore:0};}
+function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0,lifetimeScore:0,lifetimeBest:0,lifetimeAnswered:0,terms:[]};}
 function loadProfiles(){
   try{
     const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
@@ -2950,7 +2962,7 @@ function sanitizeAvatar(){
 function activateProfile(i,silent){
   if(i<0||i>=PROFILES.list.length)return;
   PROFILES.active=i;P=PROFILES.list[i];
-  P.owned=P.owned||[];P.history=P.history||[];P.house=P.house||0;P.lifetimeScore=P.lifetimeScore||0;
+  P.owned=P.owned||[];P.history=P.history||[];P.house=P.house||0;P.lifetimeScore=P.lifetimeScore||0;P.lifetimeBest=P.lifetimeBest||0;P.lifetimeAnswered=P.lifetimeAnswered||0;P.terms=P.terms||[];
   avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},P.avatar);
   sanitizeAvatar();
   nationName=P.name||'Freedomtopia';
@@ -4271,7 +4283,16 @@ function dealTerm(exclude){
   return pool.slice(0,10).map(function(i){return QBANK[i];});
 }
 function continueTerm(){
-  if(P){P.lifetimeScore=(P.lifetimeScore||0)+(S.score||0);saveProfiles();}
+  if(P){
+    var _lg=computeGrade().letter;
+    P.terms=P.terms||[];
+    P.terms.push({term:S.term||1,grade:_lg,score:S.score||0,best:S.bestCount||0,answered:S.answers.length||0});
+    if(P.terms.length>50)P.terms.shift();
+    P.lifetimeBest=(P.lifetimeBest||0)+(S.bestCount||0);
+    P.lifetimeAnswered=(P.lifetimeAnswered||0)+(S.answers.length||0);
+    P.lifetimeScore=(P.lifetimeScore||0)+(S.score||0);
+    saveProfiles();
+  }
   Q=dealTerm(Q);
   S.term=(S.term||1)+1;
   S.qIdx=0;S.answers=[];S.locked=false;S.score=0;S.streak=0;S.maxStreak=0;S.bestCount=0;

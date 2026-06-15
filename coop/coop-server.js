@@ -82,6 +82,7 @@ function publicList() {
     stats: p.stats, house: p.house, houseName: p.houseName,
     vanity: p.vanity, vanityTotal: p.vanityTotal,
     score: p.score, grade: p.grade, term: p.term,
+    lifetimeGrade: p.lifetimeGrade, termGrades: p.termGrades,
     started: p.started, inTown: p.inTown,
     pos: p.pos, idleMs: now - p.lastSeen
   }));

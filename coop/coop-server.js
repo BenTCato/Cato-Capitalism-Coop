@@ -27,14 +27,28 @@ const STALE_MS   = 8000;                            // drop a player after 8s of
 const ENV_PORT   = process.env.PORT ? Number(process.env.PORT) : null;
 const IS_CLOUD   = ENV_PORT !== null;
 
-// ── find the newest game file in the project folder ───────────────
+// ── choose which game file to serve ───────────────────────────────
+// Prefer the highest version (…_v4 > …_v3 > FINAL > unlabeled). Timestamps
+// are NOT reliable after a git checkout (all files share one mtime), so we
+// rank by the version in the filename. Override with the GAME_FILE env var.
+function gameScore(f) {
+  const m = f.match(/_v(\d+)/i);
+  if (m) return 1000 + Number(m[1]);   // versioned wins, highest number first
+  if (/final/i.test(f)) return 100;    // FINAL beats unlabeled
+  return 1;
+}
 function findGameFile() {
-  const files = fs.readdirSync(ROOT)
-    .filter(f => /^CatoCapitalismGame.*\.html$/i.test(f))
-    .map(f => ({ f, m: fs.statSync(path.join(ROOT, f)).mtimeMs }))
-    .sort((a, b) => b.m - a.m);
-  if (!files.length) return null;
-  return path.join(ROOT, files[0].f);
+  const all = fs.readdirSync(ROOT).filter(f => /^CatoCapitalismGame.*\.html$/i.test(f));
+  if (!all.length) return null;
+  if (process.env.GAME_FILE && all.includes(process.env.GAME_FILE)) {
+    return path.join(ROOT, process.env.GAME_FILE);
+  }
+  all.sort((a, b) => {
+    const d = gameScore(b) - gameScore(a);
+    if (d) return d;
+    return fs.statSync(path.join(ROOT, b)).mtimeMs - fs.statSync(path.join(ROOT, a)).mtimeMs;
+  });
+  return path.join(ROOT, all[0]);
 }
 
 // ── pick a real LAN ip (192.168.x / 10.x / 172.x preferred) ───────

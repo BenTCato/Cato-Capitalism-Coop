@@ -118,8 +118,8 @@
           <th class="sortable" data-k="health">City Health</th>
           <th class="sortable" data-k="house">House</th>
           <th class="sortable" data-k="vanity">Vanity</th>
-          <th class="sortable" data-k="score">Score <span class="arrow">▾</span></th>
-          <th class="sortable" data-k="grade">Grade</th>
+          <th class="sortable" data-k="score">Score <span id="score-scope" style="font-size:.7rem;color:#B7AEDB;font-weight:600;"></span> <span class="arrow">▾</span></th>
+          <th class="sortable" data-k="grade">Grade <span id="grade-scope" style="font-size:.7rem;color:#B7AEDB;font-weight:600;"></span></th>
         </tr>
       </thead>
       <tbody id="lb-body"></tbody>
@@ -157,7 +157,7 @@ function esc(t){return String(t==null?'':t).replace(/[<>&]/g,function(c){return{
 
 // ── sorting ──────────────────────────────────────────────────────
 var sortKey='score', sortDir=-1;
-var rankMode='lifetime';
+var rankMode=(function(){try{return localStorage.getItem('coopRankMode')||'lifetime';}catch(e){return 'lifetime';}})();
 function gradeRank(g){return {S:5,A:4,B:3,C:2,D:1}[g]||0;}
 // Resolve the grade + score to display for a player under the current rank mode.
 function resolve(p){
@@ -208,6 +208,9 @@ function render(list){
     for(var ti=1;ti<=maxTerm;ti++) opts+='<option value="'+ti+'">Term '+ti+'</option>';
     sel.innerHTML=opts; sel.value=rankMode; sel.__built=maxTerm;
   }
+  var scopeLbl=(rankMode==='lifetime'?'(Lifetime)':'(Term '+rankMode+')');
+  var ss=document.getElementById('score-scope'); if(ss)ss.textContent=scopeLbl;
+  var gs=document.getElementById('grade-scope'); if(gs)gs.textContent=scopeLbl;
 
   var sorted=list.slice().sort(function(a,b){
     var va=sortVal(a,sortKey),vb=sortVal(b,sortKey);
@@ -268,7 +271,7 @@ wn.addEventListener('change',function(){
   fetch('/__coop/world',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({world:wn.value})});
 });
 var rm=document.getElementById('rankmode');
-rm.addEventListener('change',function(){ rankMode=rm.value; render(LAST); });
+rm.addEventListener('change',function(){ rankMode=rm.value; try{localStorage.setItem('coopRankMode',rankMode);}catch(e){} render(LAST); });
 poll();
 setInterval(poll,1200);
 </script>

@@ -2267,7 +2267,7 @@ function spawnScorePop(pts,dbl){
   sfx('pop');
 }
 function updateScoreHUD(){
-  const sv=document.getElementById('score-val');if(sv)sv.textContent='⭐ '+S.score.toLocaleString();
+  const sv=document.getElementById('score-val');if(sv)sv.textContent='⭐ '+(((P&&P.lifetimeScore)||0)+(S.score||0)).toLocaleString();
   const st=document.getElementById('streak-chip');
   if(st){if(S.streak>=2){st.style.display='inline-block';st.textContent='\u{1F525} ×'+S.streak;}else st.style.display='none';}
 }
@@ -2685,7 +2685,7 @@ function nextQ(){
   const q=Q[last.qi];const c=q.choices.find(x=>x.letter===last.letter);
   pendingNext=true;openPaper(c,q);
 }
-function doNextQ(){if(S.answers.length>=Q.length){launchConfetti();sfx('win');continueTerm();}else{renderTown();showScreen('town');maybeWorldEvent();}}
+function doNextQ(){if(S.answers.length>=Q.length){buildResults();showScreen('results');launchConfetti();sfx('win');}else{renderTown();showScreen('town');maybeWorldEvent();}}
 
 // ─────────────────────────────────────────────────────────────
 // RESULTS
@@ -2715,7 +2715,7 @@ function buildResults(){
   document.getElementById('grade-score').textContent='⭐ '+S.score.toLocaleString()+' pts · '+S.bestCount+'/10 best answers · longest streak '+S.maxStreak;
   document.getElementById('grade-note').textContent=g.note;
   renderAchievements('ach-grid');
-  const earned=S.score;bankStars(earned,true);renderBankPanel('bank-panel',earned,true);maybeAskFeedback();
+  const earned=S.bestCount*250+S.answers.length*50;bankStars(earned,true);renderBankPanel('bank-panel',earned,true);maybeAskFeedback();
   setFinalBars();
   const t=S.answers.length||1;['cap','mix','soc','com'].forEach(k=>{document.getElementById('if-'+k).style.width=(S.counts[k]/t*100)+'%';document.getElementById('ic-'+k).textContent=S.counts[k]+'/'+t;});
 }
@@ -2919,7 +2919,7 @@ const SPECIAL_OUTFIT=[
 ];
 
 // ── Profiles ──
-function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0};}
+function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0,lifetimeScore:0};}
 function loadProfiles(){
   try{
     const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
@@ -2950,7 +2950,7 @@ function sanitizeAvatar(){
 function activateProfile(i,silent){
   if(i<0||i>=PROFILES.list.length)return;
   PROFILES.active=i;P=PROFILES.list[i];
-  P.owned=P.owned||[];P.history=P.history||[];P.house=P.house||0;
+  P.owned=P.owned||[];P.history=P.history||[];P.house=P.house||0;P.lifetimeScore=P.lifetimeScore||0;
   avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},P.avatar);
   sanitizeAvatar();
   nationName=P.name||'Freedomtopia';
@@ -3673,7 +3673,7 @@ function renderTown(){
     '</svg>';
   const tn=document.getElementById('town-name');if(tn)tn.textContent=nationName;
   const tp=document.getElementById('town-progress');if(tp)tp.textContent='Term '+(S.term||1)+' · '+S.answers.length+'/'+Q.length+' citizens helped';
-  const ts=document.getElementById('town-score');if(ts)ts.textContent='⭐ '+(S.score||0).toLocaleString();
+  const ts=document.getElementById('town-score');if(ts)ts.textContent='⭐ '+(((P&&P.lifetimeScore)||0)+(S.score||0)).toLocaleString();
   const strip=document.getElementById('town-statstrip');
   if(strip){strip.innerHTML=[['😊',st.h],['💰',st.e],['📚',st.ed],['🗽',st.f]].map(function(r){
       const cls=r[1]<=THRESHOLD?'critical':r[1]<=50?'bad':r[1]<=70?'ok':'great';
@@ -3896,7 +3896,7 @@ function dlgPick(letter){
     '<div class="next-wrap" style="margin-top:14px;"><button class="btn btn-gold" onclick="dlgContinue()">'+(S.answers.length>=Q.length?'Finish the Term →':'Continue →')+'</button></div>';
   fb.style.display='block';
   fb.querySelectorAll('.dc-bar').forEach(function(b){b.style.width=(b.getAttribute('data-pct')||0)+'%';});
-  const ts=document.getElementById('town-score');if(ts)ts.textContent='⭐ '+(S.score||0).toLocaleString();
+  const ts=document.getElementById('town-score');if(ts)ts.textContent='⭐ '+(((P&&P.lifetimeScore)||0)+(S.score||0)).toLocaleString();
   document.querySelector('#dlg .dlg-card').scrollTop=0;
 }
 function dlgContinue(){
@@ -4271,6 +4271,7 @@ function dealTerm(exclude){
   return pool.slice(0,10).map(function(i){return QBANK[i];});
 }
 function continueTerm(){
+  if(P){P.lifetimeScore=(P.lifetimeScore||0)+(S.score||0);saveProfiles();}
   Q=dealTerm(Q);
   S.term=(S.term||1)+1;
   S.qIdx=0;S.answers=[];S.locked=false;S.score=0;S.streak=0;S.maxStreak=0;S.bestCount=0;

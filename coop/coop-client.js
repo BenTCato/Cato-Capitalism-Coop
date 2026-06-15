@@ -45,7 +45,7 @@
       avatar: av ? { skin: av.skin, hair: av.hair, hairColor: av.hairColor, beard: av.beard,
                      glasses: av.glasses, extra: av.extra, outfit: av.outfit } : null,
       stats: stats,
-      score: (S && S.score) || 0,
+      score: ((P && P.lifetimeScore) || 0) + ((S && S.score) || 0),
       grade: grade,
       term: (S && S.term) || 1,
       house: house,

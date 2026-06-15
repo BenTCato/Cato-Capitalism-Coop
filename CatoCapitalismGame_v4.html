@@ -2659,7 +2659,9 @@ function renderGameOver(key){
 }
 
 function checkOver(){
-  for(const key of['h','e','ed','f']){if(S.stats[key]<=THRESHOLD){setTimeout(()=>{renderGameOver(key);showScreen('over');},1400);return true;}}return false;
+  // Open-world mode: never show the game-over screen. Players stay in the town
+  // map until they close the tab. Low stats simply show in the town's look.
+  return false;
 }
 
 function openPaper(c,q){
@@ -2668,7 +2670,7 @@ function openPaper(c,q){
   document.getElementById('paper-subline').textContent=c.subline;
   // Dynamic button label: last question shows "See My Results →"
   const isLast=S.answers.length>=Q.length;
-  document.getElementById('paper-continue-btn').textContent=isLast?'Read the Term Report →':'Continue to Next Question →';
+  document.getElementById('paper-continue-btn').textContent=isLast?'Start a New Term →':'Continue to Next Question →';
   document.getElementById('paper-overlay').classList.add('open');
 }
 function closePaper(){
@@ -2683,7 +2685,7 @@ function nextQ(){
   const q=Q[last.qi];const c=q.choices.find(x=>x.letter===last.letter);
   pendingNext=true;openPaper(c,q);
 }
-function doNextQ(){if(S.answers.length>=Q.length){buildResults();showScreen('results');launchConfetti();sfx('win');}else{renderTown();showScreen('town');maybeWorldEvent();}}
+function doNextQ(){if(S.answers.length>=Q.length){launchConfetti();sfx('win');continueTerm();}else{renderTown();showScreen('town');maybeWorldEvent();}}
 
 // ─────────────────────────────────────────────────────────────
 // RESULTS
@@ -2974,6 +2976,39 @@ function deleteProfile(i,ev){
   saveProfiles();sfx('bad');
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+// ── Export / Import a leader (carry avatar + progress between games) ──
+function exportProfile(){
+  if(!P)return;
+  saveProfiles(); // fold current name + avatar into the active profile first
+  const data={v:1,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0};
+  let code;
+  try{code='CATO~'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));}
+  catch(e){code='CATO~'+JSON.stringify(data);}
+  try{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(code);}catch(e){}
+  sfx('good');
+  window.prompt('Your leader code is copied! Press Ctrl+C / Cmd+C to be sure, then paste it into another game with Import:',code);
+}
+function importProfile(){
+  const raw=window.prompt('Paste your leader code here:');
+  if(!raw)return;
+  let s=raw.trim();if(s.indexOf('CATO~')===0)s=s.slice(5);
+  let data=null;
+  try{data=JSON.parse(decodeURIComponent(escape(atob(s))));}catch(e){try{data=JSON.parse(s);}catch(e2){}}
+  if(!data||!data.avatar){alert('That code did not look right. Make sure you copied the whole thing.');sfx('bad');return;}
+  if(!P)return;
+  P.owned=Array.isArray(data.owned)?data.owned:(P.owned||[]);
+  P.avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},data.avatar);
+  if(typeof data.name==='string'&&data.name)P.name=data.name;
+  if(typeof data.stars==='number')P.stars=data.stars;
+  if(typeof data.house==='number')P.house=data.house;
+  if(typeof data.best==='number')P.best=data.best;
+  if(typeof data.runs==='number')P.runs=data.runs;
+  avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},P.avatar);
+  sanitizeAvatar();nationName=P.name||'Freedomtopia';
+  updateNbPreview();renderAvCreator();renderAvatarPreview();renderProfiles();updateBankUI();
+  saveProfiles();sfx('event');
+  alert('Imported '+(P.name||'your leader')+'! Avatar and progress loaded.');
+}
 function renderProfiles(){
   const box=document.getElementById('profile-row');if(!box)return;
   let html=PROFILES.list.map(function(pr,i){
@@ -2984,6 +3019,8 @@ function renderProfiles(){
       '<div class="prof-meta">⭐ '+(pr.stars||0).toLocaleString()+' · 🎁 '+(pr.owned?pr.owned.length:0)+'/'+STORE_ITEMS.length+'</div></div>';
   }).join('');
   if(PROFILES.list.length<MAX_PROFILES)html+='<button class="prof-card prof-new" onclick="newProfile()"><span style="font-size:1.6rem;">➕</span><div class="prof-name">New Leader</div></button>';
+  html+='<button class="prof-card prof-new" onclick="exportProfile()" title="Copy a code to move this leader to another game"><span style="font-size:1.6rem;">📤</span><div class="prof-name">Export</div></button>';
+  html+='<button class="prof-card prof-new" onclick="importProfile()" title="Paste a code from another game"><span style="font-size:1.6rem;">📥</span><div class="prof-name">Import</div></button>';
   box.innerHTML=html;
 }
 

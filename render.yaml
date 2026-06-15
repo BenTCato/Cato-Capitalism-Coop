@@ -1,0 +1,10 @@
+# Render.com Blueprint — deploys the co-op server for free.
+# Render reads this automatically when you create a "Blueprint" from the repo.
+services:
+  - type: web
+    name: cato-capitalism-coop
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node coop/coop-server.js
+    autoDeploy: true

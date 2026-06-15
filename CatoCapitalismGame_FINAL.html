@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Policy Game — Cato Institute</title>
+  <style>
+    /* ═══════════════════════════════════════════════════
+       CATO INSTITUTE OFFICIAL BRAND COLORS
+       Primary Navy:  #002859
+       Primary Orange:#ED8B00
+       Light Orange:  #FFB81C
+    ═══════════════════════════════════════════════════ */
+    :root {
+      --bg:       #00162b;
+      --navy:     #002859;
+      --navy2:    #003a7a;
+      --surf:     rgba(0,40,89,.55);
+      --surf2:    rgba(0,40,89,.85);
+      --border:   rgba(237,139,0,.18);
+      --border2:  rgba(237,139,0,.35);
+      --gold:     #ED8B00;
+      --gold2:    #FFB81C;
+      --blue:     #4facfe;
+      --green:    #30d158;
+      --yellow:   #ffd60a;
+      --red:      #ff453a;
+      --text:     #f0f4ff;
+      --text2:    rgba(240,244,255,.55);
+      --text3:    rgba(240,244,255,.28);
+      --r:        18px;
+      --rs:       10px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:-apple-system,"SF Pro Display",BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+    body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+      background:radial-gradient(circle at 15% 25%,rgba(237,139,0,.08) 0%,transparent 45%),
+        radial-gradient(circle at 85% 70%,rgba(0,40,89,.6) 0%,transparent 55%),
+        radial-gradient(circle at 50% 0%,rgba(79,172,254,.05) 0%,transparent 40%);}
+
+    /* ── Header ── */
+    .header{position:relative;z-index:5;padding:13px 28px;display:flex;align-items:center;justify-content:space-between;background:var(--navy);border-bottom:2px solid var(--gold);}
+    .header .sub{color:rgba(255,255,255,.55);font-size:.7rem;margin-top:1px;}
+    .header .hd-right{display:flex;align-items:center;gap:10px;}
+    .header .title{color:var(--text2);font-size:.82rem;}
+
+    /* ── Screens ── */
+    .screen{display:none;max-width:880px;margin:0 auto;padding:28px 18px;position:relative;z-index:1;}
+    .screen.active{display:block;}
+
+    /* ── Buttons ── */
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 32px;border-radius:50px;border:none;cursor:pointer;font-size:.95rem;font-family:inherit;font-weight:700;transition:all .22s cubic-bezier(.34,1.56,.64,1);letter-spacing:.2px;}
+    .btn-gold{background:linear-gradient(135deg,var(--gold) 0%,#c86f00 100%);color:white;box-shadow:0 4px 20px rgba(237,139,0,.4);}
+    .btn-gold:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 8px 28px rgba(237,139,0,.55);}
+    .btn-navy{background:var(--navy);color:white;border:1px solid var(--border2);}
+    .btn-navy:hover{background:var(--navy2);transform:translateY(-2px);}
+
+    /* ── Title Screen ── */
+    .title-hero{border-radius:var(--r);padding:52px 40px;text-align:center;margin-bottom:20px;
+      background:linear-gradient(145deg,rgba(237,139,0,.18) 0%,rgba(0,40,89,.6) 60%,rgba(0,22,43,.8) 100%);
+      border:1px solid var(--border2);position:relative;overflow:hidden;}
+    .title-hero::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+      background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ED8B00' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");opacity:.6;}
+    .title-hero>*{position:relative;z-index:1;}
+    .title-hero .emoji{font-size:4rem;margin-bottom:16px;display:block;}
+    .title-hero h1{font-size:2.8rem;font-weight:900;background:linear-gradient(135deg,#fff 0%,var(--gold2) 60%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px;letter-spacing:-.5px;}
+    .title-hero .tag{font-size:1rem;color:var(--text2);margin-bottom:18px;}
+    .title-hero p{font-size:.92rem;color:var(--text2);max-width:500px;margin:0 auto 32px;line-height:1.7;}
+
+    .how-card{border-radius:var(--r);padding:26px 28px;background:var(--surf);border:1px solid var(--border);}
+    .how-card h3{color:var(--gold);font-size:1rem;margin-bottom:12px;font-weight:700;}
+    .how-card p{font-size:.88rem;line-height:1.7;color:var(--text2);font-family:Georgia,serif;}
+    .stat-icons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+    .stat-icon{background:rgba(0,40,89,.5);border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px;font-size:1.4rem;}
+    .stat-icon strong{display:block;color:var(--text);margin-top:5px;font-size:.82rem;font-weight:700;}
+    .stat-icon p{font-size:.75rem;color:var(--text2);margin-top:4px;line-height:1.5;font-family:Georgia,serif;}
+
+    /* ── Avatar Builder on title screen ── */
+    .nb-avatar-section{margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
+    .nb-avatar-row{display:flex;gap:16px;align-items:flex-start;}
+    .nb-avatar-preview{width:120px;flex-shrink:0;background:rgba(0,40,89,.5);border-radius:var(--rs);border:1px solid var(--border2);padding:8px;display:flex;align-items:center;justify-content:center;}
+    .nb-avatar-controls{flex:1;}
+
+    /* ── HUD with avatar ── */
+    .hud-inner{display:flex;align-items:center;gap:14px;}
+    .hud-bars{flex:1;}
+    .hud-avatar{width:80px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px;}
+    .hud-avatar svg{width:80px;height:85px;}
+    .avatar-mood-lbl{font-size:.58rem;font-weight:700;text-align:center;letter-spacing:.3px;padding:2px 6px;border-radius:10px;white-space:nowrap;}
+    .avatar-mood-lbl.mood-crisis{color:#ff453a;background:rgba(255,69,58,.15);}
+    .avatar-mood-lbl.mood-sad{color:#ff9f0a;background:rgba(255,159,10,.1);}
+    .avatar-mood-lbl.mood-worried{color:#ffd60a;background:rgba(255,214,10,.1);}
+    .avatar-mood-lbl.mood-neutral{color:var(--text2);background:rgba(255,255,255,.06);}
+    .avatar-mood-lbl.mood-happy{color:#30d158;background:rgba(48,209,88,.1);}
+    .avatar-mood-lbl.mood-thriving{color:var(--gold2);background:rgba(255,184,28,.15);}
+
+    /* ── HUD ── */
+    .hud{border-radius:var(--r);padding:16px 20px;margin-bottom:18px;position:sticky;top:8px;z-index:10;
+      background:rgba(0,22,43,.92);border:1px solid var(--border2);backdrop-filter:blur(30px);}
+    .hud.shake{animation:shake .4s ease;}
+    @keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-8px)}30%{transform:translateX(8px)}45%{transform:translateX(-5px)}60%{transform:translateX(5px)}75%{transform:translateX(-3px)}90%{transform:translateX(3px)}}
+    .hud-title{color:var(--text3);font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;font-weight:600;}
+    .hud-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+    .hud-row:last-child{margin-bottom:0;}
+    .hud-label{color:var(--text2);font-size:.78rem;width:148px;flex-shrink:0;}
+    .bar-wrap{flex:1;background:rgba(255,255,255,.07);border-radius:20px;height:8px;overflow:visible;position:relative;}
+    .bar-wrap::after{content:'';position:absolute;left:25%;top:-3px;bottom:-3px;width:2px;background:rgba(255,69,58,.65);border-radius:2px;pointer-events:none;z-index:1;}
+    .bar{height:100%;border-radius:20px;transition:width .65s cubic-bezier(.4,0,.2,1),background .6s ease;}
+    .bar.great{background:linear-gradient(90deg,#30d158,#4ade80);box-shadow:0 0 8px rgba(48,209,88,.35);}
+    .bar.ok{background:linear-gradient(90deg,var(--gold),var(--gold2));box-shadow:0 0 8px rgba(237,139,0,.35);}
+    .bar.bad{background:linear-gradient(90deg,#ff9f0a,#ffb833);box-shadow:0 0 8px rgba(255,159,10,.3);}
+    .bar.critical{background:linear-gradient(90deg,#ff453a,#ff6b62);box-shadow:0 0 10px rgba(255,69,58,.6);animation:pulse .7s infinite;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+    .hud-val{color:var(--text2);font-size:.72rem;width:34px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;}
+
+    /* ── Dots ── */
+    .dots{display:flex;justify-content:center;gap:6px;margin-bottom:16px;}
+    .dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .3s cubic-bezier(.34,1.56,.64,1);}
+    .dot.done{background:var(--gold);width:18px;border-radius:3px;}
+    .dot.current{background:var(--text);transform:scale(1.4);}
+
+    /* ── Scenario Card ── */
+    .q-count{text-align:center;color:var(--text2);font-size:.82rem;margin-bottom:14px;}
+    .q-count strong{color:var(--gold);}
+    .scenario{border-radius:var(--r);margin-bottom:16px;border:1px solid var(--border2);overflow:hidden;background:rgba(0,40,89,.3);}
+    .scene-art{width:100%;height:112px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+    .scene-art .art-emoji{font-size:3.6rem;z-index:1;filter:drop-shadow(0 2px 12px rgba(0,0,0,.5));}
+    .scene-art .art-label{position:absolute;bottom:8px;right:14px;font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.7);font-weight:700;}
+    .scene-art .art-qnum{position:absolute;top:10px;left:14px;font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.6);font-weight:700;background:rgba(0,0,0,.35);padding:2px 8px;border-radius:10px;}
+    .s-inner{padding:20px 24px;}
+    .s-tag{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--gold);font-weight:700;margin-bottom:6px;}
+    .s-title{font-size:1.2rem;color:var(--text);margin-bottom:10px;font-weight:700;}
+    .s-body{font-size:.9rem;line-height:1.7;color:var(--text2);font-family:Georgia,serif;}
+
+    /* ── Choices ── */
+    .choices{display:grid;gap:10px;}
+    .choice{background:var(--surf);border:1px solid var(--border);border-radius:var(--rs);padding:15px 18px;cursor:pointer;text-align:left;transition:all .22s cubic-bezier(.34,1.56,.64,1);font-family:inherit;font-size:.88rem;line-height:1.5;color:var(--text);display:flex;gap:13px;align-items:flex-start;}
+    .choice:hover{border-color:var(--border2);background:var(--surf2);transform:translateY(-2px) scale(1.005);box-shadow:0 8px 24px rgba(0,0,0,.35);}
+    .choice.chosen-pos{border-color:var(--green);background:rgba(48,209,88,.1);}
+    .choice.chosen-neg{border-color:var(--red);background:rgba(255,69,58,.1);}
+    .choice.dimmed{opacity:.35;pointer-events:none;}
+    .cletter{background:linear-gradient(135deg,var(--gold) 0%,#c86f00 100%);color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.77rem;flex-shrink:0;margin-top:1px;}
+    .ctext strong{display:block;color:var(--text);margin-bottom:2px;font-weight:600;}
+
+    /* ── Feedback ── */
+    .feedback{background:rgba(0,40,89,.5);border:1px solid var(--border2);border-radius:var(--rs);padding:18px 20px;margin-top:12px;display:none;animation:fadeUp .32s ease;}
+    .feedback.show{display:block;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .feedback h4{color:var(--gold);font-size:.88rem;margin-bottom:8px;font-weight:700;}
+    .feedback .fb-body{font-size:.84rem;line-height:1.7;color:var(--text2);font-family:Georgia,serif;margin-top:10px;}
+    .badges{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px;}
+    .badge{padding:3px 11px;border-radius:20px;font-size:.72rem;font-weight:700;}
+    .badge.up{background:rgba(48,209,88,.18);color:#30d158;}
+    .badge.down{background:rgba(255,69,58,.18);color:#ff453a;}
+
+    /* ── Historical Figure ── */
+    .fig-quote{background:rgba(237,139,0,.08);border:1px solid rgba(237,139,0,.25);border-radius:var(--rs);padding:14px 16px;margin:12px 0;display:flex;gap:12px;align-items:flex-start;}
+    .fig-avatar{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;background:linear-gradient(135deg,var(--gold) 0%,#c86f00 100%);color:white;border:2px solid rgba(237,139,0,.4);}
+    .fig-meta{flex:1;}
+    .fig-name{font-size:.83rem;font-weight:700;color:var(--gold);margin-bottom:1px;}
+    .fig-years{font-size:.7rem;color:var(--text3);margin-bottom:8px;}
+    .fig-text{font-size:.82rem;font-style:italic;color:var(--text2);line-height:1.65;font-family:Georgia,serif;}
+    .fig-src{font-size:.68rem;color:var(--text3);margin-top:5px;display:block;}
+
+    /* ── Data Chart ── */
+    .data-chart{margin:14px 0 4px;background:rgba(0,22,43,.6);border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px;overflow:hidden;}
+    .dc-title{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--gold);font-weight:700;margin-bottom:10px;}
+    .dc-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+    .dc-row:last-child{margin-bottom:0;}
+    .dc-label{font-size:.73rem;color:var(--text2);width:120px;flex-shrink:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .dc-bar-wrap{flex:1;background:rgba(255,255,255,.07);border-radius:10px;height:14px;overflow:hidden;}
+    .dc-bar{height:100%;border-radius:10px;transition:width 1.1s cubic-bezier(.4,0,.2,1);}
+    .dc-val{font-size:.69rem;font-weight:700;color:var(--text2);white-space:nowrap;width:62px;flex-shrink:0;text-align:left;padding-left:5px;}
+    .dc-source{font-size:.62rem;color:var(--text3);margin-top:8px;text-align:right;}
+
+    /* ── Nav row (Back button + Q counter) ── */
+    .nav-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+    .nav-row .q-count{margin-bottom:0;}
+    .btn-back{padding:7px 16px;border-radius:50px;font-size:.8rem;background:rgba(0,40,89,.6);border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-family:inherit;font-weight:600;transition:all .2s ease;}
+    .btn-back:hover{background:var(--navy2);color:var(--text);transform:translateX(-2px);}
+
+    /* ── Learn More ── */
+    .learn-more{margin-top:14px;}
+    .lm-head{font-size:.67rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);font-weight:600;margin-bottom:7px;}
+    .lm-links{display:flex;flex-wrap:wrap;gap:7px;}
+    .lm-link{font-size:.73rem;color:var(--gold2);text-decoration:none;padding:4px 11px;border-radius:20px;background:rgba(237,139,0,.1);border:1px solid rgba(237,139,0,.25);transition:all .18s ease;white-space:nowrap;}
+    .lm-link:hover{background:rgba(237,139,0,.22);border-color:rgba(237,139,0,.5);}
+
+    .next-wrap{text-align:center;margin-top:20px;}
+
+    /* ══ NEWS ALERT OVERLAY ══ */
+    #paper-overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,10,22,.93);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;animation:fadeIn .25s ease;}
+    #paper-overlay.open{display:flex;}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .paper-card{max-width:540px;width:100%;border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.75);animation:scaleIn .3s cubic-bezier(.34,1.56,.64,1);background:#001122;border:1px solid var(--border2);}
+    @keyframes scaleIn{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
+    .paper-alert-bar{background:linear-gradient(90deg,var(--gold) 0%,var(--gold2) 100%);padding:7px 18px;display:flex;align-items:center;gap:8px;font-size:.7rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#00162b;}
+    .paper-alert-bar::before{content:'📰';font-size:.85rem;}
+    .paper-masthead{padding:14px 22px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+    .pm-logo{font-size:1.8rem;}
+    .pm-text .pm-name{font-size:1rem;font-weight:800;color:var(--text);letter-spacing:.5px;}
+    .pm-text .pm-sub{font-size:.65rem;color:var(--text3);letter-spacing:1px;text-transform:uppercase;}
+    .paper-body{padding:18px 22px 22px;}
+    .paper-topic{display:inline-block;font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;color:var(--gold);margin-bottom:10px;}
+    .paper-headline{font-size:1.5rem;font-weight:900;line-height:1.2;color:var(--text);margin-bottom:9px;letter-spacing:-.3px;}
+    .paper-subline{font-size:.84rem;color:var(--text2);line-height:1.55;margin-bottom:22px;font-family:Georgia,serif;font-style:italic;}
+    /* No auto-timer — user must click to continue */
+    .paper-actions{display:flex;justify-content:space-between;align-items:center;padding-top:4px;}
+    .paper-actions small{font-size:.68rem;color:var(--text3);}
+
+    /* ── End Screens ── */
+    .end-hero{border-radius:var(--r);padding:42px 40px;text-align:center;margin-bottom:20px;}
+    .end-hero.win{background:linear-gradient(145deg,rgba(237,139,0,.2) 0%,rgba(0,40,89,.7) 100%);border:1px solid var(--border2);}
+    .end-hero.lose{background:linear-gradient(145deg,rgba(255,69,58,.18) 0%,rgba(0,22,43,.9) 100%);border:1px solid rgba(255,69,58,.4);}
+    .end-hero .e-emoji{font-size:3.2rem;margin-bottom:12px;display:block;}
+    .end-hero h1{font-size:2rem;font-weight:900;margin-bottom:10px;}
+    .end-hero h1.win{background:linear-gradient(135deg,#fff 0%,var(--gold2) 60%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .end-hero h1.lose{color:#ff6b62;}
+    .end-hero p{color:var(--text2);font-size:.9rem;line-height:1.65;max-width:560px;margin:0 auto;font-family:Georgia,serif;}
+    .ideo-pill{display:inline-block;padding:9px 24px;background:linear-gradient(135deg,var(--gold),#c86f00);color:white;border-radius:50px;font-size:1rem;font-weight:800;margin:14px 0 6px;}
+
+    .panel{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:18px;}
+    .panel h3{color:var(--gold);font-size:.95rem;margin-bottom:14px;font-weight:700;}
+    .final-bar-wrap{background:rgba(255,255,255,.07);}
+    .ideo-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+    .ideo-label{width:185px;font-size:.82rem;color:var(--text2);}
+    .ideo-track{flex:1;background:rgba(255,255,255,.07);border-radius:20px;height:11px;overflow:hidden;}
+    .ideo-fill{height:100%;border-radius:20px;transition:width .8s ease;}
+    .ideo-fill.cap{background:linear-gradient(90deg,var(--gold),var(--gold2));}
+    .ideo-fill.mix{background:linear-gradient(90deg,#4facfe,#00f2fe);}
+    .ideo-fill.soc{background:linear-gradient(90deg,var(--red),#ff6b62);}
+    .ideo-fill.com{background:linear-gradient(90deg,#9b59b6,#c39bd3);}
+    .ideo-count{font-size:.75rem;color:var(--text3);width:46px;text-align:right;}
+
+    .review-section h3{color:var(--gold);font-size:.95rem;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border2);}
+    .rev-item{background:var(--surf);border:1px solid var(--border);border-radius:var(--rs);padding:16px 18px;margin-bottom:10px;}
+    .rev-num{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:4px;}
+    .rev-title{font-weight:700;color:var(--text);margin-bottom:6px;font-size:.9rem;}
+    .rev-chosen{font-size:.82rem;color:var(--text2);margin-bottom:6px;}
+    .rev-chosen span{font-weight:700;color:var(--text);}
+    .rev-exp{font-size:.78rem;border-radius:8px;padding:8px 12px;margin-top:5px;font-family:Georgia,serif;line-height:1.6;}
+    .rev-exp.good{background:rgba(48,209,88,.1);color:#4ade80;border:1px solid rgba(48,209,88,.2);}
+    .rev-exp.note{background:rgba(0,40,89,.4);color:var(--text2);border:1px solid var(--border);}
+
+    /* ── Continue Learning ── */
+    .continue-section{margin-bottom:18px;}
+    .continue-section h3{color:var(--gold);font-size:.95rem;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border2);}
+    .resource-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .resource-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px;text-decoration:none;transition:all .2s ease;display:block;}
+    .resource-card:hover{background:var(--surf2);border-color:var(--border2);transform:translateY(-2px);}
+    .resource-card .rc-tag{font-size:.62rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--gold);font-weight:700;margin-bottom:4px;}
+    .resource-card .rc-title{font-size:.82rem;color:var(--text);font-weight:600;line-height:1.4;margin-bottom:3px;}
+    .resource-card .rc-src{font-size:.7rem;color:var(--text3);}
+
+    #confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:200;display:none;}
+
+    /* ── Nation Name Builder ── */
+    .name-builder{border-radius:var(--r);padding:26px 28px;background:var(--surf);border:1px solid var(--border);margin-bottom:20px;animation:fadeUp .3s ease;}
+    .nb-title{color:var(--gold);font-size:.95rem;font-weight:700;margin-bottom:4px;}
+    .nb-subtitle{font-size:.8rem;color:var(--text3);margin-bottom:18px;font-family:Georgia,serif;}
+    .nb-cols{display:flex;gap:12px;align-items:flex-start;margin-bottom:16px;}
+    .nb-col{flex:1;}
+    .nb-col-label{font-size:.62rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);font-weight:600;margin-bottom:8px;}
+    .nb-plus{font-size:1.4rem;color:var(--gold);padding-top:26px;flex-shrink:0;font-weight:300;}
+    .nb-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
+    .nb-chip{padding:5px 13px;border-radius:20px;border:1px solid var(--border2);background:rgba(0,40,89,.4);color:var(--text2);font-size:.78rem;cursor:pointer;font-family:inherit;transition:all .18s ease;}
+    .nb-chip:hover{border-color:var(--gold);color:var(--text);}
+    .nb-chip.active{background:rgba(237,139,0,.2);border-color:var(--gold);color:var(--gold);font-weight:700;}
+    .nb-custom{width:100%;background:rgba(0,40,89,.3);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;color:var(--text);font-size:.78rem;font-family:inherit;outline:none;margin-top:4px;}
+    .nb-custom:focus{border-color:var(--gold);}
+    .nb-preview{text-align:center;margin:12px 0 18px;padding:14px;background:rgba(237,139,0,.07);border:1px solid var(--border);border-radius:var(--rs);}
+    .nb-preview-label{font-size:.62rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);font-weight:600;margin-bottom:6px;}
+    .nb-preview-name{font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,#fff 0%,var(--gold2) 60%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;transition:all .2s ease;}
+    .nb-actions{display:flex;justify-content:center;}
+
+    /* ── Animated HUD Demo ── */
+    .demo-hud{background:rgba(0,22,43,.75);border:1px solid var(--border2);border-radius:var(--rs);padding:13px 16px;margin-top:16px;}
+    .demo-hud-title{font-size:.62rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:10px;font-weight:600;}
+    .demo-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+    .demo-row:last-of-type{margin-bottom:0;}
+    .demo-label{font-size:.7rem;color:var(--text2);width:110px;flex-shrink:0;}
+    .demo-bar-wrap{flex:1;background:rgba(255,255,255,.07);border-radius:10px;height:8px;position:relative;}
+    .demo-bar-wrap::after{content:'';position:absolute;left:25%;top:-3px;bottom:-3px;width:2px;background:rgba(255,69,58,.7);border-radius:2px;pointer-events:none;}
+    .demo-bar{height:100%;border-radius:10px;}
+    .demo-bar.anim-h{animation:demoH 7s ease-in-out infinite;}
+    .demo-bar.anim-e{animation:demoE 7s ease-in-out infinite .8s;}
+    .demo-bar.anim-ed{animation:demoEd 7s ease-in-out infinite 1.4s;}
+    .demo-bar.anim-f{animation:demoF 9s ease-in-out infinite .3s;}
+    @keyframes demoH{0%,100%{width:65%;background:linear-gradient(90deg,var(--gold),var(--gold2))}40%{width:74%}70%{width:55%}}
+    @keyframes demoE{0%,100%{width:65%;background:linear-gradient(90deg,var(--gold),var(--gold2))}35%{width:76%}65%{width:58%}}
+    @keyframes demoEd{0%,100%{width:65%;background:linear-gradient(90deg,var(--gold),var(--gold2))}30%{width:70%}60%{width:62%}}
+    @keyframes demoF{
+      0%,100%{width:65%;background:linear-gradient(90deg,var(--gold),var(--gold2));box-shadow:none}
+      25%{width:48%;background:linear-gradient(90deg,#ff9f0a,#ffb833);box-shadow:none}
+      45%,55%{width:19%;background:linear-gradient(90deg,#ff453a,#ff6b62);box-shadow:0 0 12px rgba(255,69,58,.8)}
+      75%{width:42%;background:linear-gradient(90deg,#ff9f0a,#ffb833);box-shadow:none}
+    }
+    .demo-caption{font-size:.7rem;color:rgba(255,69,58,.75);margin-top:9px;text-align:center;font-weight:600;letter-spacing:.3px;animation:demoCaption 9s ease-in-out infinite .3s;}
+    @keyframes demoCaption{0%,40%,90%,100%{opacity:0}47%,60%{opacity:1}}
+
+    @media(max-width:600px){
+      .title-hero{padding:34px 20px;}.title-hero h1{font-size:2rem;}
+      .hud-label{width:108px;font-size:.74rem;}
+      .resource-grid{grid-template-columns:1fr;}
+      .paper-headline{font-size:1.2rem;}
+      .dc-label{width:90px;font-size:.68rem;}
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<!-- ══ NEWS OVERLAY — no auto-timer, user must click ══ -->
+<div id="paper-overlay" onclick="closePaper()">
+  <div class="paper-card" onclick="event.stopPropagation()">
+    <div class="paper-alert-bar">Breaking News</div>
+    <div class="paper-masthead">
+      <div class="pm-logo">🏛️</div>
+      <div class="pm-text">
+        <div class="pm-name">The Freedomtopia Gazette</div>
+        <div class="pm-sub">Policy Edition · Breaking News</div>
+      </div>
+    </div>
+    <div class="paper-body">
+      <div class="paper-topic" id="paper-topic"></div>
+      <div class="paper-headline" id="paper-headline"></div>
+      <div class="paper-subline" id="paper-subline"></div>
+      <div class="paper-actions">
+        <button class="btn btn-gold" id="paper-continue-btn" onclick="closePaper()">Continue →</button>
+        <small>or click backdrop to dismiss</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HEADER ══ -->
+<div class="header">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <!-- Cato Institute official vector logo (Wikimedia Commons, paths-based) -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="6 23.19 337.9 167.96" width="108" height="54" style="display:block;flex-shrink:0;"><g fill="white" fill-rule="evenodd" transform="translate(6 23)"><path d="M310.473194 81.4089937C308.252123 90.1660496 304.254073 98.2245524 297.527243 105.014391 289.722595 112.184707 280.140362 116.182757 269.099225 115.104332 257.549775 114.469394 247.7149 109.583158 238.830614 102.476456 233.182816 97.7804593 228.486819 92.133267 225.060698 86.1043848 217.445682 73.159646 215.161602 56.5973355 217.763151 40.9238171 219.159046 33.6262705 221.936899 26.9527566 226.519601 20.9990007 228.724314 18.1351151 230.112333 17.0185208 231.850536 15.7316807 232.053498 15.582034 232.294629 15.7316807 232.358244 15.9225256 232.661173 17.9182183 231.596682 20.9353857 231.279819 23.5369353 231.850536 23.8544043 233.334886 23.6211494 233.388807 23.5611696 233.506343 23.4315162 233.494832 23.0740606 233.494832 23.0740606 234.12977 19.2668558 235.086418 15.7316807 236.292073 12.1783299 240.98807 9.00545719 246.318399 7.22908472 251.838968 6.02342945 259.707837 4.37307522 268.654526 5.19825234 275.76244 8.05365598 290.737405 13.8916932 302.984197 27.9790782 308.315132 42.8910345 311.932097 54.6937331 313.962324 68.908348 310.473194 81.4089937ZM127.148162 69.9867733 126.386599 70.4308664C117.883398 71.6371276 109.062727 71.8273666 100.052423 71.6371276 96.9425592 71.3832735 93.5794475 71.6371276 90.7240438 70.6217114L90.5974197 70.1140033C95.1025718 55.7091492 100.559525 41.6853792 106.207323 27.7888391 106.715031 26.773423 107.48447 24.7189622 107.793457 24.7423885 108.023076 24.7601604 108.238156 25.1866837 108.238156 25.1866837 114.329441 39.2110596 120.802416 53.1075997 126.513224 67.2585996 126.767078 68.1467859 127.465025 69.0349721 127.148162 69.9867733ZM320.371078 36.6089041C317.135802 29.0575035 312.69366 21.6969479 306.347914 15.9225256 297.844712 8.81521812 288.516333 3.61151307 277.91929 1.4540566 264.466843-1.21110797 249.808741.502255383 238.513145 6.84800072 238.513145 6.84800072 238.227786 7.00673523 238.005437 6.91161569 237.783693 6.81649616 239.058416 4.19495328 239.566124 2.79905895 239.692748 2.5452049 240.193792 1.8181766 239.401937 1.70791065 233.563294 4.11922117 226.583822 3.802358 219.984223 4.37307522L195.743282 4.88078331 167.125024 4.94439829C159.383385 4.88078331 151.641745 4.81777419 143.900105 4.62753512 140.0929 4.24645112 135.620465 4.80202191 132.5415 2.59670274 132.010163 2.21561874 131.558194.788219847 130.891751 1.4540566 128.353211 7.79980193 126.005515 14.3357863 123.467581 20.7451466 123.467581 20.7451466 123.570577 21.0068768 123.609957 21.0462575 123.729311 21.1650055 125.053714 21.4430938 125.688046 21.0626157 126.640453 17.445044 129.305618 13.3203701 133.112823 11.9880908 140.536994 9.06907217 149.357664 9.38654119 157.797251 9.13268715 162.810111 9.13268715 167.441887 8.94244807 172.391738 9.51316529 174.739434 10.0208734 174.841218 12.8562837 175.120518 14.3994013 175.709411 17.6570939 175.88208 42.2567023 176.072925 56.0266183L175.691841 75.5073415C175.437987 83.6300652 175.691841 92.133267 175.120518 100.382615 174.930279 103.047779 174.930279 105.712944 173.787633 107.997024 171.947645 111.550375 168.013816 112.565791 164.206006 112.184707 158.304959 111.867844 156.083888 105.268245 153.735586 101.144177 149.10381 90.8639968 144.153959 80.6474316 140.156515 70.1140033L127.846109 40.669963C122.706019 28.1693173 116.844353 15.3033398 112.846909 2.29438014 112.846909 2.29438014 112.80147 1.79818333 112.52944 1.85028702 111.22503 2.10111178 110.072084 1.81030046 109.925467 2.20471332 109.501367 3.35038874 107.696519 10.2626103 100.940609 28.1693173L93.9605315 47.0793233 87.3609321 64.9102982C82.4110811 77.4745589 77.8120212 90.244811 72.0048827 102.476456 69.6141713 107.511127 67.4991248 115.929509 60.1385692 116.437217 50.8101902 116.245766 43.4490287 111.297127 36.1514822 106.347882 29.9965817 101.398031 24.9837216 95.6230028 21.2395259 89.1506334 17.4953302 82.0433259 15.5917277 74.1750622 14.7035415 65.8620994 14.0055943 51.0137582 16.7343739 37.3704663 24.0955354 25.6943918 31.6463301 13.6378392 44.4644449 6.02342945 58.0441218 4.43669019 68.514541 3.73874303 78.2233981 5.83258453 87.0434631 9.70340436 89.6450127 11.0999046 92.7045901 12.3455464 94.4682396 15.1609635 95.8241473 17.3262961 94.17864 21.6084928 94.3410096 21.6969479 94.7014945 21.8932455 95.8641339 21.8871869 96.371842 21.4430938 98.1482145 14.7798795 102.762421 4.18404786 103.80813 2.4440268 104.097124 1.96418812 103.605774 1.7212395 103.288305 1.96176469 99.8615778 3.67512805 96.1809971 5.13463736 91.9933141 4.37307522 86.9798481 3.61151307 82.157227 2.27923372 77.1443669 1.4540566 60.0749542-1.71881607 42.0531344 1.07357845 28.2196034 10.0208734 14.7035415 17.9527521 5.50239251 31.596044 2.01265667 45.8736681-1.98539311 60.2149071.109054245 77.2843199 7.08913177 89.7219565 12.228616 99.3671986 21.3667558 107.74317 30.8217589 112.883261 48.9065878 123.416689 74.9232955 121.576701 94.5948637 115.675655 96.9425592 114.913487 100.95515 113.99319 101.638556 113.264345 102.114154 112.756636 105.572991 99.7476767 107.095509 92.8312142 106.90527 92.514351 106.397562 92.7039842 106.017084 92.6409751 104.898672 92.5719074 104.990762 93.3970845 104.303721 95.3061397 100.774604 103.923848 92.1199382 111.550375 83.3634882 114.469394 80.8885627 115.167947 77.58846 116.690465 75.1771495 114.723854 74.6694414 114.025301 74.6694414 112.94627 74.8596805 112.058083 77.7786991 100.699478 82.4110811 89.9758105 86.916839 79.2515373L87.8686402 77.792028C88.4399633 77.2207049 89.2009195 77.0940808 89.9624817 76.9668508 102.970836 76.0150496 116.740751 74.8730093 129.813326 76.3325187 131.081991 76.9032359 131.335845 78.4263602 131.907168 79.5053913 134.826186 87.0567919 137.999059 94.5439717 140.600609 102.222602 141.234941 104.443674 142.123127 106.60113 142.060118 109.139671 141.869273 110.979658 140.346754 112.693021 138.697006 113.453978 137.047258 114.152531 133.604173 114.405779 133.366677 114.533009 133.128575 114.660239 133.366677 116.182757 133.938 116.690465 141.298556 115.993124 148.849956 115.294571 156.464366 114.913487 173.090292 114.405779 189.398748 114.152531 205.896838 115.548425L206.277316 115.421801C206.468161 114.723854 206.539652 113.446102 206.150692 113.390969 201.51831 113.20073 197.076773 112.565791 193.141732 110.598574 187.748394 107.235462 188.89104 100.699478 188.256102 95.0516798L188.065863 77.0304658 188.319111 58.3106988 188.700195 35.0863857 188.76381 34.2612086C188.954049 26.328724 189.393901 11.2883261 189.779226 10.2111125 190.286934 9.25931124 191.492589 9.70340436 192.380776 9.45015617 204.437328 9.06907217 217.478398 7.79798436 228.58315 11.7324192L229.312602 12.304954C225.885269 14.5896404 222.522763 17.826128 219.730369 20.8717707 209.196334 33.3724165 202.343487 47.8408855 204.120465 65.1641523 205.325515 82.614649 215.034372 97.7804593 229.121757 108.631963 238.196282 114.660239 247.968148 118.974546 259.073505 119.989962 272.081253 121.449471 284.455275 118.594068 294.925694 112.375552 308.568986 104.570298 318.277237 90.8003818 322.401911 76.5863727 326.653815 64.022112 325.25792 48.4122086 320.371078 36.6089041L320.371078 36.6089041ZM35.5807649 127.097875 42.8146965 134.64867 63.4380659 154.891561 66.8647926 158.127443C67.1186467 158.317682 67.3725007 158.064434 67.4355098 157.809974 67.4991248 149.815086 67.7996299 141.666917 67.4991248 133.823493 67.413699 131.590304 67.1186467 128.747018 64.5164912 128.112686 63.56469 127.668593 61.7465134 127.511676 61.5344635 127.287509 61.0879469 126.816152 62.2960256 126.907031 62.6765038 126.843416 66.4837086 127.160885 70.1642894 127.541969 74.0351092 127.351124 74.0987242 127.414739 74.0351092 127.541969 74.0987242 127.668593 73.5910161 127.985456 72.8930689 127.858226 72.3217459 128.112686 70.2279044 128.810633 70.1642894 131.158329 69.8468204 132.998922 69.0858641 144.357527 68.9586341 155.716133 69.4027273 167.392207 69.2761032 167.645455 68.9586341 167.645455 68.7047801 167.582446 63.56469 160.031046 56.5846125 153.875539 49.922004 147.340161L35.51715 133.823493C35.2632959 133.760484 35.0730568 133.887108 35.0094419 134.077347 35.1366718 143.53235 34.6289637 153.6853 35.2632959 163.076688 36.3423271 165.869083 39.4515848 166.185946 41.9901252 166.757875 42.1803643 166.820884 42.0531344 167.011729 42.1167493 167.201362L41.8628953 167.392207C37.6109915 167.011729 32.9792153 167.011729 28.6643024 167.328592 28.4740633 167.201362 28.3468334 167.011729 28.4740633 166.820884 29.8063427 166.313176 31.5827152 166.377397 32.2812682 164.853667 33.0428303 161.808024 32.7253613 158.572142 32.9792153 155.27204 32.8519854 147.847869 33.4233085 140.105623 32.8519854 132.745068 32.5351222 131.031704 31.7796187 129.372868 30.1868208 128.365934 29.1223302 127.694039 28.157806 127.542574 27.6488862 127.160885 27.5852712 127.03426 27.6488862 126.843416 27.7755103 126.780406 30.2504358 127.160885 33.0428303 127.03426 35.5807649 127.097875M24.3487836 127.351124C24.3736237 127.90003 22.4342757 128.097539 22.001088 128.112686 20.9856718 128.365934 19.7800166 128.493164 19.2092994 129.635204 17.8127992 132.934701 18.1302682 136.996366 17.9400291 140.804176 17.8127992 148.355577 18.1302682 156.41408 18.4477372 163.901866 18.6379763 164.727043 18.9554453 165.678844 19.8436316 166.122937 21.1129018 166.630645 22.5724111 166.757875 24.0955354 166.820884 24.2857745 167.074738 23.9683054 167.328592 23.7780664 167.392207 18.4477372 167.201362 13.0537931 166.820884 7.78707894 167.455822 7.59683986 167.455822 7.40599494 167.392207 7.34298582 167.201362 7.27937084 167.011729 7.46960991 166.693654 7.72346396 166.693654 9.75429634 166.440406 12.2928368 166.630645 13.2440322 164.472583 14.1328243 161.935254 13.9419793 158.95262 14.1328243 156.223841L13.6887312 134.458431C13.3076472 132.554223 13.6887312 130.270142 11.9117528 129.065093 10.5788676 128.302925 8.86550425 128.23931 7.34298582 127.922447 7.15274675 127.858226 7.27937084 127.668593 7.21575586 127.541969L7.46960991 127.351124C12.7363241 127.605584 18.1938832 127.732208 23.3339732 127.097875 23.7144514 127.097875 24.2221595 126.907031 24.3487836 127.351124M108.49201 128.23931 132.985593 128.23931C139.411917 128.490741 140.819323 127.654052 141.17072 127.693433 141.51 127.732208 141.424574 127.887913 141.222218 128.364722 141.090141 128.674921 139.902661 131.856882 139.648807 133.950117 139.597309 134.228811 139.344061 134.204577 139.153216 134.077347 138.836353 133.126152 140.029285 131.793267 138.82363 131.094714 134.698956 128.937863 129.178388 129.762434 124.419382 129.889664 124.419382 129.889664 124.185521 130.033858 124.038298 130.397372 123.891681 130.760281 123.65782 150.703273 123.848059 160.601763 124.101913 162.442356 123.594205 164.853667 125.625037 165.742459 126.894308 166.377397 128.353211 166.504021 129.749711 166.630645 130.003565 166.693654 129.93995 167.011729 129.876335 167.137747 129.051764 167.455822 128.036348 167.201362 127.148162 167.137747 122.706019 166.185946 118.010022 167.137747 113.6321 167.70907 113.441255 167.645455 113.314631 167.582446 113.187401 167.455822 113.251016 167.011729 113.758724 167.074738 114.075587 166.948114 115.91618 166.313176 118.705545 165.8709 119.215677 164.219335 119.473772 163.384464 119.787 144.484151 119.533146 134.394816 119.342907 132.934701 119.279292 131.412788 118.771584 130.079903L118.51773 129.889664C113.695109 129.699425 108.822807 129.358328 104.557575 130.77785 103.413111 131.158329 102.690324 132.656613 102.183222 133.862874 101.973595 134.515988 101.416207 134.31242 101.511326 134.077347 102.762421 130.987477 103.68817 127.24934 103.986252 127.224229 104.241317 127.203295 104.76599 128.436819 108.49201 128.23931M100.49591 127.605584C100.179047 130.333757 99.9888078 133.315785 100.749764 135.981555 100.559525 136.235409 100.269925 136.188758 100.115432 135.981555 99.6083296 132.998922 97.3236432 130.079903 94.4046246 129.128102 90.5338048 127.668593 85.3937147 128.112686 82.4110811 131.158329 80.4444695 133.315785 80.0633855 137.12299 81.3962708 139.78876 84.2516744 144.166682 89.3911586 144.738611 93.7066774 146.451975 97.7041214 147.783648 102.400118 151.40122 102.780596 156.032996 103.22469 160.15767 101.194463 163.838251 97.7041214 165.932698 92.6276463 169.041956 85.1398606 167.899915 79.4284475 166.884499 79.0479693 166.948114 78.7941153 167.264977 78.6674912 167.645455 78.7311062 167.8363 78.6038762 168.090154 78.4136372 168.090154 77.8423141 168.090154 77.7786991 167.582446 77.8423141 167.137747 77.652075 163.901866 76.4464198 160.982847 75.8750967 157.937204 75.9938446 157.494929 76.3828048 157.809974 76.5100347 157.937204 77.1443669 161.300316 79.8731465 164.727043 83.3634882 165.424384 87.4245471 166.504021 93.3892084 167.70907 96.9425592 164.536804 99.2272456 162.695604 99.2908606 159.523338 98.8461616 156.921788 97.3236432 151.083145 90.9142829 150.385804 86.3455159 148.482807 82.601926 147.149316 78.0325532 144.484151 77.2079819 140.105623 76.5736497 136.678897 77.8423141 133.443015 80.2536246 130.90508 84.8223916 126.590167 91.6394936 126.983369 97.4775309 128.189024 99.0067137 128.477412 99.9312514 127.198448 100.242056 127.287509 100.553466 127.377176 100.49591 127.605584 100.49591 127.605584M170.094329 128.265362 195.22285 128.277479C198.501142 128.339882 199.411745 128.043012 199.970345 127.782494 200.132109 127.706762 200.223593 128.036348 200.223593 128.036348 199.525646 129.940556 198.976134 131.664219 198.599291 133.938606 198.567181 134.130663 198.489631 134.367553 198.091583 134.268192 198.091583 134.268192 197.996463 134.25244 197.901344 134.077347 197.749274 133.798653 198.853145 131.793267 197.64749 131.158329 193.522816 129.191717 188.002248 129.699425 183.243242 129.953279 182.862764 130.079903 182.735534 130.587005 182.735534 130.968089L182.48168 149.94171C182.671919 154.827946 182.164211 160.094661 183.116012 164.664034 184.258052 166.56703 186.606353 166.56703 188.572965 166.820884 188.827425 166.884499 188.827425 167.201362 188.63658 167.328592L188.256102 167.455822C182.989388 166.693654 177.405204 166.948114 172.265114 167.836626 171.80951 167.848417 171.88403 167.518831 172.074875 167.392207 174.105708 166.757875 177.304632 166.004189 177.912913 164.790052 178.110422 164.395639 178.229776 160.347909 178.229776 160.347909L178.420621 140.867186C178.166767 137.25022 178.48363 133.569639 177.595444 130.206527L177.27858 129.953279C167.598199 130.071421 163.331148 129.085086 161.921925 131.475798 161.005869 133.029215 160.722328 134.007068 160.462416 133.950117 160.335186 134.014338 160.17221 133.806529 160.17221 133.679905 161.489949 130.802691 162.390858 127.362635 162.619872 127.287509 162.887055 127.200265 163.327513 128.353211 170.094329 128.265362M251.965592 128.241127 272.094582 128.278691 281.064293 128.26415C282.339622 128.335035 283.66039 127.948499 284.052986 127.80794 284.382572 127.690404 284.785467 127.580138 284.545547 128.036348 283.910609 130.004171 283.249619 131.831436 283.058774 133.989498 282.932756 134.179737 282.774022 134.310602 282.488057 134.066442 282.237838 133.851363 282.950932 132.197979 282.678902 131.464892 282.251167 130.311341 278.300374 129.751529 275.76244 129.624299 272.969439 129.497069 270.114036 129.624299 267.512486 129.877547L267.068999 130.44887C266.687915 140.411581 266.687915 150.956521 266.877548 160.919838 267.258632 162.759825 266.75153 165.107521 268.718747 166.059322 269.987411 166.693654 271.573545 166.693654 273.03366 167.011729 273.223899 167.392207 272.779806 167.518831 272.588961 167.582446 267.322247 166.757875 261.738064 167.137747 256.598579 167.96353 256.471955 167.96353 256.280505 167.899915 256.280505 167.70907L256.280505 167.518831C258.752401 166.87117 261.618104 166.055081 262.119148 164.916676 262.619585 163.779482 262.499626 151.020136 262.689865 144.103673 262.626856 139.662136 262.817095 134.573544 261.928909 130.322246 261.48421 129.433454 260.214939 129.941162 259.327359 129.687914 255.13907 129.687914 249.292551 129.441936 246.826107 130.956578 245.804633 131.58364 245.195746 133.950117 244.769829 133.976775 244.565049 133.990104 244.467506 133.871962 244.541421 133.724133 246.307494 130.190169 246.748558 127.557721 246.889117 127.478354 247.185986 127.310531 248.144452 128.442878 251.965592 128.241127M159.891093 127.858226C159.941379 128.672498 158.232862 128.337459 157.607012 128.557385 156.655211 128.747018 155.57618 129.000872 154.941848 129.953279 153.355108 133.252776 153.989441 137.504074 153.608962 141.247664 153.545347 149.116533 153.481732 156.921788 154.053055 164.664034 154.243295 165.424384 154.687994 166.250167 155.449556 166.630645 156.71822 167.137747 158.241344 167.201362 159.637239 167.328592 159.828084 167.582446 159.637239 167.899915 159.383385 167.96353 153.989441 167.645455 148.596102 167.392207 143.138543 167.96353 143.011919 167.8363 142.948304 167.8363 142.884689 167.645455 142.82168 167.264977 143.202158 167.201362 143.456012 167.201362 145.296 167.074738 147.397717 167.062015 148.405863 165.742459 149.901724 163.782512 149.547903 159.714183 149.674528 156.540704 149.674528 148.862679 149.674528 141.565739 149.294049 134.014338 148.912965 132.363984 149.166819 130.397372 147.517071 129.381956 146.184792 128.810633 144.661667 128.493164 143.075534 128.365934 142.721108 128.340488 142.630229 128.058159 142.884689 127.858226 143.086439 127.701915 153.378131 128.275661 159.193146 127.541969 159.51425 127.501376 159.828084 127.541969 159.891093 127.858226M316.500864 128.555567 315.421833 135.410232C315.330955 135.536856 315.095882 135.567755 314.97774 135.473847 314.57121 135.148502 314.996522 134.079165 314.914731 133.696869 314.97774 132.300975 314.534253 130.841465 313.201368 130.270142 309.076694 128.873642 303.645792 128.969973 299.748315 129.128102 298.379684 129.183235 296.766287 129.381956 295.878101 130.333757 295.243163 135.536856 295.370393 140.677552 295.370393 146.134506 295.370393 146.387754 295.560026 146.705223 295.81388 146.768232 300.509877 146.832453 305.332498 146.959683 309.901265 146.387754 312.185951 146.387754 312.569459 142.909529 312.935396 142.376375 313.011734 141.884419 313.463098 142.26308 313.454616 142.453925 313.264377 146.070891 313.201368 149.687856 313.391607 153.304216 313.391607 153.495061 313.229843 153.664095 313.074138 153.6853 312.919038 153.707111 312.69366 153.495061 312.69366 153.495061 312.50342 151.655074 312.185951 149.624241 310.408973 148.67244 305.586352 148.164732 300.446868 147.847869 295.687256 148.355577L295.370393 148.735449C295.243163 154.319633 294.989309 159.840807 295.94111 165.171136 297.844712 166.693654 300.636501 166.185946 303.048417 166.504021 307.045861 166.693654 310.789451 166.313176 313.962324 164.664034 316.24701 163.267533 317.833144 160.982847 318.721936 158.635151 318.84856 158.572142 318.912175 158.507921 319.039405 158.572142L319.293259 158.8884C318.595312 161.871639 317.833144 164.790052 316.628094 167.518831L316.24701 167.8363C306.411529 167.645455 296.385203 167.518831 286.549722 168.153163 286.068066 168.064708 286.094118 167.735122 286.422492 167.582446 287.754771 167.201362 289.577795 167.062015 290.166688 165.678844 290.755581 164.295673 291.054874 153.495061 291.182104 147.212931 291.245113 142.072841 291.118489 137.059981 290.737405 132.174351 290.707718 131.62605 290.483551 129.762434 289.214887 129.381956 288.389709 128.937863 286.825387 128.697944 286.739961 128.365934 286.60122 127.830356 287.374899 127.985456 287.754771 128.049677L307.744414 127.985456C310.662827 127.985456 316.310019 127.681316 316.500864 127.795217 316.778953 127.962433 316.500864 128.555567 316.500864 128.555567M216.416937 128.264756C216.476917 128.778523 215.902565 128.639175 215.619629 128.696126 214.063183 129.011172 211.417406 129.191717 210.846083 131.412788 210.021512 139.090813 210.275366 147.340161 210.402596 155.27204 210.275366 159.269484 212.813906 163.076688 216.430266 164.536804 221.887825 167.011729 229.502235 166.059322 234.262453 162.632595 237.434719 160.15767 237.371104 156.223841 237.942427 152.67049 238.513145 146.387754 238.830614 139.851769 238.259291 133.50663 237.995743 131.902927 238.189011 130.172599 236.292073 129.445571 235.160938 129.011777 234.34182 129.056005 233.327009 129.056005 232.893216 128.857284 232.992576 128.620394 233.119806 128.493164 237.015466 128.130256 244.147614 128.358664 244.605036 128.365934 245.063064 128.374416 245.040041 128.843349 244.428126 128.759741 243.031626 129.013595 240.875987 129.178994 240.671207 130.333757 240.531254 131.11713 240.290123 140.867186 239.972654 146.578599 239.083862 153.241207 240.290123 161.300316 233.627515 165.171136 226.392977 168.470633 215.41485 169.169186 209.259949 163.076688 206.024068 160.41213 206.404546 155.969987 206.404546 152.036158 206.531776 144.738611 206.721409 136.996366 205.642984 130.016288 204.754191 128.810633 202.086603 129.165665 201.835779 128.620394 201.584954 128.076334 202.255032 128.201747 202.724571 128.176301 207.356347 128.302925 211.67126 128.365934 216.240027 128.112686L216.416937 128.264756"/><path fill-rule="nonzero" d="M330.00484,152.725926 C325.74811,152.725926 322.285086,156.18895 322.285086,160.445679 C322.285086,164.702408 326.022951,168.153163 330.27968,168.153163 C334.53641,168.153163 337.901936,164.702408 337.901936,160.445679 C337.901936,156.18895 334.261569,152.725926 330.00484,152.725926 Z M330.27968,166.772237 C326.653684,166.772237 323.798534,164.071676 323.798534,160.445679 C323.798534,156.819682 326.653684,154.204767 330.27968,154.204767 C333.905677,154.204767 336.580925,156.819682 336.580925,160.445679 C336.580925,164.071676 333.905677,166.772237 330.27968,166.772237 Z"/><path fill-rule="nonzero" d="M331.727094,161.635653 C331.577853,161.502234 331.502318,161.456075 331.214678,161.318863 C332.002979,161.211369 332.442689,160.870551 332.820257,160.474089 C333.197826,160.077627 333.38661,159.590744 333.38661,159.012175 C333.38661,158.563864 333.272447,158.154755 333.044758,157.784219 C332.817068,157.413682 332.630198,157.205751 332.24725,156.968624 C331.864303,156.731498 331.170308,156.546899 330.438132,156.546899 L326.81679,156.546899 L326.81679,164.721438 L328.28054,164.721438 L328.28054,161.318863 L329.165113,161.318863 C329.445739,161.318863 329.647279,161.332141 329.770371,161.358066 C329.938746,161.399167 330.050846,161.531953 330.213481,161.635653 C330.376117,161.739352 330.505186,162.049231 330.710553,162.30848 C330.91592,162.56773 331.09772,162.83518 331.415337,163.32396 C331.627082,163.649814 331.904386,164.115639 332.24725,164.721438 L333.742571,164.721438 L332.630198,162.719441 C332.345746,162.286305 332.044711,161.924621 331.727094,161.635653 Z M329.65576,160.232544 L328.28054,160.232544 L328.28054,157.690004 L330.505099,157.690004 C331.114183,157.690004 331.841896,158.131983 331.841896,158.961274 C331.841896,159.643604 331.257511,159.920933 330.977523,160.022735 C330.697536,160.124538 330.153232,160.232544 329.65576,160.232544 Z"/></g></svg>
+  </div>
+  <div class="hd-right"><div class="title" style="color:var(--gold2);font-size:.78rem;letter-spacing:.5px;" id="header-nation-name">Freedomtopia</div></div>
+</div>
+
+<!-- ══ TITLE SCREEN ══ -->
+<div id="screen-title" class="screen active">
+  <div class="title-hero">
+    <span class="emoji">🏛️</span>
+    <h1>The Policy Game</h1>
+    <div class="tag" id="title-tag">Name your nation and begin</div>
+    <p>You're about to be elected leader. Ten real policy crises await. Every decision shapes your society — and history's greatest thinkers will weigh in on each choice.</p>
+  </div>
+
+  <!-- ══ NATION NAME BUILDER ══ -->
+  <div class="name-builder">
+    <div class="nb-title">🗺️ Name Your Nation</div>
+    <div class="nb-subtitle">Pick a root word and a suffix to create your nation's identity.</div>
+    <div class="nb-cols">
+      <div class="nb-col">
+        <div class="nb-col-label">Root Word</div>
+        <div class="nb-chips" id="nb-roots">
+          <button class="nb-chip active" onclick="selectNbRoot('Freedom',this)">Freedom</button>
+          <button class="nb-chip" onclick="selectNbRoot('Liberty',this)">Liberty</button>
+          <button class="nb-chip" onclick="selectNbRoot('Market',this)">Market</button>
+          <button class="nb-chip" onclick="selectNbRoot('Capital',this)">Capital</button>
+          <button class="nb-chip" onclick="selectNbRoot('Prosper',this)">Prosper</button>
+          <button class="nb-chip" onclick="selectNbRoot('Golden',this)">Golden</button>
+          <button class="nb-chip" onclick="selectNbRoot('Eagle',this)">Eagle</button>
+          <button class="nb-chip" onclick="selectNbRoot('Virtue',this)">Virtue</button>
+        </div>
+        <input class="nb-custom" id="nb-custom-root" type="text" placeholder="or type your own…" oninput="customNbRoot(this.value)">
+      </div>
+      <div class="nb-plus">+</div>
+      <div class="nb-col">
+        <div class="nb-col-label">Suffix</div>
+        <div class="nb-chips" id="nb-suffixes">
+          <button class="nb-chip active" onclick="selectNbSuffix('topia',this)">-topia</button>
+          <button class="nb-chip" onclick="selectNbSuffix('opolis',this)">-opolis</button>
+          <button class="nb-chip" onclick="selectNbSuffix('ville',this)">-ville</button>
+          <button class="nb-chip" onclick="selectNbSuffix('land',this)">-land</button>
+          <button class="nb-chip" onclick="selectNbSuffix('ia',this)">-ia</button>
+          <button class="nb-chip" onclick="selectNbSuffix('burg',this)">-burg</button>
+          <button class="nb-chip" onclick="selectNbSuffix('oria',this)">-oria</button>
+          <button class="nb-chip" onclick="selectNbSuffix('stan',this)">-stan</button>
+        </div>
+        <input class="nb-custom" id="nb-custom-suffix" type="text" placeholder="or type your own…" oninput="customNbSuffix(this.value)">
+      </div>
+    </div>
+    <div class="nb-preview">
+      <div class="nb-preview-label">Your Nation</div>
+      <div class="nb-preview-name" id="nb-preview-name">Freedomtopia</div>
+    </div>
+    <!-- Avatar builder -->
+    <div class="nb-avatar-section">
+      <div class="nb-col-label" style="margin-bottom:10px;">🧑 Customize Your Leader</div>
+      <div class="nb-avatar-row">
+        <div class="nb-avatar-preview" id="avatar-preview-svg"></div>
+        <div class="nb-avatar-controls">
+          <button class="nb-chip" onclick="cycleSkin()" style="margin-bottom:6px;width:100%;">🎨 Change Skin Tone</button>
+          <button class="nb-chip" onclick="cycleHair()" style="margin-bottom:6px;width:100%;">💇 Change Hair Style</button>
+          <button class="nb-chip" onclick="cycleHairColor()" style="width:100%;">🖌️ Change Hair Color</button>
+          <div style="font-size:.65rem;color:var(--text3);margin-top:8px;line-height:1.5;">Your leader's look will change based on how your nation performs!</div>
+        </div>
+      </div>
+    </div>
+    <div class="nb-actions">
+      <button class="btn btn-gold" id="begin-btn" onclick="beginWithName()">Found Freedomtopia &amp; Begin →</button>
+    </div>
+  </div>
+
+  <div class="how-card">
+    <h3>How to Play</h3>
+    <p>Each round gives you a real policy challenge with four possible responses. Your society starts in rough shape — four health bars beginning at <strong style="color:var(--gold)">65%</strong>. If any bar drops below the <strong style="color:var(--red)">danger line (25%)</strong>, the nation collapses. After each choice, a breaking news headline appears, real data is shown, and a historical figure shares their view.</p>
+    <div class="stat-icons">
+      <div class="stat-icon">😊<strong>Citizen Happiness</strong><p>How satisfied and secure residents feel day-to-day. Drops when policies create instability, shortages, or lost rights.</p></div>
+      <div class="stat-icon">💰<strong>Economic Health</strong><p>The strength of jobs, growth, and prosperity. Sensitive to taxes, regulation, and government spending.</p></div>
+      <div class="stat-icon">📚<strong>Education Quality</strong><p>How well schools prepare young people. Affected by competition, funding allocation, and government control.</p></div>
+      <div class="stat-icon">🗽<strong>Individual Freedom</strong><p>The degree to which citizens can live, speak, and work without government interference. Fragile once eroded.</p></div>
+    </div>
+    <!-- ── Animated HUD Demo ── -->
+    <div class="demo-hud">
+      <div class="demo-hud-title">Live example — watch Individual Freedom drop into the danger zone:</div>
+      <div class="demo-row"><div class="demo-label">😊 Happiness</div><div class="demo-bar-wrap"><div class="demo-bar anim-h"></div></div></div>
+      <div class="demo-row"><div class="demo-label">💰 Economy</div><div class="demo-bar-wrap"><div class="demo-bar anim-e"></div></div></div>
+      <div class="demo-row"><div class="demo-label">📚 Education</div><div class="demo-bar-wrap"><div class="demo-bar anim-ed"></div></div></div>
+      <div class="demo-row"><div class="demo-label">🗽 Freedom</div><div class="demo-bar-wrap"><div class="demo-bar anim-f"></div></div></div>
+      <div class="demo-caption">⚠️ DANGER — Individual Freedom below 25%! Society collapsing…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ QUESTION SCREEN ══ -->
+<div id="screen-question" class="screen">
+  <div class="hud" id="hud">
+    <div class="hud-inner">
+      <div class="hud-bars">
+        <div class="hud-title">National Health — Danger line at 25%</div>
+        <div class="hud-row"><div class="hud-label">😊 Happiness</div><div class="bar-wrap"><div class="bar ok" id="bar-h" style="width:65%"></div></div><div class="hud-val" id="val-h">65%</div></div>
+        <div class="hud-row"><div class="hud-label">💰 Economy</div><div class="bar-wrap"><div class="bar ok" id="bar-e" style="width:65%"></div></div><div class="hud-val" id="val-e">65%</div></div>
+        <div class="hud-row"><div class="hud-label">📚 Education</div><div class="bar-wrap"><div class="bar ok" id="bar-ed" style="width:65%"></div></div><div class="hud-val" id="val-ed">65%</div></div>
+        <div class="hud-row"><div class="hud-label">🗽 Freedom</div><div class="bar-wrap"><div class="bar ok" id="bar-f" style="width:65%"></div></div><div class="hud-val" id="val-f">65%</div></div>
+      </div>
+      <div class="hud-avatar">
+        <div id="avatar-svg"></div>
+        <div class="avatar-mood-lbl" id="avatar-mood-lbl">😐 Getting By</div>
+      </div>
+    </div>
+  </div>
+  <div class="dots" id="dots"></div>
+  <div class="nav-row">
+    <button class="btn-back" id="back-btn" onclick="goBack()" style="display:none;">← Back</button>
+    <div class="q-count">Question <strong id="q-num" style="color:var(--gold)">1</strong> of <strong style="color:var(--text)">10</strong></div>
+    <div style="width:62px"></div><!-- spacer to center q-count -->
+  </div>
+  <div class="scenario">
+    <div class="scene-art" id="scene-art">
+      <span class="art-qnum" id="art-qnum">Q1</span>
+      <span class="art-emoji" id="art-emoji">🏛️</span>
+      <span class="art-label" id="art-label"></span>
+    </div>
+    <div class="s-inner">
+      <div class="s-tag" id="s-tag"></div>
+      <div class="s-title" id="s-title"></div>
+      <div class="s-body" id="s-body"></div>
+    </div>
+  </div>
+  <div class="choices" id="choices"></div>
+  <div class="feedback" id="feedback">
+    <h4 id="fb-title"></h4>
+    <div class="badges" id="fb-badges"></div>
+    <div class="fig-quote">
+      <div class="fig-avatar" id="fig-avatar">AS</div>
+      <div class="fig-meta">
+        <div class="fig-name" id="fig-name">Adam Smith</div>
+        <div class="fig-years" id="fig-years">1723–1790 · Economist</div>
+        <div class="fig-text" id="fig-text">"Quote"</div>
+        <cite class="fig-src" id="fig-src">— Source</cite>
+      </div>
+    </div>
+    <div class="data-chart" id="data-chart"></div>
+    <div class="fb-body" id="fb-text"></div>
+    <div class="learn-more">
+      <div class="lm-head">📚 Learn More at Cato.org</div>
+      <div class="lm-links" id="lm-links"></div>
+    </div>
+  </div>
+  <div class="next-wrap" id="next-wrap" style="display:none">
+    <button class="btn btn-gold" id="next-btn" onclick="nextQ()">Next Question →</button>
+  </div>
+</div>
+
+<!-- ══ GAME-OVER SCREEN ══ -->
+<div id="screen-over" class="screen">
+  <div class="end-hero lose">
+    <span class="e-emoji">⚠️</span>
+    <h1 class="lose">Society in Crisis</h1>
+    <p id="over-text"></p>
+  </div>
+  <div id="over-review"></div>
+  <div class="next-wrap" style="margin-top:10px"><button class="btn btn-gold" onclick="restartGame()">Try Again</button></div>
+</div>
+
+<!-- ══ RESULTS SCREEN ══ -->
+<div id="screen-results" class="screen">
+  <div class="end-hero win">
+    <span class="e-emoji">🏆</span>
+    <h1 class="win">Game Complete!</h1>
+    <div class="ideo-pill" id="ideo-label">Your Ideology</div>
+    <p id="ideo-desc" style="margin-top:10px"></p>
+  </div>
+  <div class="review-section" id="review-section"><h3>Question-by-Question Review</h3></div>
+  <div class="continue-section"><h3>📖 Continue Your Education</h3><div class="resource-grid" id="resource-grid"></div></div>
+  <div class="panel">
+    <h3>Final National Health</h3>
+    <div class="hud-row"><div class="hud-label" style="color:var(--text2)">😊 Happiness</div><div class="bar-wrap final-bar-wrap"><div class="bar ok" id="fbar-h" style="width:65%"></div></div><div class="hud-val" style="color:var(--text2)" id="fval-h">65%</div></div>
+    <div class="hud-row"><div class="hud-label" style="color:var(--text2)">💰 Economy</div><div class="bar-wrap final-bar-wrap"><div class="bar ok" id="fbar-e" style="width:65%"></div></div><div class="hud-val" style="color:var(--text2)" id="fval-e">65%</div></div>
+    <div class="hud-row"><div class="hud-label" style="color:var(--text2)">📚 Education</div><div class="bar-wrap final-bar-wrap"><div class="bar ok" id="fbar-ed" style="width:65%"></div></div><div class="hud-val" style="color:var(--text2)" id="fval-ed">65%</div></div>
+    <div class="hud-row"><div class="hud-label" style="color:var(--text2)">🗽 Freedom</div><div class="bar-wrap final-bar-wrap"><div class="bar ok" id="fbar-f" style="width:65%"></div></div><div class="hud-val" style="color:var(--text2)" id="fval-f">65%</div></div>
+  </div>
+  <div class="panel">
+    <h3>Your Policy Choice Breakdown</h3>
+    <div class="ideo-row"><div class="ideo-label">🟡 Free Market / Libertarian</div><div class="ideo-track"><div class="ideo-fill cap" id="if-cap" style="width:0%"></div></div><div class="ideo-count" id="ic-cap">0/10</div></div>
+    <div class="ideo-row"><div class="ideo-label">🔵 Mixed / Pragmatic</div><div class="ideo-track"><div class="ideo-fill mix" id="if-mix" style="width:0%"></div></div><div class="ideo-count" id="ic-mix">0/10</div></div>
+    <div class="ideo-row"><div class="ideo-label">🔴 Socialist</div><div class="ideo-track"><div class="ideo-fill soc" id="if-soc" style="width:0%"></div></div><div class="ideo-count" id="ic-soc">0/10</div></div>
+    <div class="ideo-row"><div class="ideo-label">🟣 Authoritarian</div><div class="ideo-track"><div class="ideo-fill com" id="if-com" style="width:0%"></div></div><div class="ideo-count" id="ic-com">0/10</div></div>
+  </div>
+  <div class="next-wrap"><button class="btn btn-gold" onclick="restartGame()">Play Again</button></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// CHART DATA — one per question, shown after any answer
+// rows: [{label, value, color}], unit appended to values
+// ─────────────────────────────────────────────────────────────
+const CHARTS = [
+  // Q1 — Regulation
+  {title:"Days to Legally Start a Business",unit:" day(s)",source:"World Bank, Doing Business Index",rows:[
+    {label:"New Zealand",value:1,pct:1,color:"#30d158"},
+    {label:"Australia",value:2,pct:2,color:"#4ade80"},
+    {label:"USA",value:4,pct:4,color:"#86efac"},
+    {label:"Germany",value:7,pct:7,color:"#ffd60a"},
+    {label:"India",value:18,pct:18,color:"#ff9f0a"},
+    {label:"Venezuela",value:230,pct:100,color:"#ff453a"}
+  ]},
+  // Q2 — Education
+  {title:"High School Graduation Rates: Voucher vs. Public School",unit:"%",source:"Wolf et al. 2013; Cowen et al. 2013 — Cato Inst.",rows:[
+    {label:"City A — Vouchers",value:82,pct:82,color:"#30d158"},
+    {label:"City A — Public",value:70,pct:70,color:"#ff453a"},
+    {label:"City B — Vouchers",value:77,pct:77,color:"#4ade80"},
+    {label:"City B — Public",value:74,pct:74,color:"#ff9f0a"}
+  ]},
+  // Q3 — Healthcare (sorted descending by value — highest spender first)
+  {title:"Healthcare Spending as % of GDP",unit:"%",source:"Commonwealth Fund / World Health Organization 2022",rows:[
+    {label:"United States",value:17.2,pct:100,color:"#ff453a"},
+    {label:"United Kingdom",value:11.9,pct:69,color:"#ff9f0a"},
+    {label:"Australia",value:9.3,pct:54,color:"#ffd60a"},
+    {label:"OECD Avg",value:8.2,pct:48,color:"#86efac"},
+    {label:"Singapore",value:4.9,pct:29,color:"#30d158"}
+  ]},
+  // Q4 — Trade
+  {title:"People Living in Extreme Poverty (Billions)",unit:"B",source:"World Bank — Driven by trade liberalization",rows:[
+    {label:"1990",value:1.9,pct:100,color:"#ff453a"},
+    {label:"2000",value:1.57,pct:83,color:"#ff9f0a"},
+    {label:"2010",value:1.00,pct:53,color:"#ffd60a"},
+    {label:"2022",value:0.68,pct:36,color:"#30d158"}
+  ]},
+  // Q5 — Deficit/Spending
+  {title:"Ireland's Celtic Tiger: GDP Growth Rate",unit:"%/yr",source:"Cato Institute — Irish Approach vs. Grecian Formula",rows:[
+    {label:"Pre-reform (1980s)",value:0.2,pct:3,color:"#ff453a"},
+    {label:"Post-cuts (1989–2001)",value:7.2,pct:100,color:"#30d158"},
+    {label:"Canada cuts (1990s)",value:4.1,pct:57,color:"#4ade80"},
+    {label:"Greece (tax hikes)",value:-5.5,pct:0,color:"#ff453a"}
+  ]},
+  // Q6 — Free Speech
+  {title:"Press Freedom Index 2024 (Higher = More Free / 100)",unit:"",source:"Reporters Without Borders, 2024",rows:[
+    {label:"Finland",value:94,pct:94,color:"#30d158"},
+    {label:"USA",value:66,pct:66,color:"#ffd60a"},
+    {label:"Hungary",value:45,pct:45,color:"#ff9f0a"},
+    {label:"Russia",value:22,pct:22,color:"#ff453a"},
+    {label:"North Korea",value:8,pct:8,color:"#7f0000"}
+  ]},
+  // Q7 — Housing
+  {title:"Home Price-to-Income Ratio (Lower = More Affordable)",unit:"x",source:"Demographia International Housing Affordability 2024",rows:[
+    {label:"Houston TX",value:3.8,pct:29,color:"#30d158"},
+    {label:"Atlanta GA",value:4.5,pct:35,color:"#4ade80"},
+    {label:"Denver CO",value:6.8,pct:52,color:"#ffd60a"},
+    {label:"New York City",value:8.4,pct:65,color:"#ff9f0a"},
+    {label:"San Francisco",value:11.8,pct:91,color:"#ff453a"},
+    {label:"Vancouver BC",value:13.0,pct:100,color:"#7f0000"}
+  ]},
+  // Q8 — Labor
+  {title:"Months to Recover Pre-Recession Employment (2008)",unit:" mo",source:"BLS, OECD Employment Outlook",rows:[
+    {label:"Germany",value:14,pct:16,color:"#30d158"},
+    {label:"USA",value:29,pct:34,color:"#4ade80"},
+    {label:"Japan",value:38,pct:44,color:"#ffd60a"},
+    {label:"United Kingdom",value:46,pct:54,color:"#ff9f0a"},
+    {label:"France",value:86,pct:100,color:"#ff453a"}
+  ]},
+  // Q9 — Property Rights
+  {title:"Avg GDP Per Capita by Economic Freedom Quartile (USD)",unit:"",source:"Fraser Institute, Economic Freedom of the World 2023",rows:[
+    {label:"Top 25% (freest)",value:48350,pct:100,color:"#30d158"},
+    {label:"Upper-middle",value:25210,pct:52,color:"#4ade80"},
+    {label:"Lower-middle",value:11850,pct:25,color:"#ffd60a"},
+    {label:"Bottom 25%",value:6140,pct:13,color:"#ff453a"}
+  ]},
+  // Q10 — AI/Technology
+  {title:"Private AI Investment by Country (2023, USD Billions)",unit:"B",source:"Stanford AI Index Report 2024",rows:[
+    {label:"USA (market-led)",value:67.2,pct:100,color:"#30d158"},
+    {label:"China (state)",value:7.8,pct:12,color:"#ffd60a"},
+    {label:"UK",value:3.8,pct:6,color:"#4ade80"},
+    {label:"EU Combined",value:5.1,pct:8,color:"#ff9f0a"}
+  ]}
+];
+
+// ─────────────────────────────────────────────────────────────
+// QUESTION DATA — all URLs verified working as of 2024/2025
+// ─────────────────────────────────────────────────────────────
+const Q=[
+  {tag:"Entrepreneurship & Regulation",title:"Red Tape vs. Innovation",icon:"🏪",gradient:"linear-gradient(135deg,#c86f00 0%,#ED8B00 100%)",
+   links:[
+     {text:"Cato: Regulatory Barriers to New Businesses",url:"https://www.cato.org/policy-analysis/entrepreneurs-regulations-removing-state-local-barriers-new-businesses"},
+     {text:"Free Market Is the Answer",url:"https://www.cato.org/commentary/free-market-answer"},
+     {text:"Economic Freedom of the World",url:"https://www.cato.org/economic-freedom-world"}
+   ],
+   body:"A young entrepreneur wants to open a bakery. She has a solid business plan and capital saved — but the permit process takes 18 months and costs $12,000. Meanwhile, citizens are frustrated by a lack of local food options. What's your policy?",
+   choices:[
+    {type:"cap",letter:"A",label:"Streamline permits: cut the process to 30 days and reduce fees significantly",fx:{h:3,e:7,ed:0,f:6},
+     headline:"BAKERY OPENS IN 30 DAYS:\n'I CAN'T BELIEVE HOW EASY IT WAS'",subline:"Permit reform sparks wave of small business applications across the city",
+     figure:{name:"Adam Smith",initials:"AS",years:"1723–1790",title:"Philosopher & Economist",quote:"It is not from the benevolence of the butcher, the brewer, or the baker that we expect our dinner, but from their regard to their own interest.",source:"Wealth of Nations, 1776"},
+     feedback:"Simplifying permits removes barriers without eliminating safety standards — the two aren't the same thing. New Zealand processes most business permits in under a day and consistently ranks among the world's most innovative economies. When compliance costs fall disproportionately on small businesses (large ones have full legal teams), streamlining tends to benefit new entrants most."},
+    {type:"mix",letter:"B",label:"Keep regulations but add a government grant program for small businesses",fx:{h:5,e:-5,ed:0,f:-5},
+     headline:"GOVERNMENT SELECTS 50 BUSINESSES FOR NEW GRANT PROGRAM",subline:"Critics question who decides which entrepreneurs deserve taxpayer funding",
+     figure:{name:"John M. Keynes",initials:"JK",years:"1883–1946",title:"Economist",quote:"The political problem of mankind is to combine three things: economic efficiency, social justice, and individual liberty.",source:"Essays in Persuasion, 1931"},
+     feedback:"Grant programs can genuinely help entrepreneurs who lack access to startup capital — a real and documented barrier, especially for disadvantaged communities. The challenge is that grants are expensive, require someone to pick winners, and don't solve the underlying regulatory burden. Only the chosen few benefit while barriers remain for everyone else."},
+    {type:"soc",letter:"C",label:"Increase oversight — add more inspectors to ensure businesses meet strict standards",fx:{h:-3,e:-10,ed:0,f:-10},
+     headline:"NEW COMPLIANCE RULES ADD 6 MONTHS TO BUSINESS PERMITS",subline:"Smaller businesses report compliance costs are hardest to absorb",
+     figure:{name:"Ralph Nader",initials:"RN",years:"b. 1934",title:"Consumer Advocate & Author",quote:"The function of leadership is to produce more leaders, not more followers. Regulations exist to protect the public from genuine harms.",source:"Various speeches"},
+     feedback:"Consumer and worker safety regulations exist for legitimate reasons — food safety standards prevent illness, building codes save lives. The concern is that compliance costs fall hardest on small businesses, while large companies with legal teams can more easily absorb them. Well-designed regulation targets genuine risks; poorly designed regulation becomes a barrier to competition."},
+    {type:"com",letter:"D",label:"Have the city government open its own bakery to fill the community need",fx:{h:-5,e:-15,ed:0,f:-14},
+     headline:"CITY-RUN BAKERY OPENS OVER BUDGET, STRUGGLES TO COMPETE",subline:"Taxpayers cover operating losses; private bakers cite unfair competition with subsidized rival",
+     figure:{name:"Juan Perón",initials:"JP",years:"1895–1974",title:"President of Argentina",quote:"The state must guarantee that the basic needs of the people are met. Where markets fail, government must step in.",source:"Various addresses, 1946–1955"},
+     feedback:"Government-run businesses face a structural challenge: without profit pressure or real competition, there's little incentive to control costs or improve quality. Argentina's state-owned enterprises under Perón became emblematic of this — well-intentioned but chronically over-budget and inefficient. The goal of providing food access is reasonable; a government bakery just happens to be one of the least effective ways to achieve it."}
+   ],best:"A",explain:"Free market advocates argue reducing regulatory barriers is the most effective way to promote entrepreneurship and growth. The World Bank's Ease of Doing Business index consistently shows countries with simpler regulations have stronger economies and more opportunity."},
+
+  {tag:"Education Policy",title:"Schools in Crisis",icon:"🏫",gradient:"linear-gradient(135deg,#002859 0%,#003a7a 100%)",
+   links:[
+     {text:"Cato Handbook: School Choice",url:"https://www.cato.org/cato-handbook-policymakers/cato-handbook-policymakers-9th-edition-2022/school-choice"},
+     {text:"School Choice Program Evidence",url:"https://www.cato.org/cato-journal/winter-2018/what-leads-successful-school-choice-programs-review-theories-evidence"},
+     {text:"Highly Positive Impacts of Vouchers",url:"https://www.cato.org/blog/highly-positive-impacts-vouchers"}
+   ],
+   body:"Test scores in your city's public schools have declined for 10 straight years. Dropout rates have doubled. Teachers' unions blame underfunding; parents blame poor accountability; students are seeking options elsewhere. What do you do?",
+   choices:[
+    {type:"cap",letter:"A",label:"Launch school choice vouchers so families can send children to any school",fx:{h:5,e:3,ed:8,f:7},
+     headline:"VOUCHER STUDENTS GRADUATE AT RECORD RATES, SAVING MILLIONS",subline:"School choice programs show 21-point graduation gains; voucher students cost 41% less per pupil",
+     figure:{name:"Milton Friedman",initials:"MF",years:"1912–2006",title:"Nobel Laureate in Economics",quote:"Vouchers would allow parents to choose the schools their children attend. Competition would force public schools to improve or lose students to competitors who will.",source:"Capitalism and Freedom, 1962"},
+     feedback:"School choice programs give families — especially low-income ones — the power to find schools that fit their children. The D.C. Opportunity Scholarship Program increased graduation rates by 21 percentage points. Evidence from 25 out of 28 fiscal studies finds choice programs save taxpayer money while improving outcomes."},
+    {type:"mix",letter:"B",label:"Create charter schools within the public system for more flexibility",fx:{h:4,e:0,ed:6,f:4},
+     headline:"NEW CHARTER SCHOOLS DRAW STUDENTS, SHOW EARLY ACADEMIC GAINS",subline:"Competition showing modest improvement across the district's test scores",
+     figure:{name:"John Dewey",initials:"JD",years:"1859–1952",title:"Philosopher & Education Reformer",quote:"Education is not preparation for life; education is life itself.",source:"Democracy and Education, 1916"},
+     feedback:"Charter schools introduce competition and innovation within public education. Research shows charter students — especially in urban areas — often outperform traditional public school peers. They offer accountability while remaining publicly funded, and enjoy bipartisan support as a genuine reform that doesn't require abandoning the public system."},
+    {type:"soc",letter:"C",label:"Significantly increase public school funding and hire more teachers",fx:{h:4,e:-10,ed:2,f:-5},
+     headline:"SCHOOL BUDGET UP 30%; TEST SCORES UNCHANGED FOR THIRD YEAR",subline:"Auditors find majority of new funds went to administration, not classrooms",
+     figure:{name:"Lyndon B. Johnson",initials:"LJ",years:"1908–1973",title:"36th U.S. President",quote:"Education is the key that opens the door to opportunity. No nation can prosper when it denies the chance to learn.",source:"State of the Union Address, 1965"},
+     feedback:"Adequate funding is a genuine concern — schools in low-income areas often face real resource gaps. However, the U.S. has roughly tripled real per-pupil spending since 1970 with little overall improvement in outcomes. The research suggests that how schools are held accountable matters as much as how much they receive."},
+    {type:"com",letter:"D",label:"Nationalize all schools under a single standardized federal curriculum",fx:{h:-10,e:-5,ed:-12,f:-18},
+     headline:"FEDERAL CURRICULUM MANDATE STRIPS LOCAL SCHOOLS OF FLEXIBILITY",subline:"Teachers and parents push back; districts struggle to adapt rigid national standards to local needs",
+     figure:{name:"Horace Mann",initials:"HM",years:"1796–1859",title:"Education Reformer",quote:"A human being is not attaining his full heights until he is educated — and the state has an obligation to guarantee that education.",source:"Annual Reports on Education, 1840s"},
+     feedback:"The impulse toward a universal educational standard is understandable — consistent quality for all students sounds fair. In practice, central curriculum mandates remove the local flexibility that lets schools adapt to their communities. The highest-performing education systems (Finland, Singapore) combine national goals with significant school and teacher autonomy."}
+   ],best:"A",explain:"School choice is a cornerstone of Cato's education policy work. The D.C. Opportunity Scholarship Program increased graduation rates by 21 percentage points. The Milwaukee voucher program saved $52 million in one fiscal year. 25 out of 28 fiscal studies find choice programs save taxpayer money while improving outcomes."},
+
+  {tag:"Healthcare",title:"The Healthcare Crunch",icon:"🏥",gradient:"linear-gradient(135deg,#1b5e20 0%,#2e7d32 100%)",
+   links:[
+     {text:"Cato Handbook: Health Care",url:"https://www.cato.org/handbook-affordability/health-care"},
+     {text:"Singapore Healthcare Model",url:"https://www.cato.org/cato-journal/winter-2018/welfare-savings-not-taxation"},
+     {text:"Free Market & Health Costs",url:"https://www.cato.org/commentary/free-market-answer"}
+   ],
+   body:"Healthcare costs have doubled in five years. A family of four now spends $28,000 per year on premiums alone. Emergency rooms are overloaded and some citizens can't afford basic care. Pharmaceutical companies are posting record profits. What policy do you choose?",
+   choices:[
+    {type:"cap",letter:"A",label:"Deregulate: allow insurance competition across state lines and remove coverage mandates",fx:{h:4,e:6,ed:0,f:7},
+     headline:"INSURANCE COMPETITION DRIVES PREMIUMS DOWN 18% IN FIRST YEAR",subline:"Analysts cite Singapore model: 4.9% of GDP vs. 17.2% in the U.S. — with comparable outcomes",
+     figure:{name:"Friedrich Hayek",initials:"FH",years:"1899–1992",title:"Nobel Laureate in Economics",quote:"Competition is the only method by which our activities can be adjusted to each other without coercive or arbitrary intervention of authority.",source:"The Road to Serfdom, 1944"},
+     feedback:"Heavy regulation is a primary driver of high U.S. healthcare costs — not just the system structure. Singapore's MediSave system delivers excellent outcomes at 4.9% of GDP vs. 17.2% in the U.S. Markets work well in healthcare when patients can compare prices and real competition exists. U.S. healthcare, heavily regulated and consolidated, currently has neither."},
+    {type:"mix",letter:"B",label:"Expand Medicaid only for the lowest-income citizens; keep markets for everyone else",fx:{h:6,e:-6,ed:0,f:-6},
+     headline:"MEDICAID EXPANSION REACHES 2 MILLION LOW-INCOME CITIZENS",subline:"Long-term fiscal pressure noted; middle-class premiums remain unchanged",
+     figure:{name:"Otto von Bismarck",initials:"OB",years:"1815–1898",title:"Chancellor of Germany",quote:"Give the working classes the right to work as long as they are healthy; assure them care when they are sick.",source:"Speech to the Reichstag, 1884"},
+     feedback:"A targeted safety net for those who genuinely can't afford care has broad support across the political spectrum and addresses a real problem. The tradeoff is fiscal: Medicaid is already one of the largest items in state budgets, and expanding eligibility adds long-term costs that compete with other priorities."},
+    {type:"soc",letter:"C",label:"Universal government healthcare: the state covers all citizens' care",fx:{h:6,e:-14,ed:0,f:-12},
+     headline:"UNIVERSAL HEALTHCARE LAUNCHES; ACCESS EXPANDS BUT WAIT TIMES CLIMB",subline:"Tax burden rises; low-income access improves; specialists shift to private practices",
+     figure:{name:"Clement Attlee",initials:"CA",years:"1883–1967",title:"UK Prime Minister, NHS Founder",quote:"The NHS will last as long as there are folk left with the faith to fight for it. Every citizen should receive care based on need, not ability to pay.",source:"Various addresses, 1945–1950"},
+     feedback:"Universal healthcare has genuine appeal — every citizen receiving care regardless of income is a meaningful goal, and several countries achieve it at lower cost than the U.S. The tradeoffs are real: Canada's single-payer system has a median specialist wait of 27 weeks; the UK's NHS faces chronic funding pressure. Universal access and system efficiency are goals that often pull in opposite directions."},
+    {type:"com",letter:"D",label:"Nationalize all pharmaceutical companies to cap drug prices permanently",fx:{h:-4,e:-18,ed:0,f:-18},
+     headline:"DRUG COMPANIES RELOCATE; AVAILABILITY OF KEY TREATMENTS FALLS",subline:"Domestic R&D investment drops sharply; some medicines harder to source",
+     figure:{name:"Bernie Sanders",initials:"BS",years:"b. 1941",title:"U.S. Senator",quote:"The pharmaceutical industry is the most profitable industry in America. We must end the greed of the drug companies.",source:"Senate floor speech, 2019"},
+     feedback:"High drug prices are a real and documented problem — Americans pay far more for the same drugs than patients in other wealthy countries. Nationalization, however, removes the profit incentive that funds drug research and development. Economists across the spectrum tend to prefer alternatives like government price negotiation or importing drugs from regulated markets, which reduce costs without eliminating the R&D pipeline."}
+   ],best:"A",explain:"Cato scholars have documented how government regulations drive U.S. healthcare costs. Singapore's market-based MediSave system spends just 4.9% of GDP vs. 17.2% in the U.S. — yet achieves equivalent or better health outcomes."},
+
+  {tag:"International Trade",title:"Trade Winds",icon:"🚢",gradient:"linear-gradient(135deg,#0d47a1 0%,#1976d2 100%)",
+   links:[
+     {text:"Cato: The Updated Case for Free Trade",url:"https://www.cato.org/policy-analysis/updated-case-free-trade"},
+     {text:"The Real Cost of Protectionism",url:"https://www.cato.org/sites/cato.org/files/pubs/pdf/pa-819-updated.pdf"},
+     {text:"Capitalism Saves Lives",url:"https://www.cato.org/commentary/capitalism-saves-lives-socialism-always-fails"}
+   ],
+   body:"Foreign manufacturers produce clothing 60% cheaper than domestic factories. Three domestic textile plants have announced closures, affecting 5,000 workers. Labor unions demand protection; consumers are enjoying lower prices. What is your trade policy?",
+   choices:[
+    {type:"cap",letter:"A",label:"Embrace free trade; invest the consumer savings into worker retraining programs",fx:{h:3,e:8,ed:5,f:6},
+     headline:"CONSUMER PRICES FALL 15%; NEW TECH JOBS REPLACE TEXTILE LOSSES",subline:"Retraining program graduates 8,000 workers into higher-paying industries within two years",
+     figure:{name:"Adam Smith",initials:"AS",years:"1723–1790",title:"Philosopher & Economist",quote:"If a foreign country can supply us with a commodity cheaper than we ourselves can make it, better buy it of them with some part of the produce of our own industry.",source:"Wealth of Nations, 1776"},
+     feedback:"Free trade creates broad gains for consumers while concentrating costs on specific workers and industries. The key insight is that pairing free trade with genuine retraining addresses both sides honestly — and is the approach most economists across the political spectrum endorse. Since 1990, economic openness has helped lift roughly a billion people out of extreme poverty."},
+    {type:"mix",letter:"B",label:"Negotiate bilateral trade agreements with targeted protections for key sectors",fx:{h:2,e:-5,ed:0,f:-5},
+     headline:"TRADE DEAL REACHED WITH SECTOR CARVE-OUTS; ECONOMISTS WARN OF LOOPHOLES",subline:"Multiple industries now lobbying for expanded protections",
+     figure:{name:"John M. Keynes",initials:"JK",years:"1883–1946",title:"Economist",quote:"I sympathise with those who would minimise, rather than those who would maximise, economic entanglement among nations.",source:"National Self-Sufficiency, 1933"},
+     feedback:"Managed trade agreements can smooth the disruption of economic transitions and are politically more durable than pure free trade. The challenge is that 'key sector' protections tend to expand over time as lobbying pressure grows, and trading partners often respond with their own retaliatory protections."},
+    {type:"soc",letter:"C",label:"Impose heavy tariffs on all foreign clothing imports to protect domestic jobs",fx:{h:-3,e:-13,ed:-5,f:-8},
+     headline:"CLOTHING TARIFFS RAISE CONSUMER PRICES; TRADING PARTNERS RETALIATE",subline:"Counter-tariffs from trading partners cost trade-related jobs in other sectors",
+     figure:{name:"Eugene Debs",initials:"ED",years:"1855–1926",title:"American Labor Leader",quote:"The working class and the employing class have nothing in common. There can be no peace so long as hunger and want are found among millions of the working people.",source:"IWW Preamble, 1905"},
+     feedback:"Protecting domestic workers from foreign competition is a real and legitimate concern. The complication is that tariffs function as a hidden tax paid by all consumers — often affecting low-income households most. The Smoot-Hawley Tariff (1930) is the cautionary case: retaliatory tariffs from 25 trading partners deepened the Great Depression. Studies find the cost per job 'saved' by tariffs routinely exceeds the job's value."},
+    {type:"com",letter:"D",label:"Ban all imports; produce everything domestically to achieve self-sufficiency",fx:{h:-14,e:-20,ed:-5,f:-15},
+     headline:"IMPORT BAN TRIGGERS SHORTAGES; PRICES SURGE ON BASIC GOODS",subline:"Items once widely available become scarce; government begins rationing key products",
+     figure:{name:"Julius Nyerere",initials:"JN",years:"1922–1999",title:"President of Tanzania",quote:"Self-reliance does not mean isolation. But Africa must build its economy on its own resources, not permanent dependence on foreign goods.",source:"Ujamaa: The Basis of African Socialism, 1962"},
+     feedback:"Complete economic self-sufficiency is appealing in principle but has never succeeded in practice. Tanzania's Ujamaa self-reliance experiment and similar autarkic policies consistently produced shortages and declining living standards. Trade enables specialization — each country producing what it does best — and blocking it forces everyone to produce everything poorly."}
+   ],best:"A",explain:"The economic consensus on free trade is strong. From 2002 to 2022, nearly 1 billion people escaped extreme poverty driven primarily by economic openness. Studies find protectionism costs consumers far more per job 'saved' than the value of the job itself."},
+
+  {tag:"Government Spending",title:"The Deficit Crisis",icon:"🏦",gradient:"linear-gradient(135deg,#7f0000 0%,#b71c1c 100%)",
+   links:[
+     {text:"Cato Handbook: Fiscal Policy",url:"https://www.cato.org/handbook-affordability/fiscal-policy"},
+     {text:"Ireland's Celtic Tiger",url:"https://www.cato.org/commentary/irish-approach-vs-grecian-formula"},
+     {text:"Capitalism Saves Lives",url:"https://www.cato.org/commentary/capitalism-saves-lives-socialism-always-fails"}
+   ],
+   body:"Your government's debt has reached 120% of GDP. Interest payments alone consume 15% of the annual budget. Credit agencies are warning of a downgrade. Bond markets are nervous. You must make a fiscal decision. What do you do?",
+   choices:[
+    {type:"cap",letter:"A",label:"Cut government spending by 20% and eliminate low-value programs",fx:{h:-3,e:8,ed:-2,f:7},
+     headline:"SPENDING CUTS RESTORE FISCAL CONFIDENCE; DEBT RATIO BEGINS TO FALL",subline:"Ireland model: 6.9% spending cut enabled 7.2% annual GDP growth; debt fell from 125% to 25% of GDP",
+     figure:{name:"Frédéric Bastiat",initials:"FB",years:"1801–1850",title:"Economist & Journalist",quote:"The state is the great fictitious entity by which everyone seeks to live at the expense of everyone else.",source:"The State, 1848"},
+     feedback:"Ireland's fiscal consolidation in the late 1980s is one of history's strongest case studies. Cutting spending and reducing corporate tax rates triggered GDP growth from 0.2% to 7.2% annually, and debt fell from 125% to 25% of GDP by 2007. Harvard economists found fiscal adjustments based on spending cuts are more likely to reduce deficits without causing recessions than those based on tax increases."},
+    {type:"mix",letter:"B",label:"Modest spending cuts paired with closing corporate tax loopholes",fx:{h:1,e:-5,ed:0,f:-3},
+     headline:"MODEST DEFICIT PLAN PASSES; MARKETS REACT WITH CAUTIOUS OPTIMISM",subline:"Tax code complexity increases; economists divided on long-term impact",
+     figure:{name:"John M. Keynes",initials:"JK",years:"1883–1946",title:"Economist",quote:"In the long run we are all dead.",source:"A Tract on Monetary Reform, 1923"},
+     feedback:"A balanced approach — some spending restraint plus closing genuine loopholes — can reduce the deficit without dramatic short-term pain. The risk is that 'closing loopholes' often adds complexity to the tax code rather than simplifying it, and may not generate the projected revenue if businesses change their behavior in response."},
+    {type:"soc",letter:"C",label:"Raise taxes sharply on high earners and corporations",fx:{h:4,e:-12,ed:0,f:-12},
+     headline:"TOP EARNERS SHIFT ASSETS ABROAD; TREASURY COLLECTS LESS THAN PROJECTED",subline:"Capital outflows accelerate; startup funding drops significantly in first quarter",
+     figure:{name:"Franklin D. Roosevelt",initials:"FR",years:"1882–1945",title:"32nd U.S. President",quote:"Taxes are the dues we pay for the privilege of membership in an organized society.",source:"Address to Young Democrats, 1936"},
+     feedback:"Higher taxes on the wealthy have genuine support — addressing inequality while raising revenue for public services. The question is behavioral response: when top marginal rates become very high, earners have incentives to reduce taxable income through deductions or relocation. France's 75% top tax rate (2013–14) was abandoned after two years when revenue fell short of forecasts."},
+    {type:"com",letter:"D",label:"Print money to cover the deficit and fund government programs",fx:{h:-14,e:-22,ed:-5,f:-8},
+     headline:"INFLATION ACCELERATES; PRICES RISE FASTER THAN WAGES",subline:"Fixed-income citizens hit hardest; central bank credibility questioned by bond markets",
+     figure:{name:"John M. Keynes",initials:"JK",years:"1883–1946",title:"Economist",quote:"By a continuing process of inflation, governments can confiscate, secretly and unobserved, an important part of the wealth of their citizens.",source:"The Economic Consequences of the Peace, 1919"},
+     feedback:"Monetizing debt — having the central bank print money to cover government deficits — is a real policy choice made by governments in fiscal crisis. The consequence is inflation, which functions as a hidden tax on savings and wages. Zimbabwe (2008) and Venezuela (2016–2019) are recent extreme examples; even milder versions erode living standards fastest for those with the least savings to buffer the impact."}
+   ],best:"A",explain:"Harvard economists Alesina and Ardagna found fiscal adjustments based on spending cuts are more likely to reduce deficits without causing recessions. Ireland proves this: spending cuts of 6.9% (1987-89) enabled a 12.5% corporate tax rate, and GDP growth surged from 0.2% to 7.2% annually."},
+
+  {tag:"Free Speech & Civil Liberties",title:"The Misinformation Dilemma",icon:"📰",gradient:"linear-gradient(135deg,#004d40 0%,#00695c 100%)",
+   links:[
+     {text:"Cato: Free Speech & Civil Liberties",url:"https://www.cato.org/free-speech-civil-liberties"},
+     {text:"Human Freedom Index",url:"https://www.cato.org/human-freedom-index-new"},
+     {text:"Capitalism & Freedom",url:"https://www.cato.org/commentary/capitalism-saves-lives-socialism-always-fails"}
+   ],
+   body:"False health information spreads rapidly online, causing documented harm. 30% of citizens report distrust of all official guidance. Politicians from both parties demand action. Tech companies face intense public pressure. What do you do?",
+   choices:[
+    {type:"cap",letter:"A",label:"Protect free speech; fund media literacy education and independent fact-checking",fx:{h:4,e:3,ed:6,f:8},
+     headline:"MEDIA LITERACY PROGRAM REACHES 500,000 STUDENTS; MISINFORMATION DECLINES",subline:"Independent fact-checkers praised for transparency; public trust begins slow recovery",
+     figure:{name:"John Locke",initials:"JL",years:"1632–1704",title:"Philosopher & Political Theorist",quote:"The end of law is not to abolish or restrain, but to preserve and enlarge freedom.",source:"Second Treatise of Government, 1689"},
+     feedback:"The best counter to bad information is better information. Media literacy builds lasting critical-thinking skills, and transparent fact-checking addresses specific false claims without delegating editorial power to the government. Government-controlled speech restrictions have a poor track record: once established, they tend to expand beyond their original scope."},
+    {type:"mix",letter:"B",label:"Require platforms to label disputed health claims, but allow all content to remain",fx:{h:3,e:0,ed:3,f:3},
+     headline:"PLATFORM LABELS ROLL OUT; STUDIES SHOW MIXED RESULTS",subline:"Some users engage more critically with labeled content; many ignore the warnings",
+     figure:{name:"John Stuart Mill",initials:"JM",years:"1806–1873",title:"Philosopher & Political Economist",quote:"The peculiar evil of silencing the expression of an opinion is that it is robbing the human race.",source:"On Liberty, 1859"},
+     feedback:"Content labeling is a lighter-touch approach that preserves free expression while giving users context. It keeps editorial judgment with platforms and individuals rather than government agencies. Research on its real-world effectiveness is genuinely mixed — some users engage more critically; others ignore labels entirely."},
+    {type:"soc",letter:"C",label:"Create a government agency to review and flag harmful health misinformation",fx:{h:-6,e:-5,ed:-8,f:-18},
+     headline:"NEW SPEECH AGENCY FLAGS DISPUTED CONTENT; CRITICS QUESTION SCOPE",subline:"Civil liberties groups warn of overreach; journalists report chilling effect on reporting",
+     figure:{name:"Cass Sunstein",initials:"CS",years:"b. 1954",title:"Legal Scholar & Former White House Advisor",quote:"Government has a role in countering false information that causes concrete harm — the challenge is doing so without overreach.",source:"#Republic: Divided Democracy in the Age of Social Media, 2017"},
+     feedback:"The concern about misinformation causing real harm is legitimate — false health information has had measurable consequences. Government agencies face a harder problem, though: who decides what's false? The line between misinformation and contested scientific opinion shifts over time, and history suggests that speech-limiting agencies consistently expand their scope beyond their original purpose."},
+    {type:"com",letter:"D",label:"State takes full control of public health messaging; ban all competing narratives",fx:{h:-18,e:-8,ed:-12,f:-25},
+     headline:"STATE SEIZES BROADCAST NETWORKS; INDEPENDENT JOURNALISM ENDS",subline:"Citizens increasingly access foreign news through private channels to get alternative views",
+     figure:{name:"Hugo Chavez",initials:"HC",years:"1954–2013",title:"President of Venezuela",quote:"A government that controls information controls reality. The revolution cannot allow its enemies to use our airwaves against us.",source:"Presidential Address, Venezuela, 2007"},
+     feedback:"A state monopoly on public information removes the error-correction mechanism that makes knowledge reliable. When governments control the information environment, legitimate criticism gets labeled as dangerous misinformation. Venezuela's media crackdown is a recent example: citizens lost access to independent reporting precisely at the moments it mattered most."}
+   ],best:"A",explain:"Cato scholars consistently defend free speech as foundational to all other liberties. Once speech restrictions are introduced for seemingly good reasons, they tend to expand. The cure for misinformation is education and open debate — not government control of the information environment."},
+
+  {tag:"Housing",title:"The Housing Shortage",icon:"🏘️",gradient:"linear-gradient(135deg,#bf360c 0%,#e64a19 100%)",
+   links:[
+     {text:"Cato: Zoning & Housing Affordability",url:"https://www.cato.org/policy-analysis/zoning-land-use-planning-housing-affordability"},
+     {text:"Economic Freedom & Housing",url:"https://www.cato.org/economic-freedom-world"},
+     {text:"Cato Handbook: Fiscal Policy",url:"https://www.cato.org/handbook-affordability/fiscal-policy"}
+   ],
+   body:"Housing prices have surged 45% in three years. Young families are priced out of your city. Homelessness is rising. Despite strong demand, housing supply has barely grown. Developers cite permitting and zoning restrictions. What's your approach?",
+   choices:[
+    {type:"cap",letter:"A",label:"Deregulate zoning laws — allow denser housing construction throughout the city",fx:{h:6,e:6,ed:0,f:6},
+     headline:"HOUSING STARTS TRIPLE AFTER ZONING REFORM; PRICES FALL FOR FIRST TIME IN 5 YEARS",subline:"Minneapolis model: more units, lower costs, no taxpayer funding required",
+     figure:{name:"Milton Friedman",initials:"MF",years:"1912–2006",title:"Nobel Laureate in Economics",quote:"If you put the federal government in charge of the Sahara Desert, in 5 years there'd be a shortage of sand.",source:"Widely attributed"},
+     feedback:"The primary cause of housing unaffordability is supply restrictions: zoning laws, height limits, parking minimums, and lengthy approval processes. This diagnosis is now shared across the political spectrum — from libertarians to progressive housing advocates. Tokyo allows dense construction freely and has stable housing prices despite enormous population. Minneapolis deregulated single-family zoning in 2019 and saw rapid supply growth."},
+    {type:"mix",letter:"B",label:"Fund public-private partnerships to build affordable housing units",fx:{h:5,e:-5,ed:0,f:-5},
+     headline:"PUBLIC-PRIVATE HOUSING PROJECT DELIVERS 2,000 AFFORDABLE UNITS",subline:"Costs run over budget; waitlist still shows tens of thousands of applicants",
+     figure:{name:"Theodore Roosevelt",initials:"TR",years:"1858–1919",title:"26th U.S. President",quote:"Do what you can, with what you have, where you are.",source:"Widely attributed"},
+     feedback:"Public-private partnerships can add real units more efficiently than pure government construction, and have worked in cities like Denver. The challenge is scale: these programs typically address a small fraction of the supply gap, come with added costs, and are slower than straightforward zoning deregulation — which adds supply at no public expense."},
+    {type:"soc",letter:"C",label:"Implement strict rent control across all residential rental properties",fx:{h:4,e:-15,ed:0,f:-8},
+     headline:"RENT CONTROL PASSES; RENTAL SUPPLY TIGHTENS AS LANDLORDS EXIT MARKET",subline:"Economists warn shortage will worsen long-term; some existing tenants benefit in the short run",
+     figure:{name:"Bernie Sanders",initials:"BS",years:"b. 1941",title:"U.S. Senator",quote:"At a time of massive income inequality, we need to make sure that every American has a decent, affordable place to live.",source:"Campaign platform, 2019–2020"},
+     feedback:"Rent control directly helps existing tenants in the short run — that's a real benefit to real people. The long-run evidence is more complicated: Stanford research on San Francisco found rent control reduced rental housing supply by 15% as landlords converted or sold units. Stockholm has had rent control since 1942; the average wait for a regulated apartment is now 20 years."},
+    {type:"com",letter:"D",label:"Nationalize all housing; the state manages and allocates all rental properties",fx:{h:-10,e:-18,ed:0,f:-22},
+     headline:"GOVERNMENT TAKES CONTROL OF ALL RENTALS; MAINTENANCE BACKLOGS GROW",subline:"Tenants report declining upkeep; bureaucratic repair processes slow response times significantly",
+     figure:{name:"Fidel Castro",initials:"FC",years:"1926–2016",title:"President of Cuba",quote:"The state has a responsibility to house its citizens. Private landlords are a relic of exploitation.",source:"Address to the National Assembly, 1960"},
+     feedback:"State management of housing removes the incentive structure that drives investment in maintenance and quality. Cuba's experience post-nationalization is instructive: housing quality deteriorated significantly over decades as the state lacked both the resources and the mechanisms to respond to tenant needs. Market-rate housing, despite its flaws, responds to demand in ways state-managed inventory tends not to."}
+   ],best:"A",explain:"Research across the political spectrum agrees: housing unaffordability is primarily a supply problem created by government zoning restrictions. Deregulation expands supply without costing taxpayers anything."},
+
+  {tag:"Labor Market",title:"Unemployment Spike",icon:"🏭",gradient:"linear-gradient(135deg,#37474f 0%,#546e7a 100%)",
+   links:[
+     {text:"Cato: Minimum Wage Effects",url:"https://www.cato.org/downsizing-government-essay/negative-effects-minimum-wage-laws"},
+     {text:"Economic Freedom & Jobs",url:"https://www.cato.org/economic-freedom-world"},
+     {text:"Free Market Creates Jobs",url:"https://www.cato.org/commentary/free-market-answer"}
+   ],
+   body:"A sudden economic shock has pushed unemployment to 14%. Workers are struggling and businesses are cutting staff. Citizens are demanding immediate government action. An election is six months away. What policy do you implement?",
+   choices:[
+    {type:"cap",letter:"A",label:"Cut business taxes and reduce employment regulations to make hiring less costly",fx:{h:3,e:8,ed:0,f:6},
+     headline:"BUSINESS HIRING SURGES AFTER REGULATORY RELIEF; UNEMPLOYMENT FALLS TO 9%",subline:"Small businesses account for majority of new jobs created in the first quarter of recovery",
+     figure:{name:"Thomas Jefferson",initials:"TJ",years:"1743–1826",title:"3rd U.S. President",quote:"A wise and frugal government, which shall restrain men from injuring one another, shall leave them otherwise free to regulate their own pursuits.",source:"First Inaugural Address, 1801"},
+     feedback:"Making it cheaper to hire is among the fastest paths to job creation. Ireland combined spending restraint with a low corporate tax rate in the late 1980s, triggering over a decade of 7%+ annual GDP growth. Reducing payroll taxes and compliance costs directly lowers the cost of adding a worker, and businesses tend to respond quickly."},
+    {type:"mix",letter:"B",label:"Provide skills retraining grants and time-limited unemployment benefits",fx:{h:6,e:-7,ed:5,f:-5},
+     headline:"RETRAINING PROGRAM PLACES 40,000 WORKERS IN NEW INDUSTRIES",subline:"Benefits prevent immediate suffering; economists note 18-month lag before full economic impact",
+     figure:{name:"John M. Keynes",initials:"JK",years:"1883–1946",title:"Economist",quote:"Look after unemployment and the budget will look after itself.",source:"Paraphrase of Keynesian principle, 1930s"},
+     feedback:"Targeted retraining and transitional support address real worker needs, have genuine bipartisan support, and prevent suffering during economic transitions. The design matters: well-structured programs that emphasize placement tend to produce better long-term outcomes than open-ended benefits that may reduce urgency in finding new work."},
+    {type:"soc",letter:"C",label:"Dramatically raise the minimum wage to boost purchasing power",fx:{h:3,e:-12,ed:0,f:-5},
+     headline:"MINIMUM WAGE HIKE: SOME WORKERS GAIN, ENTRY-LEVEL HIRING SLOWS",subline:"Economists debate net employment effect; fast food chains accelerate automation",
+     figure:{name:"Franklin D. Roosevelt",initials:"FR",years:"1882–1945",title:"32nd U.S. President",quote:"No business which depends for existence on paying less than living wages to its workers has any right to continue in this country.",source:"Statement on the National Industrial Recovery Act, 1933"},
+     feedback:"Raising the minimum wage has real benefits for workers who keep their jobs — and the research on employment effects is genuinely contested. Some studies find minimal job losses; others find significant reductions in hours or hiring, particularly for young and low-skill workers. During a recession with already-high unemployment, the risk of pricing some workers out of the market is amplified."},
+    {type:"com",letter:"D",label:"Government directly employs all unemployed workers in state enterprises",fx:{h:-5,e:-18,ed:0,f:-15},
+     headline:"GOVERNMENT JOBS PROGRAM SCALES UP; PRIVATE SECTOR HIRING SLOWS",subline:"Workers report limited productive work to do; program proves expensive to wind down",
+     figure:{name:"Olof Palme",initials:"OP",years:"1927–1986",title:"Swedish Prime Minister",quote:"The role of government is to ensure that no one falls through the cracks. Everyone deserves the dignity of work.",source:"Various speeches, 1970s"},
+     feedback:"Government job guarantee programs have real appeal — no one left unemployed. In practice, productive work requires matching skills to tasks in ways that markets do through wages and hiring signals. Large-scale government employment programs historically produce work of limited economic value, crowd out private hiring, and create fiscal commitments that are politically very difficult to reduce once established."}
+   ],best:"A",explain:"Labor market flexibility and lower tax burdens show strong evidence for rapid job creation. The contrast between more flexible and more rigid economies after the 2008 financial crisis illustrates the real-world impact of market-oriented labor policy."},
+
+  {tag:"Property Rights",title:"The Eminent Domain Debate",icon:"🏠",gradient:"linear-gradient(135deg,#1b5e20 0%,#388e3c 100%)",
+   links:[
+     {text:"Cato Handbook: Property Rights",url:"https://www.cato.org/cato-handbook-policymakers/cato-handbook-policymakers-9th-edition-2022/property-rights-constitution"},
+     {text:"Economic Freedom Index",url:"https://www.cato.org/economic-freedom-world"},
+     {text:"State Capitalism vs. Free Markets",url:"https://www.cato.org/commentary/state-capitalism-versus-free-markets"}
+   ],
+   body:"A developer wants to build a shopping center that could create 800 jobs. The project requires demolishing a neighborhood of 50 homes. Homeowners refuse to sell. The city council is considering using eminent domain (forced sale) to proceed. What do you decide?",
+   choices:[
+    {type:"cap",letter:"A",label:"Refuse eminent domain for private development; require fair negotiation with homeowners",fx:{h:6,e:3,ed:0,f:10},
+     headline:"HOMEOWNERS PREVAIL; DEVELOPER NEGOTIATES FAIR DEAL FOR ALL 50 FAMILIES",subline:"Property rights advocates call ruling 'a victory for every homeowner in the nation'",
+     figure:{name:"John Locke",initials:"JL",years:"1632–1704",title:"Philosopher & Political Theorist",quote:"Being all equal and independent, no one ought to harm another in his life, health, liberty, or possessions.",source:"Second Treatise of Government, 1689"},
+     feedback:"Property rights are foundational to both freedom and economic growth. If the development is genuinely beneficial, the developer should be able to offer homeowners enough to purchase their homes voluntarily — that's what market negotiation is for. Eminent domain for private development, as in the notorious Kelo v. New London (2005) case, destroys the security that makes homeownership and private investment worthwhile."},
+    {type:"mix",letter:"B",label:"Allow eminent domain only if homeowners receive 150% of market value",fx:{h:2,e:5,ed:0,f:-7},
+     headline:"HOMES SEIZED UNDER ENHANCED COMPENSATION DEAL; COMMUNITY DIVIDED",subline:"Some families accept enhanced payment; others say no amount compensates for displacement",
+     figure:{name:"Theodore Roosevelt",initials:"TR",years:"1858–1919",title:"26th U.S. President",quote:"I believe in property rights strongly; but property rights must be accompanied by responsibility to the broader community.",source:"The New Nationalism, 1910"},
+     feedback:"Enhanced compensation reduces the injustice of forced displacement. Many homeowners value their property for reasons money can't fully replace — community ties, stability, family history. If eminent domain must occur, higher compensation is more just. The deeper question is whether 800 private-sector jobs justify overriding 50 families' property rights at all."},
+    {type:"soc",letter:"C",label:"Use standard eminent domain and pay market value — job creation justifies it",fx:{h:-8,e:3,ed:0,f:-15},
+     headline:"CITY FORCES OUT 50 FAMILIES; SHOPPING CENTER BREAKS GROUND",subline:"Homeowners receive minimum legal compensation; similar cases multiply across the country",
+     figure:{name:"John Paul Stevens",initials:"JPS",years:"1920–2019",title:"U.S. Supreme Court Justice",quote:"Promoting economic development is a traditional and long accepted function of government. Just compensation enables the public interest to proceed fairly.",source:"Kelo v. City of New London, majority opinion, 2005"},
+     feedback:"The Kelo decision (2005) upheld eminent domain for economic development — and prompted a backlash: 44 states passed new property rights protections in response. Promised economic benefits don't always materialize; the New London site remained vacant for years after the families were displaced. Market value compensation often doesn't capture what homeowners actually value about their homes."},
+    {type:"com",letter:"D",label:"Seize all property in the area; government will develop it and distribute the proceeds",fx:{h:-16,e:-15,ed:0,f:-25},
+     headline:"MASS PROPERTY SEIZURE; INVESTOR CONFIDENCE FALLS ACROSS THE CITY",subline:"Property values decline city-wide; banks tighten mortgage lending; residents question security of ownership",
+     figure:{name:"Hugo Chavez",initials:"HC",years:"1954–2013",title:"President of Venezuela",quote:"Private property will be expropriated in the name of the people. The revolution is irreversible.",source:"Presidential Address, Venezuela"},
+     feedback:"Large-scale property expropriation creates a chilling effect across the entire economy — not just the seized properties. When property can be taken without reliable compensation, no one invests in improvements. Venezuela's nationalizations and Zimbabwe's farm seizures both followed this pattern: short-term political support followed by long-term economic decline as investment dried up."}
+   ],best:"A",explain:"Property rights are the bedrock of economic freedom. The Fraser Institute's Economic Freedom of the World index consistently shows strong property rights are among the strongest predictors of prosperity. Protecting homes from forced seizure also protects political and personal freedom."},
+
+  {tag:"Technology & Innovation",title:"The AI Revolution",icon:"🤖",gradient:"linear-gradient(135deg,#4a148c 0%,#7b1fa2 100%)",
+   links:[
+     {text:"Cato: Regulation & Innovation",url:"https://www.cato.org/research-briefs-economic-policy/impact-regulation-innovation"},
+     {text:"Economic Freedom & Growth",url:"https://www.cato.org/economic-freedom-world"},
+     {text:"Free Market Creates Innovation",url:"https://www.cato.org/commentary/free-market-answer"}
+   ],
+   body:"Artificial intelligence is rapidly transforming industries, promising enormous productivity gains. It's also beginning to automate many jobs, raising public concerns. Advocacy groups are demanding regulation before the technology spreads further. What is your approach?",
+   choices:[
+    {type:"cap",letter:"A",label:"Minimal regulation: let markets and competition shape AI development",fx:{h:3,e:10,ed:5,f:8},
+     headline:"AI SECTOR BOOMS; NEW TOOLS CUT COSTS ACROSS EDUCATION, HEALTHCARE, BUSINESS",subline:"Competitive market produces rapid improvements; consumer applications proliferate",
+     figure:{name:"Friedrich Hayek",initials:"FH",years:"1899–1992",title:"Nobel Laureate in Economics",quote:"The curious task of economics is to demonstrate to men how little they really know about what they imagine they can design.",source:"The Fatal Conceit, 1988"},
+     feedback:"Transformative technologies tend to flourish in open regulatory environments. The internet grew rapidly partly because the U.S. avoided heavy-handed regulation in the 1990s. Regulators designing AI rules today have limited visibility into what the technology will look like in two years — competition tends to produce the safety improvements that matter most."},
+    {type:"mix",letter:"B",label:"Light-touch transparency rules only; no operational restrictions for now",fx:{h:4,e:5,ed:3,f:3},
+     headline:"AI TRANSPARENCY RULES TAKE EFFECT; INDUSTRY LARGELY COMPLIANT",subline:"Advocates praise measured approach; tech firms report manageable compliance costs",
+     figure:{name:"John M. Keynes",initials:"JK",years:"1883–1946",title:"Economist",quote:"The day is not far off when the economic problem will take the back seat where it belongs, and the arena of the heart and head will be occupied by our real problems.",source:"Economic Possibilities for our Grandchildren, 1930"},
+     feedback:"Requiring transparency — disclosing when AI makes significant decisions — addresses real accountability concerns without stifling innovation. This 'watchful waiting' approach preserves flexibility as the technology matures and risks become clearer. Most policy experts across the political spectrum view some transparency requirements as reasonable."},
+    {type:"soc",letter:"C",label:"Create a government agency to license and approve all commercial AI applications",fx:{h:-3,e:-10,ed:-5,f:-15},
+     headline:"AI LICENSING DELAYS PRODUCT LAUNCHES; STARTUPS FACE COSTLY COMPLIANCE",subline:"Large incumbents navigate process; smaller innovators report costs are prohibitive",
+     figure:{name:"Elizabeth Warren",initials:"EW",years:"b. 1949",title:"U.S. Senator",quote:"Big Tech has too much power and too much influence over our economy. Aggressive oversight is the only answer.",source:"Campaign platform, 2019"},
+     feedback:"Concern about unchecked AI is legitimate — algorithmic systems can encode bias, and powerful AI without accountability poses real risks. Government licensing creates a bottleneck, however, where political and compliance factors can override innovation. It tends to favor large incumbents over the startups that drive genuine breakthroughs. The EU's AI Act is a live real-world test of this tradeoff."},
+    {type:"com",letter:"D",label:"Nationalize the leading AI companies to ensure the technology serves the public",fx:{h:-10,e:-20,ed:-8,f:-20},
+     headline:"GOVERNMENT TAKES OWNERSHIP OF AI COMPANIES; ENGINEERS RESIGN EN MASSE",subline:"Private investment in the sector collapses; domestic AI output falls sharply",
+     figure:{name:"Xi Jinping",initials:"XJ",years:"b. 1953",title:"President of China",quote:"Technology must serve the nation. Party leadership must be strengthened to ensure innovation develops in the right direction.",source:"Speech to National Congress on Innovation, 2021"},
+     feedback:"China's assertion of control over its major tech companies after 2020 — short of full nationalization — triggered a sharp drop in private investment and market value. Government ownership removes the competitive pressure that drives innovation. Engineers and researchers who power AI progress tend to leave when their work is subject to political direction rather than merit-based development."}
+   ],best:"A",explain:"Technological innovation thrives in free markets. The U.S. became the world's technology leader largely because its regulatory environment allowed experimentation and risk-taking. Pre-emptive government regulation of emerging technologies consistently trades short-term risk reduction for long-term stagnation."}
+];
+
+// ─────────────────────────────────────────────────────────────
+// RESULTS-SCREEN RESOURCES (all verified working URLs)
+// ─────────────────────────────────────────────────────────────
+const RESULT_RESOURCES=[
+  {tag:"Cato Analysis",title:"Capitalism Saves Lives, Socialism Always Fails",src:"Cato Institute",url:"https://www.cato.org/commentary/capitalism-saves-lives-socialism-always-fails"},
+  {tag:"Cato Analysis",title:"State Capitalism vs. Free Markets",src:"Cato Institute",url:"https://www.cato.org/commentary/state-capitalism-versus-free-markets"},
+  {tag:"Policy Research",title:"Economic Freedom of the World Report",src:"Fraser / Cato",url:"https://www.cato.org/economic-freedom-world"},
+  {tag:"Education",title:"School Choice: Evidence and Arguments",src:"Cato Institute",url:"https://www.cato.org/cato-handbook-policymakers/cato-handbook-policymakers-9th-edition-2022/school-choice"},
+  {tag:"Free Trade",title:"The Updated Case for Free Trade",src:"Cato Institute",url:"https://www.cato.org/policy-analysis/updated-case-free-trade"},
+  {tag:"Fiscal Policy",title:"Ireland's Celtic Tiger: The Right Path",src:"Cato Institute",url:"https://www.cato.org/commentary/irish-approach-vs-grecian-formula"},
+  {tag:"Property Rights",title:"Property Rights & the Constitution",src:"Cato Handbook 9th Ed.",url:"https://www.cato.org/cato-handbook-policymakers/cato-handbook-policymakers-9th-edition-2022/property-rights-constitution"},
+  {tag:"Human Freedom",title:"Human Freedom Index",src:"Cato / Fraser Institute",url:"https://www.cato.org/human-freedom-index-new"},
+  {tag:"Cato Learning",title:"Cato Home Study Resources",src:"Cato Institute",url:"https://www.cato.org/cato-home-study-resources"},
+  {tag:"Housing",title:"Zoning, Land Use & Housing Affordability",src:"Cato Institute",url:"https://www.cato.org/policy-analysis/zoning-land-use-planning-housing-affordability"}
+];
+
+// ─────────────────────────────────────────────────────────────
+// GAME STATE
+// ─────────────────────────────────────────────────────────────
+const THRESHOLD=25;
+let S={},shuffleMap=[],pendingNext=false;
+
+function freshState(){return{qIdx:0,stats:{h:65,e:65,ed:65,f:65},answers:[],counts:{cap:0,mix:0,soc:0,com:0},locked:false};}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');window.scrollTo(0,0);}
+function barClass(v){if(v<=THRESHOLD)return'critical';if(v<=50)return'bad';if(v<=70)return'ok';return'great';}
+function clamp(v){return Math.min(100,Math.max(0,v));}
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function updateHUD(shake){
+  const map=[['bar-h','val-h',S.stats.h],['bar-e','val-e',S.stats.e],['bar-ed','val-ed',S.stats.ed],['bar-f','val-f',S.stats.f]];
+  let danger=false;
+  map.forEach(([bid,vid,v])=>{const b=document.getElementById(bid),t=document.getElementById(vid);if(b){b.style.width=v+'%';b.className='bar '+barClass(v);}if(t)t.textContent=v+'%';if(v<=THRESHOLD)danger=true;});
+  if(shake&&danger){const h=document.getElementById('hud');h.classList.remove('shake');void h.offsetWidth;h.classList.add('shake');setTimeout(()=>h.classList.remove('shake'),500);}
+  renderAvatar();
+}
+function setFinalBars(){[['fbar-h','fval-h',S.stats.h],['fbar-e','fval-e',S.stats.e],['fbar-ed','fval-ed',S.stats.ed],['fbar-f','fval-f',S.stats.f]].forEach(([bid,vid,v])=>{const b=document.getElementById(bid),t=document.getElementById(vid);if(b){b.style.width=v+'%';b.className='bar '+barClass(v);}if(t)t.textContent=v+'%';});}
+function buildDots(){const c=document.getElementById('dots');c.innerHTML='';Q.forEach((_,i)=>{const d=document.createElement('div');d.className='dot'+(i===0?' current':'');d.id='dot-'+i;c.appendChild(d);});}
+function updateDots(){Q.forEach((_,i)=>{const d=document.getElementById('dot-'+i);if(!d)return;d.className='dot';if(i<S.qIdx)d.classList.add('done');else if(i===S.qIdx)d.classList.add('current');});}
+
+// ─────────────────────────────────────────────────────────────
+// CHART RENDERER — builds an animated bar chart from CHARTS data
+// ─────────────────────────────────────────────────────────────
+function renderChart(qi){
+  const container=document.getElementById('data-chart');
+  if(!container)return;
+  const cd=CHARTS[qi];
+  if(!cd){container.innerHTML='';return;}
+  let html=`<div class="dc-title">${cd.title}</div>`;
+  cd.rows.forEach(r=>{
+    const pct=Math.max(r.pct,0);
+    const displayVal=r.value<0?r.value+cd.unit:(r.value.toLocaleString()+cd.unit);
+    // Value always rendered OUTSIDE the bar to prevent clipping on short bars
+    html+=`<div class="dc-row">
+      <div class="dc-label">${r.label}</div>
+      <div class="dc-bar-wrap">
+        <div class="dc-bar" style="width:0%;background:${r.color}" data-pct="${pct}"></div>
+      </div>
+      <div class="dc-val">${displayVal}</div>
+    </div>`;
+  });
+  html+=`<div class="dc-source">Source: ${cd.source}</div>`;
+  container.innerHTML=html;
+  // Animate bars in after a short delay
+  setTimeout(()=>{
+    container.querySelectorAll('.dc-bar').forEach(bar=>{
+      bar.style.transition='width 1.0s cubic-bezier(.4,0,.2,1)';
+      bar.style.width=bar.dataset.pct+'%';
+    });
+  },80);
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER QUESTION
+// ─────────────────────────────────────────────────────────────
+const TYPE_LABELS={cap:'🟡 Free Market Choice',mix:'🔵 Mixed Approach',soc:'🔴 Socialist Policy',com:'🟣 Authoritarian Policy'};
+
+function renderQ(){
+  S.locked=false;const q=Q[S.qIdx];
+  document.getElementById('q-num').textContent=S.qIdx+1;
+  document.getElementById('s-tag').textContent=q.tag;
+  document.getElementById('s-title').textContent=q.title;
+  document.getElementById('s-body').textContent=q.body;
+  document.getElementById('art-qnum').textContent='Q'+(S.qIdx+1);
+  const art=document.getElementById('scene-art');art.style.background=q.gradient;
+  document.getElementById('art-emoji').textContent=q.icon;
+  document.getElementById('art-label').textContent=q.tag;
+  const displayLetters=['A','B','C','D'];const shuffled=shuffle(q.choices);shuffleMap[S.qIdx]=shuffled;
+  const wrap=document.getElementById('choices');wrap.innerHTML='';
+  shuffled.forEach((c,vi)=>{const btn=document.createElement('button');btn.className='choice';btn.innerHTML=`<div class="cletter">${displayLetters[vi]}</div><div class="ctext"><strong>${c.label}</strong></div>`;btn.onclick=()=>pickChoice(c.letter);wrap.appendChild(btn);});
+  document.getElementById('feedback').classList.remove('show');
+  document.getElementById('data-chart').innerHTML='';
+  document.getElementById('next-wrap').style.display='none';
+  updateDots();
+}
+
+// ─────────────────────────────────────────────────────────────
+// PICK CHOICE
+// ─────────────────────────────────────────────────────────────
+function pickChoice(letter){
+  if(S.locked)return;
+  pushHistory(); // save state before applying so "Back" can undo this choice
+  updateBackBtn();
+  S.locked=true;
+  const q=Q[S.qIdx];const c=q.choices.find(x=>x.letter===letter);const vi=shuffleMap[S.qIdx].findIndex(x=>x.letter===letter);
+  S.answers.push({qi:S.qIdx,letter});S.counts[c.type]++;
+  S.stats.h=clamp(S.stats.h+c.fx.h);S.stats.e=clamp(S.stats.e+c.fx.e);S.stats.ed=clamp(S.stats.ed+c.fx.ed);S.stats.f=clamp(S.stats.f+c.fx.f);
+  const btns=document.querySelectorAll('.choice');const net=c.fx.h+c.fx.e+c.fx.ed+c.fx.f;
+  btns.forEach((b,i)=>{if(i===vi)b.classList.add(net>=0?'chosen-pos':'chosen-neg');else b.classList.add('dimmed');});
+  showFeedback(c,q);updateHUD(true);
+  const failed=checkOver();
+  if(!failed){document.getElementById('next-wrap').style.display='block';document.getElementById('next-btn').textContent=S.qIdx>=Q.length-1?'See My Results →':'Next Question →';}
+}
+
+// ─────────────────────────────────────────────────────────────
+// SHOW FEEDBACK
+// ─────────────────────────────────────────────────────────────
+function showFeedback(c,q){
+  document.getElementById('fb-title').textContent=TYPE_LABELS[c.type]||'Result';
+  const badges=document.getElementById('fb-badges');badges.innerHTML='';
+  [{key:'h',label:'😊 Happiness'},{key:'e',label:'💰 Economy'},{key:'ed',label:'📚 Education'},{key:'f',label:'🗽 Freedom'}].forEach(({key,label})=>{const v=c.fx[key];if(v!==0){const b=document.createElement('span');b.className='badge '+(v>0?'up':'down');b.textContent=label+' '+(v>0?'+':'')+v;badges.appendChild(b);}});
+  const f=c.figure;
+  document.getElementById('fig-avatar').textContent=f.initials;document.getElementById('fig-name').textContent=f.name;
+  document.getElementById('fig-years').textContent=f.years+' · '+f.title;document.getElementById('fig-text').textContent='"'+f.quote+'"';
+  document.getElementById('fig-src').textContent='— '+f.source;
+  // Render data chart for this question
+  renderChart(S.qIdx);
+  document.getElementById('fb-text').textContent=c.feedback;
+  const lmLinks=document.getElementById('lm-links');lmLinks.innerHTML='';
+  q.links.forEach(lk=>{const a=document.createElement('a');a.href=lk.url;a.target='_blank';a.rel='noopener noreferrer';a.className='lm-link';a.textContent=lk.text+' ↗';lmLinks.appendChild(a);});
+  document.getElementById('feedback').classList.add('show');
+}
+
+// ─────────────────────────────────────────────────────────────
+// GAME OVER
+// ─────────────────────────────────────────────────────────────
+const STAT_NAMES={h:'Citizen Happiness',e:'Economic Health',ed:'Education Quality',f:'Individual Freedom'};
+function checkOver(){
+  for(const key of['h','e','ed','f']){if(S.stats[key]<=THRESHOLD){setTimeout(()=>{document.getElementById('over-text').textContent=`Freedomtopia's ${STAT_NAMES[key]} collapsed to ${S.stats[key]}% — below the danger threshold of ${THRESHOLD}%. Citizens are in crisis. Policy choices have real, lasting consequences.`;renderReview(document.getElementById('over-review'));showScreen('over');},1400);return true;}}return false;
+}
+
+// ─────────────────────────────────────────────────────────────
+// NEWSPAPER — NO AUTO-TIMER, manual close only
+// ─────────────────────────────────────────────────────────────
+function openPaper(c,q){
+  document.getElementById('paper-topic').textContent=q.tag;
+  document.getElementById('paper-headline').textContent=c.headline;
+  document.getElementById('paper-subline').textContent=c.subline;
+  // Dynamic button label: last question shows "See My Results →"
+  const isLast=S.qIdx>=Q.length-1;
+  document.getElementById('paper-continue-btn').textContent=isLast?'See My Results →':'Continue to Next Question →';
+  document.getElementById('paper-overlay').classList.add('open');
+}
+function closePaper(){
+  document.getElementById('paper-overlay').classList.remove('open');
+  if(pendingNext){pendingNext=false;doNextQ();}
+}
+
+function nextQ(){
+  const last=S.answers[S.answers.length-1];
+  if(!last){doNextQ();return;}
+  const q=Q[last.qi];const c=q.choices.find(x=>x.letter===last.letter);
+  pendingNext=true;openPaper(c,q);
+}
+function doNextQ(){S.qIdx++;if(S.qIdx>=Q.length){buildResults();showScreen('results');launchConfetti();}else renderQ();}
+
+// ─────────────────────────────────────────────────────────────
+// RESULTS
+// ─────────────────────────────────────────────────────────────
+function ideologyResult(){
+  const t=S.answers.length||1;const p={};Object.keys(S.counts).forEach(k=>p[k]=S.counts[k]/t);
+  if(p.cap>=0.6)return{label:'🟡 Libertarian Capitalist',desc:'You consistently chose free markets, individual liberty, and limited government — the philosophy behind the most dramatic improvements in global living standards in history. Well done.'};
+  if(p.soc>=0.5)return{label:'🔴 Social Democrat',desc:'You frequently chose government-led solutions: regulation, redistribution, and collective action. While well-intentioned, evidence consistently shows these policies reduce economic dynamism and personal freedom over time.'};
+  if(p.com>=0.4)return{label:'🟣 Authoritarian Statist',desc:"Your choices concentrated power in the state at the expense of individual rights and economic freedom. History's clearest lesson — from the Soviet Union to Venezuela — is that centralized control destroys both prosperity and human dignity."};
+  if(p.mix>=0.5)return{label:'🔵 Pragmatic Centrist',desc:'You took a mixed approach, splitting the difference between markets and government. While pragmatic, consistent application of free market principles consistently outperforms the mixed approach in real-world evidence.'};
+  const winner=Object.keys(S.counts).reduce((a,b)=>S.counts[a]>=S.counts[b]?a:b);
+  const fb={cap:'🟡 Leaning Libertarian',mix:'🔵 Leaning Centrist',soc:'🔴 Leaning Socialist',com:'🟣 Leaning Authoritarian'};
+  return{label:fb[winner],desc:'Your choices were varied, leaning in one direction. Exploring the consistent evidence for free market policies may reveal why principled economic freedom produces the best outcomes for everyone.'};
+}
+function buildResults(){
+  const ideo=ideologyResult();
+  document.getElementById('ideo-label').textContent=ideo.label;document.getElementById('ideo-desc').textContent=ideo.desc;
+  const rs=document.getElementById('review-section');rs.innerHTML='<h3>Question-by-Question Review</h3>';renderReview(rs);
+  const grid=document.getElementById('resource-grid');grid.innerHTML='';
+  RESULT_RESOURCES.forEach(r=>{const a=document.createElement('a');a.href=r.url;a.target='_blank';a.rel='noopener noreferrer';a.className='resource-card';a.innerHTML=`<div class="rc-tag">${r.tag}</div><div class="rc-title">${r.title}</div><div class="rc-src">${r.src} ↗</div>`;grid.appendChild(a);});
+  setFinalBars();
+  const t=S.answers.length||1;['cap','mix','soc','com'].forEach(k=>{document.getElementById('if-'+k).style.width=(S.counts[k]/t*100)+'%';document.getElementById('ic-'+k).textContent=S.counts[k]+'/'+t;});
+}
+function renderReview(container){
+  S.answers.forEach(({qi,letter})=>{
+    const q=Q[qi];const chosen=q.choices.find(c=>c.letter===letter);const best=q.choices.find(c=>c.letter===q.best);const isGood=chosen.letter===q.best;
+    const div=document.createElement('div');div.className='rev-item';
+    div.innerHTML=`<div class="rev-num">Q${qi+1} — ${q.tag}</div><div class="rev-title">${q.title}</div><div class="rev-chosen">Your choice: <span>${TYPE_LABELS[chosen.type]} — "${chosen.label}"</span></div><div class="rev-exp ${isGood?'good':'note'}">${isGood?`✅ <strong>Great choice!</strong> ${q.explain}`:`📖 <strong>Best answer:</strong> "${best.label}" — ${q.explain}`}</div>`;
+    container.appendChild(div);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONFETTI
+// ─────────────────────────────────────────────────────────────
+function launchConfetti(){
+  const canvas=document.getElementById('confetti-canvas');canvas.style.display='block';
+  const ctx=canvas.getContext('2d');canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  const COLORS=['#ED8B00','#FFB81C','#4facfe','#30d158','#ff453a','#ffffff','#002859'];
+  const pieces=Array.from({length:140},()=>({x:Math.random()*canvas.width,y:Math.random()*-canvas.height,w:7+Math.random()*9,h:4+Math.random()*4,color:COLORS[Math.floor(Math.random()*COLORS.length)],vx:(Math.random()-.5)*3,vy:1.8+Math.random()*3,angle:Math.random()*360,spin:(Math.random()-.5)*6}));
+  let frame=0;
+  function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);pieces.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.angle+=p.spin;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle*Math.PI/180);ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();});frame++;if(frame<180)requestAnimationFrame(draw);else{ctx.clearRect(0,0,canvas.width,canvas.height);canvas.style.display='none';}}
+  draw();
+}
+
+// ─────────────────────────────────────────────────────────────
+// STATE HISTORY — powers the "Back" button
+// ─────────────────────────────────────────────────────────────
+let stateHistory=[];
+
+function pushHistory(){
+  stateHistory.push({
+    stats:{...S.stats},
+    qIdx:S.qIdx,
+    answers:[...S.answers],
+    counts:{...S.counts}
+  });
+}
+
+function goBack(){
+  if(stateHistory.length===0)return;
+  const prev=stateHistory.pop();
+  S.stats=prev.stats;S.qIdx=prev.qIdx;S.answers=prev.answers;S.counts=prev.counts;S.locked=false;
+  pendingNext=false;
+  document.getElementById('paper-overlay').classList.remove('open');
+  renderQ();updateHUD(false);updateBackBtn();
+}
+
+function updateBackBtn(){
+  const btn=document.getElementById('back-btn');
+  if(btn)btn.style.display=stateHistory.length>0?'inline-flex':'none';
+}
+
+// ─────────────────────────────────────────────────────────────
+// NATION NAME BUILDER
+// ─────────────────────────────────────────────────────────────
+let nationName='Freedomtopia';
+let nbRoot='Freedom',nbSuffix='topia';
+
+function selectNbRoot(root,el){
+  nbRoot=root;
+  document.getElementById('nb-custom-root').value='';
+  document.querySelectorAll('#nb-roots .nb-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  updateNbPreview();
+}
+function selectNbSuffix(suf,el){
+  nbSuffix=suf;
+  document.getElementById('nb-custom-suffix').value='';
+  document.querySelectorAll('#nb-suffixes .nb-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  updateNbPreview();
+}
+function customNbRoot(val){
+  if(val.trim()){nbRoot=val.trim().charAt(0).toUpperCase()+val.trim().slice(1);document.querySelectorAll('#nb-roots .nb-chip').forEach(c=>c.classList.remove('active'));}
+  else{nbRoot='Freedom';document.querySelectorAll('#nb-roots .nb-chip').forEach((c,i)=>{if(i===0)c.classList.add('active');});}
+  updateNbPreview();
+}
+function customNbSuffix(val){
+  if(val.trim()){nbSuffix=val.trim();document.querySelectorAll('#nb-suffixes .nb-chip').forEach(c=>c.classList.remove('active'));}
+  else{nbSuffix='topia';document.querySelectorAll('#nb-suffixes .nb-chip').forEach((c,i)=>{if(i===0)c.classList.add('active');});}
+  updateNbPreview();
+}
+function updateNbPreview(){
+  const name=nbRoot+nbSuffix;
+  const preview=document.getElementById('nb-preview-name');
+  if(preview)preview.textContent=name;
+  const btn=document.getElementById('begin-btn');
+  if(btn)btn.innerHTML='Found '+name+' &amp; Begin →';
+}
+function updateNationName(name){
+  nationName=name;
+  const targets=['header-nation-name','title-tag'];
+  targets.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=id==='title-tag'?'Can you keep '+name+' thriving?':name;});
+  // update newspaper masthead
+  const pm=document.querySelector('.pm-name');if(pm)pm.textContent='The '+name+' Gazette';
+  // update title hero tag and description
+  const heroTag=document.querySelector('.title-hero .tag');if(heroTag)heroTag.textContent='Can you keep '+name+' thriving?';
+}
+function beginWithName(){
+  const name=nbRoot+nbSuffix;
+  updateNationName(name);
+  startGame();
+}
+
+// ─────────────────────────────────────────────────────────────
+// AVATAR SYSTEM
+// ─────────────────────────────────────────────────────────────
+// Avatar state: tracks chosen features
+let avatar={
+  skin:0,       // 0-4 skin tones
+  hair:0,       // 0-5 hair styles
+  hairColor:0,  // 0-4 colors
+  eyes:0,       // 0-3 eye styles
+  outfit:0,     // 0-3 outfit styles (changes with economy)
+  expression:0, // computed from happiness
+  educated:true,// computed from education
+  mood:'neutral'// computed composite
+};
+
+function getAvatarMood(){
+  const h=S.stats?S.stats.h:65,e=S.stats?S.stats.e:65,ed=S.stats?S.stats.ed:65,f=S.stats?S.stats.f:65;
+  const avg=(h+e+ed+f)/4;
+  if(h<=25||e<=25||ed<=25||f<=25)return'crisis';
+  if(h<40)return'sad';
+  if(avg<50)return'worried';
+  if(avg<65)return'neutral';
+  if(avg<80)return'happy';
+  return'thriving';
+}
+
+// SVG skin tones
+const SKIN_TONES=['#FFDBB4','#F0C28A','#D4956A','#A0614A','#6B3A2A'];
+const HAIR_COLORS=['#2C1810','#8B4513','#C8A96E','#F5C842','#E84040'];
+
+function buildAvatarSVG(mood,stats){
+  const h=stats?stats.h:65,e=stats?stats.e:65,ed=stats?stats.ed:65,f=stats?stats.f:65;
+  const skin=SKIN_TONES[avatar.skin];
+  const hair=HAIR_COLORS[avatar.hairColor];
+
+  // Expression based on happiness
+  let smile='';
+  if(mood==='crisis'||mood==='sad'){
+    smile=`<path d="M88 118 Q100 110 112 118" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  }else if(mood==='worried'){
+    smile=`<path d="M88 116 Q100 114 112 116" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  }else if(mood==='happy'||mood==='thriving'){
+    smile=`<path d="M88 112 Q100 122 112 112" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  }else{
+    smile=`<path d="M88 116 Q100 120 112 116" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+  }
+
+  // Eyes based on mood
+  let eyes='';
+  if(mood==='crisis'){
+    eyes=`<ellipse cx="92" cy="100" rx="4" ry="3" fill="#333"/>
+          <ellipse cx="108" cy="100" rx="4" ry="3" fill="#333"/>
+          <path d="M88 95 L96 98" stroke="#555" stroke-width="2" fill="none"/>
+          <path d="M104 98 L112 95" stroke="#555" stroke-width="2" fill="none"/>`;
+  }else if(mood==='sad'||mood==='worried'){
+    eyes=`<ellipse cx="92" cy="100" rx="4" ry="4" fill="#333"/>
+          <ellipse cx="108" cy="100" rx="4" ry="4" fill="#333"/>
+          <path d="M88 96 Q92 94 96 97" stroke="#555" stroke-width="1.5" fill="none"/>
+          <path d="M104 97 Q108 94 112 96" stroke="#555" stroke-width="1.5" fill="none"/>`;
+  }else if(mood==='thriving'){
+    eyes=`<ellipse cx="92" cy="100" rx="5" ry="5" fill="#333"/>
+          <ellipse cx="108" cy="100" rx="5" ry="5" fill="#333"/>
+          <ellipse cx="93" cy="99" rx="1.5" ry="1.5" fill="white"/>
+          <ellipse cx="109" cy="99" rx="1.5" ry="1.5" fill="white"/>`;
+  }else{
+    eyes=`<ellipse cx="92" cy="100" rx="4" ry="4.5" fill="#333"/>
+          <ellipse cx="108" cy="100" rx="4" ry="4.5" fill="#333"/>
+          <ellipse cx="93" cy="99" rx="1.3" ry="1.3" fill="white"/>
+          <ellipse cx="109" cy="99" rx="1.3" ry="1.3" fill="white"/>`;
+  }
+
+  // Hair style based on education (caveman look when very low ed)
+  let hairStyle='';
+  const caveman=ed<=30;
+  if(caveman){
+    hairStyle=`<path d="M65 90 Q68 60 100 55 Q132 60 135 90 Q128 70 120 75 Q115 58 100 56 Q85 58 80 75 Q72 70 65 90Z" fill="${hair}"/>
+               <path d="M72 72 Q65 55 75 50" stroke="${hair}" stroke-width="4" fill="none" stroke-linecap="round"/>
+               <path d="M80 65 Q76 45 85 42" stroke="${hair}" stroke-width="3" fill="none" stroke-linecap="round"/>
+               <path d="M128 72 Q135 55 125 50" stroke="${hair}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  }else if(avatar.hair===0){
+    hairStyle=`<path d="M65 90 Q68 55 100 52 Q132 55 135 90 Q120 62 100 60 Q80 62 65 90Z" fill="${hair}"/>`;
+  }else if(avatar.hair===1){
+    hairStyle=`<path d="M68 80 Q70 52 100 50 Q130 52 132 80 Q128 58 100 56 Q72 58 68 80Z" fill="${hair}"/>
+               <path d="M132 80 Q138 75 135 68" stroke="${hair}" stroke-width="3" fill="none"/>`;
+  }else if(avatar.hair===2){
+    // bun
+    hairStyle=`<path d="M68 90 Q70 58 100 55 Q130 58 132 90 Q125 65 100 62 Q75 65 68 90Z" fill="${hair}"/>
+               <ellipse cx="100" cy="52" rx="12" ry="10" fill="${hair}"/>`;
+  }else{
+    hairStyle=`<path d="M65 90 Q68 55 100 52 Q132 55 135 90 Q120 62 100 60 Q80 62 65 90Z" fill="${hair}"/>`;
+  }
+
+  // Outfit: changes with economy
+  let outfit='';
+  const outfitColor=e>=60?'#002859':e>=40?'#555':'#8B4513';
+  const outfitAccent=e>=60?'#ED8B00':e>=40?'#888':'#A0522D';
+  const ripped=e<=35;
+  if(ripped){
+    outfit=`<path d="M60 165 Q70 145 100 140 Q130 145 140 165 L145 200 L55 200Z" fill="${outfitColor}" opacity=".9"/>
+            <path d="M70 155 L75 170 M80 148 L78 162 M120 155 L118 170 M128 150 L126 163" stroke="${outfitAccent}" stroke-width="2" fill="none" opacity=".6"/>
+            <path d="M65 160 L72 162 L68 168Z" fill="${outfitAccent}" opacity=".5"/>
+            <path d="M125 158 L132 160 L129 166Z" fill="${outfitAccent}" opacity=".5"/>`;
+  }else{
+    outfit=`<path d="M60 165 Q70 145 100 140 Q130 145 140 165 L145 200 L55 200Z" fill="${outfitColor}"/>
+            <line x1="100" y1="140" x2="100" y2="200" stroke="${outfitAccent}" stroke-width="2" opacity=".5"/>
+            <rect x="90" y="155" width="20" height="3" rx="1" fill="${outfitAccent}" opacity=".7"/>`;
+  }
+
+  // Tie / badge for high education
+  let badge='';
+  if(ed>=70&&!caveman){
+    badge=`<rect x="92" y="162" width="16" height="20" rx="3" fill="white" opacity=".9"/>
+           <text x="100" y="177" text-anchor="middle" font-size="8" fill="#002859">📜</text>`;
+  }
+
+  // Worry sweat for crisis
+  let extras='';
+  if(mood==='crisis'){
+    extras=`<ellipse cx="128" cy="92" rx="4" ry="6" fill="#4facfe" opacity=".6"/>
+            <ellipse cx="125" cy="100" rx="3" ry="4" fill="#4facfe" opacity=".4"/>`;
+  }else if(mood==='thriving'){
+    extras=`<circle cx="75" cy="72" r="4" fill="#FFD700" opacity=".6"/>
+            <circle cx="78" cy="65" r="2.5" fill="#FFD700" opacity=".4"/>`;
+  }
+
+  // Caveman club
+  let prop='';
+  if(caveman){
+    prop=`<rect x="138" y="130" width="8" height="45" rx="4" fill="#8B4513"/>
+          <ellipse cx="142" cy="128" rx="12" ry="10" fill="#6B3A2A"/>`;
+  }else if(f<=30){
+    // Chains / cuffs
+    prop=`<ellipse cx="72" cy="160" rx="6" ry="4" fill="none" stroke="#888" stroke-width="2"/>
+          <ellipse cx="128" cy="160" rx="6" ry="4" fill="none" stroke="#888" stroke-width="2"/>`;
+  }else if(e>=80){
+    // Money bag
+    prop=`<ellipse cx="138" cy="155" rx="9" ry="11" fill="#ED8B00"/>
+          <text x="138" y="159" text-anchor="middle" font-size="10" fill="white">$</text>
+          <line x1="138" y1="144" x2="138" y2="140" stroke="#ED8B00" stroke-width="2"/>`;
+  }
+
+  // Hat for high happiness
+  let hat='';
+  if(h>=80&&!caveman){
+    hat=`<rect x="75" y="56" width="50" height="8" rx="4" fill="#002859"/>
+         <rect x="82" y="38" width="36" height="20" rx="5" fill="#002859"/>
+         <line x1="75" y1="56" x2="125" y2="56" stroke="#ED8B00" stroke-width="2"/>`;
+  }
+
+  return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 210" width="200" height="210">
+    ${prop}
+    <!-- Body -->
+    ${outfit}
+    <!-- Arms -->
+    <path d="M60 165 Q45 175 48 190" stroke="${skin}" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <path d="M140 165 Q155 175 152 190" stroke="${skin}" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <!-- Neck -->
+    <rect x="90" y="128" width="20" height="16" rx="8" fill="${skin}"/>
+    <!-- Head -->
+    <ellipse cx="100" cy="94" rx="36" ry="40" fill="${skin}"/>
+    <!-- Hair -->
+    ${hairStyle}
+    ${hat}
+    <!-- Face -->
+    ${eyes}
+    <!-- Nose -->
+    <path d="M97 107 Q100 113 103 107" stroke="${skin==='#2C1810'||skin==='#A0614A'||skin==='#6B3A2A'?'rgba(0,0,0,.3)':'rgba(0,0,0,.15)'}" stroke-width="2" fill="none"/>
+    <!-- Mouth -->
+    ${smile}
+    ${badge}
+    ${extras}
+    <!-- Cheeks when happy -->
+    ${(mood==='happy'||mood==='thriving')?`<ellipse cx="82" cy="112" rx="7" ry="4" fill="#ff9f0a" opacity=".25"/>
+    <ellipse cx="118" cy="112" rx="7" ry="4" fill="#ff9f0a" opacity=".25"/>`:''}
+  </svg>`;
+}
+
+function renderAvatar(){
+  const el=document.getElementById('avatar-svg');
+  if(!el)return;
+  const mood=getAvatarMood();
+  el.innerHTML=buildAvatarSVG(mood,S.stats||{h:65,e:65,ed:65,f:65});
+  // Update mood label
+  const lbl=document.getElementById('avatar-mood-lbl');
+  if(lbl){
+    const moodText={crisis:'😱 In Crisis!',sad:'😢 Unhappy',worried:'😟 Worried',neutral:'😐 Getting By',happy:'😊 Doing Well',thriving:'🌟 Thriving!'};
+    lbl.textContent=moodText[mood]||'';
+    lbl.className='avatar-mood-lbl mood-'+mood;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// AVATAR BUILDER (title screen customizer)
+// ─────────────────────────────────────────────────────────────
+function cycleSkin(){avatar.skin=(avatar.skin+1)%SKIN_TONES.length;renderAvatarPreview();}
+function cycleHair(){avatar.hair=(avatar.hair+1)%3;renderAvatarPreview();}
+function cycleHairColor(){avatar.hairColor=(avatar.hairColor+1)%HAIR_COLORS.length;renderAvatarPreview();}
+function renderAvatarPreview(){
+  const el=document.getElementById('avatar-preview-svg');
+  if(!el)return;
+  el.innerHTML=buildAvatarSVG('neutral',{h:65,e:65,ed:65,f:65});
+}
+
+// ─────────────────────────────────────────────────────────────
+// START / RESTART
+// ─────────────────────────────────────────────────────────────
+function startGame(){S=freshState();shuffleMap=[];pendingNext=false;stateHistory=[];buildDots();updateHUD(false);renderQ();renderAvatar();showScreen('question');updateBackBtn();}
+function restartGame(){showScreen('title');setTimeout(renderAvatarPreview,50);}
+
+// Init on page load
+document.addEventListener('DOMContentLoaded',function(){renderAvatarPreview();updateNbPreview();});
+</script>
+</body>
+</html>

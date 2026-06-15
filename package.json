@@ -1,0 +1,13 @@
+{
+  "name": "cato-capitalism-coop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Co-op / classroom host for the Cato Capitalism Game (zero dependencies).",
+  "main": "coop/coop-server.js",
+  "scripts": {
+    "start": "node coop/coop-server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -108,7 +108,26 @@
 </header>
 
 <div class="wrap">
-  <div class="section-title">🏆 Leaderboard <span class="chip">click a column to sort</span><span class="updated" id="updated"></span></div>
+  <div id="goal-card" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:16px 18px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;font-size:1.05rem;font-weight:800;">🎯 Class Goal:
+        <select id="goal-stat" style="background:transparent;border:none;border-bottom:2px dashed rgba(255,184,28,.5);color:var(--gold);font-weight:800;font-family:inherit;font-size:1rem;cursor:pointer;">
+          <option value="f">🗽 Freedom</option><option value="h">😊 Happiness</option><option value="e">💰 Economy</option><option value="ed">📚 Education</option><option value="avg">⭐ Overall health</option>
+        </select>
+        <span style="color:#B7AEDB;font-weight:600;font-size:.9rem;">≥</span>
+        <input id="goal-target" type="number" min="0" max="100" value="75" style="width:56px;background:transparent;border:none;border-bottom:2px dashed rgba(255,184,28,.5);color:var(--gold);font-weight:800;font-family:inherit;font-size:1rem;text-align:center;">
+        <span style="color:#B7AEDB;font-weight:600;font-size:.9rem;">%</span>
+      </div>
+      <div id="goal-status" style="font-weight:800;font-size:.95rem;"></div>
+    </div>
+    <div style="margin-top:12px;height:22px;background:rgba(255,255,255,.12);border-radius:12px;overflow:hidden;position:relative;">
+      <div id="goal-fill" style="height:100%;border-radius:12px;transition:width .6s ease, background .4s ease;width:0%;background:#F2B23E;"></div>
+      <div id="goal-marker" style="position:absolute;top:-3px;bottom:-3px;width:3px;background:#fff;opacity:.85;left:75%;"></div>
+    </div>
+    <div id="goal-detail" style="margin-top:8px;font-size:.82rem;color:#B7AEDB;font-weight:600;"></div>
+  </div>
+
+  <div class="section-title">🏆 Leaderboard <span class="chip">click a column to sort</span><span id="champion" style="font-weight:800;color:#FFD43B;font-size:.92rem;"></span><span class="updated" id="updated"></span></div>
   <div class="lb">
     <table>
       <thead>
@@ -183,6 +202,24 @@ document.querySelectorAll('th.sortable').forEach(function(th){
   });
 });
 
+// ── class goal ───────────────────────────────────────────────────
+var GOALSTAT=(function(){try{return localStorage.getItem('coopGoalStat')||'f';}catch(e){return 'f';}})();
+var GOALTGT=(function(){try{var v=+localStorage.getItem('coopGoalTarget');return v>0?v:75;}catch(e){return 75;}})();
+function goalStatName(k){return {f:'Freedom',h:'Happiness',e:'Economy',ed:'Education',avg:'overall health'}[k]||k;}
+function playerStatVal(p,k){ if(!p.stats)return null; return k==='avg'?(p.stats.h+p.stats.e+p.stats.ed+p.stats.f)/4 : p.stats[k]; }
+function updateGoal(list){
+  var vals=list.filter(function(p){return p.started&&p.stats;}).map(function(p){return playerStatVal(p,GOALSTAT);}).filter(function(v){return v!=null;});
+  var avg=vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length):0;
+  var meeting=vals.filter(function(v){return v>=GOALTGT;}).length;
+  var met=vals.length>0&&avg>=GOALTGT;
+  var fill=document.getElementById('goal-fill'), marker=document.getElementById('goal-marker'),
+      status=document.getElementById('goal-status'), detail=document.getElementById('goal-detail');
+  if(fill){ fill.style.width=Math.max(0,Math.min(100,avg))+'%'; fill.style.background=met?'#2EB872':'#F2B23E'; }
+  if(marker){ marker.style.left=Math.max(0,Math.min(100,GOALTGT))+'%'; }
+  if(status){ status.textContent=met?'✅ Goal met!':'⏳ In progress'; status.style.color=met?'#2EB872':'#FFD43B'; }
+  if(detail){ detail.textContent=vals.length?('Class average '+goalStatName(GOALSTAT)+': '+avg+'%  ·  '+meeting+' of '+vals.length+' cities at or above '+GOALTGT+'%'):'Waiting for students to start playing…'; }
+}
+
 // ── render ───────────────────────────────────────────────────────
 var LAST=[];
 var BARS=[['😊','h'],['💰','e'],['📚','ed'],['🗽','f']];
@@ -197,6 +234,13 @@ function render(list){
   document.getElementById('online').textContent=online;
   document.getElementById('city-count').textContent=list.length;
   document.getElementById('empty').style.display=list.length?'none':'block';
+  updateGoal(list);
+
+  // term/lifetime champion = top resolved score in the current rank mode
+  var champ=null, champScore=-1;
+  list.forEach(function(p){ if(!p.started)return; var sc=resolve(p).score; if(sc!=null && sc>champScore){champScore=sc; champ=p;} });
+  var champEl=document.getElementById('champion');
+  if(champEl){ var scopeTxt=(rankMode==='lifetime'?'Lifetime':'Term '+rankMode); champEl.textContent=champ?('👑 '+scopeTxt+' Champion: '+champ.name):''; }
 
   // build the Rank-by options (Lifetime + every term any student has reached)
   var maxTerm=0;
@@ -227,7 +271,7 @@ function render(list){
     }).join('');
     var rk=i+1;
     return '<tr class="'+idle.trim()+'">'+
-      '<td class="rank r'+rk+'">'+rk+'</td>'+
+      '<td class="rank r'+rk+'">'+(p===champ?'👑 ':'')+rk+'</td>'+
       '<td><div class="nation"><span class="av">'+avatarSVG(p.avatar,34,40)+'</span><span>'+esc(p.name)+(p.started?'':' <span style="font-size:.7rem;color:#B7AEDB;">(setting up)</span>')+'</span></div></td>'+
       '<td><div class="bars">'+bars+'</div></td>'+
       '<td class="house"><span class="ico">'+houseIcon(p.houseName)+'</span>'+esc(p.houseName||'—')+'</td>'+
@@ -272,6 +316,9 @@ wn.addEventListener('change',function(){
 });
 var rm=document.getElementById('rankmode');
 rm.addEventListener('change',function(){ rankMode=rm.value; try{localStorage.setItem('coopRankMode',rankMode);}catch(e){} render(LAST); });
+var gStat=document.getElementById('goal-stat'), gTgt=document.getElementById('goal-target');
+if(gStat){ gStat.value=GOALSTAT; gStat.addEventListener('change',function(){ GOALSTAT=gStat.value; try{localStorage.setItem('coopGoalStat',GOALSTAT);}catch(e){} updateGoal(LAST); }); }
+if(gTgt){ gTgt.value=GOALTGT; gTgt.addEventListener('change',function(){ GOALTGT=Math.max(0,Math.min(100,+gTgt.value||0)); try{localStorage.setItem('coopGoalTarget',GOALTGT);}catch(e){} updateGoal(LAST); }); }
 poll();
 setInterval(poll,1200);
 </script>

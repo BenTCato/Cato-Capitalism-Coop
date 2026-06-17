@@ -63,6 +63,8 @@
       vanityTotal: STORE ? STORE.length : 0,
       started: started,
       inTown: townActive(),
+      emote: (function(){ var ce = window.currentEmote; return (ce && (Date.now() - ce.at) < 4000) ? ce.id : null; })(),
+      emoteAt: (window.currentEmote && window.currentEmote.at) || 0,
       pos: pl ? { x: Math.round(pl.x), y: Math.round(pl.y), dir: pl.dir, moving: !!pl.moving, step: pl.step || 0 } : null
     };
   }
@@ -183,6 +185,23 @@
     return grp;
   }
 
+  // ── remote emotes (rendered above another player's avatar) ────
+  var EMOJI = { wave:'👋', thumb:'👍', heart:'❤️', laugh:'😂', party:'🎉', cool:'😎', think:'🤔', fire:'🔥' };
+  (function(){
+    var s = document.createElement('style');
+    s.textContent = '@keyframes coopEmoteFloat{0%{opacity:0;transform:translateY(6px) scale(.5);}20%{opacity:1;transform:translateY(-4px) scale(1.1);}100%{opacity:0;transform:translateY(-32px) scale(1);}} .coop-emote{animation:coopEmoteFloat 1.6s ease forwards;transform-box:fill-box;transform-origin:center;}';
+    (document.head || document.documentElement).appendChild(s);
+  })();
+  function showRemoteEmote(r) {
+    if (!r.el) return;
+    var t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', '0'); t.setAttribute('y', '-78'); t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('font-size', '26'); t.setAttribute('class', 'coop-emote');
+    t.textContent = EMOJI[r.data.emote] || '❓';
+    r.el.appendChild(t);
+    setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 1600);
+  }
+
   // ── render loop (smooth interpolation) ────────────────────────
   function frame() {
     requestAnimationFrame(frame);
@@ -203,6 +222,10 @@
       r.ry += (r.ty - r.ry) * 0.22;
       r.el.setAttribute('transform', 'translate(' + r.rx.toFixed(1) + ',' + r.ry.toFixed(1) + ')');
       if (r.body) r.body.setAttribute('transform', 'scale(' + (r.dir < 0 ? -1 : 1) + ',1)');
+      if (r.data.emote && r.data.emoteAt && r.data.emoteAt !== r.lastEmote) {
+        r.lastEmote = r.data.emoteAt;
+        if (Date.now() - r.data.emoteAt < 4000) showRemoteEmote(r);
+      }
     }
   }
   requestAnimationFrame(frame);

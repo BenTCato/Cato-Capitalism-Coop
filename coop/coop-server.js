@@ -166,7 +166,7 @@ const server = http.createServer(async (req, res) => {
     const others = [...players.values()]
       .filter(o => o.id !== d.id && o.inTown)
       .map(o => ({ id: o.id, name: o.name, avatar: o.avatar, pos: o.pos,
-                   stats: o.stats, house: o.house }));
+                   stats: o.stats, house: o.house, emote: o.emote, emoteAt: o.emoteAt }));
     return send(res, 200, 'application/json', JSON.stringify({ now: Date.now(), world: WORLD_NAME, players: others }));
   }
 

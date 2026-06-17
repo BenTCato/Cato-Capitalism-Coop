@@ -478,6 +478,14 @@
     @keyframes shim{0%,100%{opacity:.5}50%{opacity:.15}}
     .dlg{display:none;position:absolute;left:0;right:0;bottom:0;z-index:20;padding:10px;}
     .dlg.open{display:block;animation:fadeUp .22s ease;}
+    #emote-fab{position:absolute;right:14px;bottom:14px;z-index:30;width:50px;height:50px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(16,22,40,.85);color:#fff;font-size:1.5rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);}
+    #emote-fab:hover{background:rgba(30,40,70,.95);}
+    #emote-tray{position:absolute;right:14px;bottom:74px;z-index:30;display:none;flex-direction:column;gap:6px;background:rgba(16,22,40,.94);padding:10px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.45);}
+    #emote-tray.open{display:flex;}
+    #emote-tray button{font-size:1.7rem;line-height:1;background:transparent;border:none;cursor:pointer;padding:4px;border-radius:8px;}
+    #emote-tray button:hover{background:rgba(255,255,255,.12);}
+    @keyframes emoteFloat{0%{transform:translate(-50%,0) scale(.5);opacity:0;}20%{opacity:1;transform:translate(-50%,-12px) scale(1.15);}100%{transform:translate(-50%,-90px) scale(1);opacity:0;}}
+    .emote-pop{position:absolute;left:50%;top:46%;font-size:2.6rem;pointer-events:none;z-index:35;animation:emoteFloat 1.6s ease forwards;}
     .dlg-card{background:rgba(255,253,247,.98);border-radius:18px;box-shadow:0 -8px 40px rgba(0,0,0,.45);max-height:54vh;overflow-y:auto;padding:14px 16px;border:3px solid #21331F;}
     .dlg-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
     .dlg-ico{font-size:1.9rem;background:#EAF2E6;border:2px solid #21331F;border-radius:12px;padding:4px 8px;}
@@ -703,6 +711,8 @@
       <div class="dlg-choices choices" id="dlg-choices"></div>
       <div class="dlg-feedback" id="dlg-feedback" style="display:none;"></div>
     </div></div>
+    <button id="emote-fab" onclick="toggleEmoteTray()" title="Emotes">🎭</button>
+    <div id="emote-tray"></div>
   </div>
   <div class="town-hint">⌨️ <strong>W A S D</strong> to walk · <strong>SPACE</strong> to talk to citizens · the world changes with your choices · visit the <strong>MARKET</strong> to spend your ⭐</div>
 </div>
@@ -810,6 +820,11 @@
   <div class="panel">
     <h3>📦 This Leader's Collection <span id="store-progress" style="float:right;color:var(--goldDark);">0/16</span></h3>
     <div class="store-grid" id="store-grid"></div>
+  </div>
+  <div class="panel">
+    <h3>🎭 Emotes <span id="emote-progress" style="float:right;color:var(--goldDark);">0/8</span></h3>
+    <div class="box-desc" style="margin-bottom:10px;">Buy emotes to react in the shared town — other players see them pop above your head!</div>
+    <div class="store-grid" id="emote-grid"></div>
   </div>
   <div class="next-wrap"><button class="btn btn-navy" onclick="storeBack()">← Back</button></div>
 </div>
@@ -2881,6 +2896,41 @@ const PART_BASE={extra:5,glasses:4,outfit:6};
 function specialsFor(part){return STORE_ITEMS.filter(function(i){return i.part===part;});}
 function specialAt(part,k){return specialsFor(part)[k];}
 function ownedItem(id){return !!(P&&P.owned&&P.owned.indexOf(id)>=0);}
+// ── Emotes (buyable in the Star Store; shown above your avatar in co-op) ──
+const EMOTES=[
+  {id:'wave',icon:'👋',name:'Wave',cost:400},
+  {id:'thumb',icon:'👍',name:'Thumbs Up',cost:400},
+  {id:'heart',icon:'❤️',name:'Heart',cost:600},
+  {id:'laugh',icon:'😂',name:'Laugh',cost:600},
+  {id:'party',icon:'🎉',name:'Party',cost:900},
+  {id:'cool',icon:'😎',name:'Cool',cost:900},
+  {id:'think',icon:'🤔',name:'Think',cost:1200},
+  {id:'fire',icon:'🔥',name:'Fire',cost:1200}
+];
+function emoteById(id){return EMOTES.filter(function(e){return e.id===id;})[0];}
+function ownedEmote(id){return !!(P&&P.emotes&&P.emotes.indexOf(id)>=0);}
+function buyEmote(id){
+  const e=emoteById(id); if(!e||!P)return;
+  if(ownedEmote(id)){sfx('click');return;}
+  if((P.stars||0)<e.cost){sfx('bad');return;}
+  P.stars-=e.cost; P.emotes=P.emotes||[]; P.emotes.push(id);
+  saveProfiles(); if(typeof updateBankUI==='function')updateBankUI(); renderStore(); if(typeof renderProfiles==='function')renderProfiles(); sfx('win');
+}
+function renderEmoteTray(){
+  const tray=document.getElementById('emote-tray'); if(!tray)return;
+  const owned=(P&&P.emotes)?P.emotes:[];
+  if(!owned.length){ tray.innerHTML='<div style="color:#cbd5e1;font-size:.72rem;max-width:130px;text-align:center;line-height:1.3;">Buy emotes at the 🎁 Market to react here!</div>'; return; }
+  tray.innerHTML=owned.map(function(id){const e=emoteById(id);return e?'<button onclick="playEmote(\''+id+'\')" title="'+e.name+'">'+e.icon+'</button>':'';}).join('');
+}
+function toggleEmoteTray(){ const t=document.getElementById('emote-tray'); if(!t)return; renderEmoteTray(); t.classList.toggle('open'); sfx('click'); }
+function playEmote(id){
+  const e=emoteById(id); if(!e||!ownedEmote(id))return;
+  window.currentEmote={id:id,at:Date.now()};
+  const vp=document.querySelector('#screen-town .town-viewport');
+  if(vp){ const d=document.createElement('div'); d.className='emote-pop'; d.textContent=e.icon; vp.appendChild(d); setTimeout(function(){ if(d.parentNode)d.parentNode.removeChild(d); },1600); }
+  const t=document.getElementById('emote-tray'); if(t)t.classList.remove('open');
+  sfx('pop');
+}
 function specialIndex(item){return PART_BASE[item.part]+specialsFor(item.part).indexOf(item);}
 function lockedOption(part,i){
   const base=PART_BASE[part];
@@ -2931,7 +2981,7 @@ const SPECIAL_OUTFIT=[
 ];
 
 // ── Profiles ──
-function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0,lifetimeScore:0,lifetimeBest:0,lifetimeAnswered:0,terms:[]};}
+function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0,lifetimeScore:0,lifetimeBest:0,lifetimeAnswered:0,terms:[],emotes:[]};}
 function loadProfiles(){
   try{
     const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
@@ -2962,7 +3012,7 @@ function sanitizeAvatar(){
 function activateProfile(i,silent){
   if(i<0||i>=PROFILES.list.length)return;
   PROFILES.active=i;P=PROFILES.list[i];
-  P.owned=P.owned||[];P.history=P.history||[];P.house=P.house||0;P.lifetimeScore=P.lifetimeScore||0;P.lifetimeBest=P.lifetimeBest||0;P.lifetimeAnswered=P.lifetimeAnswered||0;P.terms=P.terms||[];
+  P.owned=P.owned||[];P.history=P.history||[];P.house=P.house||0;P.lifetimeScore=P.lifetimeScore||0;P.lifetimeBest=P.lifetimeBest||0;P.lifetimeAnswered=P.lifetimeAnswered||0;P.terms=P.terms||[];P.emotes=P.emotes||[];
   avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},P.avatar);
   sanitizeAvatar();
   nationName=P.name||'Freedomtopia';
@@ -3198,6 +3248,15 @@ function renderStore(){
     const r=RARITY[it.rarity];
     return '<div class="ach'+(got?' got':'')+'" style="border-left:5px solid '+r.color+';"><span class="ach-icon">'+(got?it.icon:'🔒')+'</span><div><div class="ach-name">'+it.name+' <span style="color:'+r.color+';font-size:.6rem;letter-spacing:.5px;">'+r.label.toUpperCase()+'</span></div><div class="ach-desc">'+kind+(got?' · owned':'')+'</div></div></div>';
   }).join('');
+  const eg=document.getElementById('emote-grid');
+  if(eg){
+    const ep=document.getElementById('emote-progress'); if(ep)ep.textContent=((P&&P.emotes)?P.emotes.length:0)+'/'+EMOTES.length;
+    eg.innerHTML=EMOTES.map(function(e){
+      const got=ownedEmote(e.id);
+      const can=P&&(P.stars||0)>=e.cost;
+      return '<div class="ach'+(got?' got':'')+'" style="border-left:5px solid #F2B23E;align-items:center;"><span class="ach-icon">'+e.icon+'</span><div style="flex:1;"><div class="ach-name">'+e.name+'</div><div class="ach-desc">'+(got?'Owned ✓':e.cost.toLocaleString()+' ⭐')+'</div></div>'+(got?'':'<button class="btn-dice" style="padding:6px 12px;" '+(can?'':'disabled')+' onclick="buyEmote(\''+e.id+'\')">Buy</button>')+'</div>';
+    }).join('');
+  }
 }
 function buyBox(){
   if(!P||(P.stars||0)<BOX_COST)return;

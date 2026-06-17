@@ -79,3 +79,32 @@ The export code correctly carries stars/house/vanity, but until bug #1 is fixed,
 4. Everything else is optional polish.
 
 *Test note: the live leaderboard currently shows two leftover test players ("Maya QA", "Theo QA"); they'll drop off automatically a few seconds after those tabs close.*
+
+---
+
+# Round 2 — Re-test after star / score / grade fixes (June 15, later)
+
+**Build:** live `cato-capitalism-coop.onrender.com` with star-earning, cumulative score, term recap, and the new lifetime + per-term grade system.
+
+## Result: all clear — no new bugs
+
+**Fixes from Round 1 verified working live:**
+- **Stars earn + bank:** played 3 full terms; stars accrued from correct answers (+participation) and banked into a bank that **persisted across terms** (ended at 3,000⭐). Store/house are now usable.
+- **Term recap:** the Term Report (ideology, history, review, grade, stars earned) shows at each term end and its "Keep Governing →" button returns to a fresh term. No forced game-over.
+- **Cumulative score:** `lifetimeScore` accumulated across terms (2,445 after 3 terms) and the leaderboard/HUD show the climbing total.
+
+**New grade feature verified:**
+- **Per-term grades recorded:** 3 terms logged distinct grades (D, D, C) with per-term scores and best-answer counts.
+- **Lifetime grade:** computed from the best-answer ratio across all terms (6/30 → D), updates live.
+- **Dashboard "Rank by" selector:** dropdown correctly lists **Lifetime + Term 1…N**. Switching modes re-ranks and re-labels both the leaderboard and the city cards:
+  - Lifetime → Beta (A, 5,800) over Alpha (D, 2,565)
+  - Term 1 → Beta (A) / Alpha (D); Term 2 → Beta (S) / Alpha (D); Term 3 → Beta (B) / Alpha (C)
+  - Players who haven't reached a selected term correctly show "—".
+- **No console errors** from game code on any tab (only the benign browser-extension "message channel closed" notices, which are not from the game).
+
+## Notes (not bugs)
+- **The in-progress (current) term appears in the Rank-by list** and shows a partial grade until that term is finished. Intended, but worth knowing.
+- **Reloaded tabs needed after a deploy:** an already-open tab keeps running the old code until refreshed (normal web behavior). During testing one tab briefly looked like it "wasn't recording terms" — it was simply running the pre-deploy page; a refresh fixed it.
+- **Re-confirmed the two Round-1 by-design items:** background browser tabs get throttled (a backgrounded test player was pruned from "online"); and two tabs in one browser share a co-op ID. Neither affects real students on their own devices/foreground tabs.
+
+**Bottom line:** the star economy, cumulative scoring, term recap, and the lifetime/per-term grade selector all work correctly on the live build with no game errors.

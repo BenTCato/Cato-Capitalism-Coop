@@ -486,6 +486,16 @@
     #emote-tray button:hover{background:rgba(255,255,255,.12);}
     @keyframes emoteFloat{0%{transform:translate(-50%,0) scale(.5);opacity:0;}20%{opacity:1;transform:translate(-50%,-12px) scale(1.15);}100%{transform:translate(-50%,-90px) scale(1);opacity:0;}}
     .emote-pop{position:absolute;left:50%;top:46%;font-size:2.6rem;pointer-events:none;z-index:35;animation:emoteFloat 1.6s ease forwards;}
+    #minigame-overlay{display:none;position:fixed;inset:0;z-index:130;background:rgba(10,30,60,.55);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;}
+    #minigame-overlay.open{display:flex;animation:fadeIn .25s ease;}
+    .mg-opt{background:#FFF9EC;border:2px solid #F2B23E;border-radius:12px;padding:11px 14px;cursor:pointer;font-family:inherit;font-size:.95rem;font-weight:700;color:#4A3B22;text-align:left;transition:background .12s;}
+    .mg-opt:hover:not(:disabled){background:#FFEFC9;}
+    .mg-opt:disabled{cursor:default;}
+    .mg-correct{background:#2EB872 !important;border-color:#2EB872 !important;color:#fff !important;}
+    .mg-wrong{background:#E03131 !important;border-color:#E03131 !important;color:#fff !important;}
+    .mg-card{height:62px;font-size:1.9rem;border:2px solid #C9912E;border-radius:12px;background:#FFB81C;cursor:pointer;transition:background .15s;}
+    .mg-card.flip{background:#FFF9EC;}
+    .mg-card.done{background:#2EB872;border-color:#1F8A53;opacity:.9;}
     .dlg-card{background:rgba(255,253,247,.98);border-radius:18px;box-shadow:0 -8px 40px rgba(0,0,0,.45);max-height:54vh;overflow-y:auto;padding:14px 16px;border:3px solid #21331F;}
     .dlg-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
     .dlg-ico{font-size:1.9rem;background:#EAF2E6;border:2px solid #21331F;border-radius:12px;padding:4px 8px;}
@@ -548,6 +558,13 @@
         <small>or click backdrop to dismiss</small>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="minigame-overlay" onclick="closeMiniGame()">
+  <div class="event-card" onclick="event.stopPropagation()" style="max-width:480px;border-color:#F2B23E;">
+    <div class="event-bar" id="mg-bar" style="background:linear-gradient(90deg,#FFB81C,#ED8B00);">🕹️ Mini-Game</div>
+    <div id="mg-body" style="padding:18px 20px 22px;"></div>
   </div>
 </div>
 
@@ -816,6 +833,7 @@
       <button class="btn btn-gold" id="buy-box-btn" onclick="buyBox()">Open Box. 2,500 ⭐</button>
     </div>
     <div class="store-note" id="store-note"></div>
+    <button class="btn btn-navy" style="margin-top:10px;" onclick="openMiniGame('market')">🕹️ Play the Market Arcade</button>
   </div>
   <div class="panel">
     <h3>📦 This Leader's Collection <span id="store-progress" style="float:right;color:var(--goldDark);">0/16</span></h3>
@@ -2471,7 +2489,7 @@ function lifetimeGrade(){
 function freshState(){
   const st=DIFFS[DIFF_KEY].start;
   return{qIdx:0,term:1,stats:{h:st,e:st,ed:st,f:st},answers:[],counts:{cap:0,mix:0,soc:0,com:0},locked:false,
-    score:0,streak:0,maxStreak:0,bestCount:0,minStats:{h:st,e:st,ed:st,f:st}};
+    score:0,streak:0,maxStreak:0,bestCount:0,minStats:{h:st,e:st,ed:st,f:st},mini:{}};
 }
 
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');window.scrollTo(0,0);}
@@ -2930,6 +2948,110 @@ function playEmote(id){
   if(vp){ const d=document.createElement('div'); d.className='emote-pop'; d.textContent=e.icon; vp.appendChild(d); setTimeout(function(){ if(d.parentNode)d.parentNode.removeChild(d); },1600); }
   const t=document.getElementById('emote-tray'); if(t)t.classList.remove('open');
   sfx('pop');
+}
+
+// ════════ MINI-GAMES (walk into buildings; earn stars once per term) ════════
+const MINI_LABEL={hall:'🏛️ Town Hall Quiz',market:'🕹️ Market Arcade',bank:'🏦 Bank Memory Match'};
+const QUIZ_QS=[
+  {q:'In a free market, prices are mainly set by…',a:['Government officials','Supply and demand','Random chance','The biggest company'],c:1},
+  {q:'What usually happens when a government prints lots of new money?',a:['Prices rise (inflation)','Everyone gets richer','Prices fall','Nothing changes'],c:0},
+  {q:'Voluntary trade between two people generally…',a:['Helps only the seller','Helps only the buyer','Can benefit both sides','Always needs a subsidy'],c:2},
+  {q:'A rising price signals producers to…',a:['Ignore the shortage','Make more of what people want','Lower quality','Stop producing'],c:1},
+  {q:'Competition among businesses tends to…',a:['Raise prices','Lower quality','Improve choices and prices','Reduce innovation'],c:2},
+  {q:'Property rights mean…',a:['The state owns everything','You control what you own','No one owns anything','Only firms own things'],c:1},
+  {q:'A "subsidy" is when the government…',a:['Bans a product','Pays to support something','Raises a price','Prints money'],c:1},
+  {q:'Profit in a free market mostly rewards…',a:['Luck only','Serving customers well','Political connections','Breaking rules'],c:1}
+];
+let MG={};
+function miniDone(type){return !!(S&&S.mini&&S.mini[type]);}
+function awardMiniStars(type,amount){
+  if(!P)return '';
+  S.mini=S.mini||{};
+  if(miniDone(type)){ return 'You already earned stars here this term — come back next term!'; }
+  if(amount>0){ S.mini[type]=true; P.stars=(P.stars||0)+amount; saveProfiles(); if(typeof updateBankUI==='function')updateBankUI(); return '⭐ +'+amount.toLocaleString()+' stars banked!'; }
+  return '';
+}
+function openMiniGame(type){
+  const ov=document.getElementById('minigame-overlay'); if(!ov)return;
+  const bar=document.getElementById('mg-bar'); if(bar)bar.textContent=MINI_LABEL[type]||'🕹️ Mini-Game';
+  ov.classList.add('open'); sfx('click');
+  if(type==='hall')mgQuiz();
+  else if(type==='market')mgReflex();
+  else if(type==='bank')mgMemory();
+}
+function closeMiniGame(){ const ov=document.getElementById('minigame-overlay'); if(ov)ov.classList.remove('open'); if(MG&&MG.raf)cancelAnimationFrame(MG.raf); MG={}; sfx('click'); }
+function mgResult(type,amount,msg){
+  const note=awardMiniStars(type,amount);
+  const b=document.getElementById('mg-body');
+  b.innerHTML='<div style="text-align:center;"><div style="font-size:2.4rem;">'+(amount>0?'🎉':'🙂')+'</div>'+
+    '<div style="font-weight:800;font-size:1.1rem;margin:6px 0;">'+msg+'</div>'+
+    '<div style="color:#2EB872;font-weight:800;margin-bottom:14px;min-height:18px;">'+note+'</div>'+
+    '<button class="btn btn-gold" onclick="closeMiniGame()">Done →</button></div>';
+}
+// 1) Town Hall — quiz
+function mgQuiz(){ MG={type:'hall',i:0,correct:0,qs:shuffle(QUIZ_QS.slice()).slice(0,3)}; mgQuizStep(); }
+function mgQuizStep(){
+  const b=document.getElementById('mg-body');
+  if(MG.i>=MG.qs.length){ mgResult('hall',MG.correct*100,'You answered '+MG.correct+' of '+MG.qs.length+' correctly!'); return; }
+  const q=MG.qs[MG.i];
+  let s='<div style="font-weight:700;color:#7A6A4F;font-size:.8rem;margin-bottom:6px;">Question '+(MG.i+1)+' of '+MG.qs.length+' · 100 ⭐ each</div>';
+  s+='<div style="font-weight:800;font-size:1.05rem;margin-bottom:12px;">'+q.q+'</div><div style="display:flex;flex-direction:column;gap:8px;">';
+  q.a.forEach(function(opt,k){ s+='<button class="mg-opt" onclick="mgQuizPick('+k+')">'+opt+'</button>'; });
+  b.innerHTML=s+'</div>';
+}
+function mgQuizPick(k){
+  const q=MG.qs[MG.i]; const correct=(k===q.c); if(correct)MG.correct++;
+  sfx(correct?'good':'bad');
+  const btns=document.querySelectorAll('#mg-body .mg-opt');
+  btns.forEach(function(bn){bn.disabled=true;});
+  if(btns[k])btns[k].classList.add(correct?'mg-correct':'mg-wrong');
+  if(!correct&&btns[q.c])btns[q.c].classList.add('mg-correct');
+  MG.i++; setTimeout(mgQuizStep,800);
+}
+// 2) Market — reflex timing bar
+function mgReflex(){
+  MG={type:'market',pos:0,dir:1,stopped:false};
+  const b=document.getElementById('mg-body');
+  b.innerHTML='<div style="text-align:center;"><div style="font-weight:700;margin-bottom:8px;">Tap STOP in the <span style="color:#2EB872;">green zone</span> — dead center = 300 ⭐!</div>'+
+    '<div id="mg-track" style="position:relative;height:34px;background:#EFE7D3;border-radius:17px;overflow:hidden;margin:16px 0;">'+
+    '<div style="position:absolute;left:38%;width:24%;top:0;bottom:0;background:rgba(46,184,114,.35);"></div>'+
+    '<div style="position:absolute;left:46.5%;width:7%;top:0;bottom:0;background:rgba(46,184,114,.7);"></div>'+
+    '<div id="mg-marker" style="position:absolute;top:-3px;bottom:-3px;width:5px;background:#1a1456;left:0;"></div></div>'+
+    '<button class="btn btn-gold" onclick="mgReflexStop()">STOP</button></div>';
+  const marker=document.getElementById('mg-marker');
+  (function step(){ if(MG.stopped)return; MG.pos+=MG.dir*1.7; if(MG.pos>=100){MG.pos=100;MG.dir=-1;} if(MG.pos<=0){MG.pos=0;MG.dir=1;} if(marker)marker.style.left=MG.pos+'%'; MG.raf=requestAnimationFrame(step); })();
+}
+function mgReflexStop(){
+  if(MG.stopped)return; MG.stopped=true; if(MG.raf)cancelAnimationFrame(MG.raf);
+  const d=Math.abs(MG.pos-50);
+  if(d>20){ const b=document.getElementById('mg-body'); b.innerHTML='<div style="text-align:center;"><div style="font-size:2.2rem;">😅</div><div style="font-weight:800;margin:8px 0;">Missed the zone!</div><button class="btn btn-gold" onclick="mgReflex()">Try Again</button> <button class="btn-dice" style="margin-left:6px;" onclick="closeMiniGame()">Leave</button></div>'; sfx('bad'); return; }
+  let amount=d<=3?300:d<=12?200:100;
+  sfx('win'); mgResult('market',amount,d<=3?'Bullseye! Perfect timing.':'Nice — you hit the zone!');
+}
+// 3) Bank — memory match
+function mgMemory(){
+  const icons=['💰','🏦','📈','🪙','💎','🔑'];
+  const pick=shuffle(icons.slice()).slice(0,4);
+  MG={type:'bank',deck:shuffle(pick.concat(pick)),flipped:[],matched:[],moves:0,lock:false};
+  mgMemoryRender();
+}
+function mgMemoryRender(){
+  const b=document.getElementById('mg-body');
+  let s='<div style="text-align:center;font-weight:700;margin-bottom:10px;">Match all 4 pairs — fewer flips = more stars!</div>';
+  s+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:300px;margin:0 auto;">';
+  MG.deck.forEach(function(ic,i){ const shown=MG.flipped.indexOf(i)>=0||MG.matched.indexOf(i)>=0; s+='<button class="mg-card'+(shown?' flip':'')+(MG.matched.indexOf(i)>=0?' done':'')+'" onclick="mgMemoryFlip('+i+')">'+(shown?ic:'❓')+'</button>'; });
+  b.innerHTML=s+'</div><div style="text-align:center;color:#7A6A4F;font-size:.8rem;margin-top:10px;">Flips: '+MG.moves+'</div>';
+}
+function mgMemoryFlip(i){
+  if(MG.lock||MG.flipped.indexOf(i)>=0||MG.matched.indexOf(i)>=0)return;
+  MG.flipped.push(i); sfx('click');
+  if(MG.flipped.length===2){
+    MG.moves++; MG.lock=true; const a=MG.flipped[0],c=MG.flipped[1];
+    if(MG.deck[a]===MG.deck[c]){
+      MG.matched.push(a,c); MG.flipped=[]; MG.lock=false; sfx('good'); mgMemoryRender();
+      if(MG.matched.length===MG.deck.length){ const amount=MG.moves<=5?300:MG.moves<=7?220:150; setTimeout(function(){mgResult('bank',amount,'Solved in '+MG.moves+' flips!');},450); }
+    } else { mgMemoryRender(); sfx('bad'); setTimeout(function(){MG.flipped=[];MG.lock=false;mgMemoryRender();},800); }
+  } else { mgMemoryRender(); }
 }
 function specialIndex(item){return PART_BASE[item.part]+specialsFor(item.part).indexOf(item);}
 function lockedOption(part,i){
@@ -3395,6 +3517,9 @@ function openLearn(){renderLearn();showScreen('learn');sfx('good');}
 function closeLearn(){renderTown();showScreen('town');sfx('click');}
 const SHOP_SPOT=[775,1050];
 const HOME_SPOT=[240,918];
+const BANK_SPOT=[1300,712];
+const HALL_SPOT=[900,400];
+let nearBank=false,nearHall=false;
 let nearHome=false;
 let storeFrom='title';
 function tTier(v){return v>=65?2:v>=40?1:0;}
@@ -3810,7 +3935,7 @@ function collides(nx,ny){
     if(nx>c.x-2&&nx<c.x+c.w+2&&ny>c.y-2&&ny<c.y+c.h+6)return true;}
   return false;}
 function overlaysOpen(){
-  return dlgOpen||['paper-overlay','event-overlay','reveal-overlay','history-overlay','survey-overlay'].some(function(id){const el=document.getElementById(id);return el&&el.classList.contains('open');});}
+  return dlgOpen||['paper-overlay','event-overlay','reveal-overlay','history-overlay','survey-overlay','minigame-overlay'].some(function(id){const el=document.getElementById(id);return el&&el.classList.contains('open');});}
 function townTick(){
   const active=document.getElementById('screen-town');
   if(!active||!active.classList.contains('active'))return;
@@ -3887,6 +4012,12 @@ function townTick(){
   nearShop=shopD2<85*85;
   nearHome=homeD2<85*85;
   nearSchool=schoolD2<85*85;
+  const kdx=BANK_SPOT[0]-player.x,kdy=BANK_SPOT[1]-player.y;const bankD2=kdx*kdx+kdy*kdy;
+  const wdx=HALL_SPOT[0]-player.x,wdy=HALL_SPOT[1]-player.y;const hallD2=wdx*wdx+wdy*wdy;
+  nearBank=bankD2<85*85;
+  nearHall=hallD2<85*85;
+  if(nearBank&&nearNPC>=0&&bankD2<best)nearNPC=-1;
+  if(nearHall&&nearNPC>=0&&hallD2<best)nearNPC=-1;
   if(nearShop&&nearNPC>=0&&shopD2<best)nearNPC=-1;
   if(nearHome&&nearNPC>=0&&homeD2<best)nearNPC=-1;
   if(nearSchool&&nearNPC>=0&&schoolD2<best)nearNPC=-1;
@@ -3898,6 +4029,8 @@ function townTick(){
     else if(nearShop&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent='SPACE · Shop';TC.pr.setAttribute('transform','translate('+SHOP_SPOT[0]+','+(SHOP_SPOT[1]-40)+')');}
     else if(nearHome&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent='SPACE · Home';TC.pr.setAttribute('transform','translate('+HOME_SPOT[0]+','+(HOME_SPOT[1]-40)+')');}
     else if(nearSchool&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent='SPACE · Learn';TC.pr.setAttribute('transform','translate('+SCHOOL_SPOT[0]+','+(SCHOOL_SPOT[1]-40)+')');}
+    else if(nearBank&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent='SPACE · Bank Game';TC.pr.setAttribute('transform','translate('+BANK_SPOT[0]+','+(BANK_SPOT[1]-40)+')');}
+    else if(nearHall&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent='SPACE · Quiz';TC.pr.setAttribute('transform','translate('+HALL_SPOT[0]+','+(HALL_SPOT[1]-40)+')');}
     else TC.pr.style.display='none';}
 }
 function ensureTownLoop(){
@@ -3910,7 +4043,7 @@ function initTownControls(){
     if(!town||!town.classList.contains('active'))return;
     if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].indexOf(e.code)>=0)e.preventDefault();
     if(e.code==='Escape'&&dlgOpen){closeDialog();return;}
-    if(e.code==='Space'){if(!dlgOpen&&nearNPC>=0)openDialog(nearNPC);else if(!dlgOpen&&nearShop&&!overlaysOpen())openStore('town');else if(!dlgOpen&&nearHome&&!overlaysOpen())openHome();else if(!dlgOpen&&nearSchool&&!overlaysOpen())openLearn();return;}
+    if(e.code==='Space'){if(!dlgOpen&&nearNPC>=0)openDialog(nearNPC);else if(!dlgOpen&&nearShop&&!overlaysOpen())openStore('town');else if(!dlgOpen&&nearHome&&!overlaysOpen())openHome();else if(!dlgOpen&&nearSchool&&!overlaysOpen())openLearn();else if(!dlgOpen&&nearBank&&!overlaysOpen())openMiniGame('bank');else if(!dlgOpen&&nearHall&&!overlaysOpen())openMiniGame('hall');return;}
     keysDown[e.code]=true;
   });
   document.addEventListener('keyup',function(e){keysDown[e.code]=false;});
@@ -4357,6 +4490,7 @@ function continueTerm(){
   S.qIdx=0;S.answers=[];S.locked=false;S.score=0;S.streak=0;S.maxStreak=0;S.bestCount=0;
   S.counts={cap:0,mix:0,soc:0,com:0};
   S.minStats={h:S.stats.h,e:S.stats.e,ed:S.stats.ed,f:S.stats.f};
+  S.mini={};
   shuffleMap=[];pendingNext=false;stateHistory=[];
   buildDots();updateScoreHUD();updateBackBtn();
   renderTown();showScreen('town');sfx('good');

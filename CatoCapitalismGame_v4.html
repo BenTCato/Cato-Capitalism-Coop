@@ -2975,17 +2975,26 @@ function openMiniGame(type){
   const ov=document.getElementById('minigame-overlay'); if(!ov)return;
   const bar=document.getElementById('mg-bar'); if(bar)bar.textContent=MINI_LABEL[type]||'🕹️ Mini-Game';
   ov.classList.add('open'); sfx('click');
+  if(miniDone(type)){
+    const b=document.getElementById('mg-body');
+    b.innerHTML='<div style="text-align:center;"><div style="font-size:2.3rem;">🔒</div><div style="font-weight:800;font-size:1.05rem;margin:8px 0;">You already played here this term.</div><div style="color:#7A6A4F;margin-bottom:16px;">Come back next term to play again!</div><button class="btn btn-gold" onclick="closeMiniGame()">OK →</button></div>';
+    return;
+  }
   if(type==='hall')mgQuiz();
   else if(type==='market')mgReflex();
   else if(type==='bank')mgMemory();
 }
 function closeMiniGame(){ const ov=document.getElementById('minigame-overlay'); if(ov)ov.classList.remove('open'); if(MG&&MG.raf)cancelAnimationFrame(MG.raf); MG={}; sfx('click'); }
 function mgResult(type,amount,msg){
-  const note=awardMiniStars(type,amount);
+  // one play-through per term: completing an attempt uses this building's turn
+  S.mini=S.mini||{}; S.mini[type]=true;
+  let note='';
+  if(amount>0&&P){ P.stars=(P.stars||0)+amount; saveProfiles(); if(typeof updateBankUI==='function')updateBankUI(); note='⭐ +'+amount.toLocaleString()+' stars banked!'; }
+  else { note='No stars this time — come back next term!'; }
   const b=document.getElementById('mg-body');
   b.innerHTML='<div style="text-align:center;"><div style="font-size:2.4rem;">'+(amount>0?'🎉':'🙂')+'</div>'+
     '<div style="font-weight:800;font-size:1.1rem;margin:6px 0;">'+msg+'</div>'+
-    '<div style="color:#2EB872;font-weight:800;margin-bottom:14px;min-height:18px;">'+note+'</div>'+
+    '<div style="color:'+(amount>0?'#2EB872':'#7A6A4F')+';font-weight:800;margin-bottom:14px;min-height:18px;">'+note+'</div>'+
     '<button class="btn btn-gold" onclick="closeMiniGame()">Done →</button></div>';
 }
 // 1) Town Hall — quiz
@@ -3024,7 +3033,7 @@ function mgReflex(){
 function mgReflexStop(){
   if(MG.stopped)return; MG.stopped=true; if(MG.raf)cancelAnimationFrame(MG.raf);
   const d=Math.abs(MG.pos-50);
-  if(d>20){ const b=document.getElementById('mg-body'); b.innerHTML='<div style="text-align:center;"><div style="font-size:2.2rem;">😅</div><div style="font-weight:800;margin:8px 0;">Missed the zone!</div><button class="btn btn-gold" onclick="mgReflex()">Try Again</button> <button class="btn-dice" style="margin-left:6px;" onclick="closeMiniGame()">Leave</button></div>'; sfx('bad'); return; }
+  if(d>20){ sfx('bad'); mgResult('market',0,'Missed the green zone!'); return; }
   let amount=d<=3?300:d<=12?200:100;
   sfx('win'); mgResult('market',amount,d<=3?'Bullseye! Perfect timing.':'Nice — you hit the zone!');
 }

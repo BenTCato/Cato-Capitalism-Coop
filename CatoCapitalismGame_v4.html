@@ -833,7 +833,7 @@
       <button class="btn btn-gold" id="buy-box-btn" onclick="buyBox()">Open Box. 2,500 ⭐</button>
     </div>
     <div class="store-note" id="store-note"></div>
-    <button class="btn btn-navy" style="margin-top:10px;" onclick="openMiniGame('market')">🕹️ Play the Market Arcade</button>
+    <button class="btn btn-navy" id="arcade-btn" style="margin-top:10px;" onclick="openMiniGame('market')">🕹️ Play the Market Arcade</button>
   </div>
   <div class="panel">
     <h3>📦 This Leader's Collection <span id="store-progress" style="float:right;color:var(--goldDark);">0/16</span></h3>
@@ -848,24 +848,7 @@
 </div>
 
 <!-- ══ GAME-OVER SCREEN ══ -->
-<div id="screen-over" class="screen">
-  <div class="end-hero lose">
-    <span class="e-emoji">⚠️</span>
-    <h1 class="lose">Society in Crisis</h1>
-    <p id="over-text"></p>
-  </div>
-  <div class="panel city-panel" id="city-panel-over"></div>
-  <div class="panel" style="text-align:center;">
-    <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);font-weight:800;margin-bottom:4px;">The Government You Ran</div>
-    <div class="ideo-pill" id="over-ideo-pill">, </div>
-    <p class="over-ideo-desc" id="over-ideo-desc"></p>
-  </div>
-  <div class="panel" id="over-hist"></div>
-  <div class="panel" style="text-align:center;" id="bank-panel-over"></div>
-  <div class="panel"><h3>🏅 Achievements Earned</h3><div class="ach-grid" id="ach-grid-over"></div></div>
-  <div id="over-review"></div>
-  <div class="next-wrap" style="margin-top:10px"><button class="btn btn-gold" onclick="restartGame()">Try Again</button></div>
-</div>
+<!-- (Old game-over screen removed — open-world mode never triggers it.) -->
 
 <!-- ══ RESULTS SCREEN ══ -->
 <div id="screen-results" class="screen">
@@ -2617,91 +2600,7 @@ function showFeedback(c,q){
 // ─────────────────────────────────────────────────────────────
 // GAME OVER
 // ─────────────────────────────────────────────────────────────
-const STAT_NAMES={h:'Citizen Happiness',e:'Economic Health',ed:'Education Quality',f:'Individual Freedom'};
-
-function govType(){
-  const t=S.answers.length||1;const p={};Object.keys(S.counts).forEach(k=>p[k]=S.counts[k]/t);
-  if(p.com>=0.4)return{key:'com',label:'\u{1F7E3} Authoritarian',desc:'You governed by command, concentrating power in the state and overriding individual choice. History’s authoritarian states promised order and delivered collapse.'};
-  if(p.soc>=0.5)return{key:'soc',label:'\u{1F534} Socialist',desc:'You ran a government-led society: heavy regulation, redistribution, and state control of services. These systems consistently strain economies and liberties until something breaks.'};
-  if(p.cap>=0.6)return{key:'cap',label:'\u{1F7E1} Free-Market / Libertarian',desc:'You mostly chose markets and liberty, yet your nation still collapsed, usually a sign one foundation was neglected past the danger line. Even free societies need all four bars above 25%.'};
-  if(p.mix>=0.5)return{key:'mix',label:'\u{1F535} Mixed / Interventionist',desc:'You split the difference between markets and state control. Half-measures still add up: each intervention chipped away at one of your nation’s foundations.'};
-  const dom=Object.keys(S.counts).reduce((a,b)=>S.counts[a]>=S.counts[b]?a:b);
-  const m={cap:['\u{1F7E1} Leaning Free-Market','Your choices leaned toward markets and liberty, but inconsistently, and the gaps proved fatal.'],
-           mix:['\u{1F535} Leaning Interventionist','You mostly mixed markets with state control, and the interventions piled up.'],
-           soc:['\u{1F534} Leaning Socialist','You leaned on government-led solutions, and their hidden costs accumulated.'],
-           com:['\u{1F7E3} Leaning Authoritarian','You leaned toward state power over individual rights, a road history knows well.']};
-  return{key:dom,label:m[dom][0],desc:m[dom][1]};
-}
-
-const HIST_PARALLELS={
-  e:{
-    soc:{flag:'\u{1F1FB}\u{1F1EA}',name:'Venezuela',years:'1999 – today',
-      what:'Once the richest country in South America, Venezuela nationalized industries and imposed sweeping price controls. Its economy shrank by roughly 75%, inflation passed 1,000,000% in 2018, and more than 7 million people fled the country.',
-      share:'Your economy was regulated and spent into collapse the same way, shortages followed the good intentions.'},
-    com:{flag:'☭',name:'The Soviet Union',years:'1922 – 1991',
-      what:'Central planners set every price and production quota. The result was chronic shortages, bread lines, and decades of stagnation, until the entire system collapsed in 1991.',
-      share:'Your economy, like theirs, was directed from the top until it simply stopped producing.'},
-    def:{flag:'\u{1F1E6}\u{1F1F7}',name:'Argentina',years:'1946 – today',
-      what:'In the early 1900s Argentina ranked among the ten richest countries on Earth. Decades of heavy spending, protectionism, and money-printing later, it has defaulted on its national debt nine times and repeatedly suffered inflation over 100%.',
-      share:'Prosperity isn’t permanent, like Argentina, your nation spent and controlled its way out of wealth.'}
-  },
-  f:{
-    com:{flag:'\u{1F1E9}\u{1F1EA}',name:'East Germany',years:'1949 – 1990',
-      what:'The Stasi secret police kept files on millions of citizens through a vast network of informants, and the Berlin Wall was built to keep people in, at least 140 died trying to cross it. In 1989 the Wall, and then the state, fell.',
-      share:'When freedom fell below the danger line, your nation walked the same road: control first, collapse later.'},
-    soc:{flag:'\u{1F1E8}\u{1F1FA}',name:'Cuba',years:'1959 – today',
-      what:'After the revolution, independent newspapers were shut and dissent criminalized. Well over a million Cubans have fled. 125,000 in the Mariel boatlift alone, in just six months of 1980.',
-      share:'Your citizens, like Cuba’s, lost the freedom to speak, trade, and leave, and those who could leave, did.'},
-    def:{flag:'\u{1F3DB}️',name:'The Roman Republic',years:'509 – 27 BC',
-      what:'Rome’s republic survived nearly 500 years, until "temporary" emergency powers became permanent ones. Citizens traded liberty for promises of security and grain, and got an emperor instead.',
-      share:'Every freedom your nation surrendered "just for now" followed Rome’s pattern: power granted is rarely returned.'}
-  },
-  h:{
-    soc:{flag:'\u{1F1F7}\u{1F1F4}',name:'Romania under Ceaușescu',years:'1965 – 1989',
-      what:'To pay state debts, the regime rationed food, fuel, and even heat, television ran two hours a day. In December 1989, crowds gathered for a staged rally turned on the dictator instead.',
-      share:'Your citizens’ happiness collapsed the same way: daily life kept getting harder while the state insisted everything was fine.'},
-    com:{flag:'\u{1F1F0}\u{1F1F5}',name:'North Korea',years:'1990s famine',
-      what:'When collectivized farming and the planned economy failed, famine killed hundreds of thousands of people in the late 1990s. The state named it "The Arduous March", and changed nothing.',
-      share:'A government that controls everything owns every failure. Your unhappy citizens knew exactly who to blame.'},
-    def:{flag:'\u{1F1EC}\u{1F1F7}',name:'Greece',years:'2008 – 2018',
-      what:'Years of unsustainable government spending ended in a debt crisis: the economy shrank by a quarter, unemployment hit 27%, and youth unemployment passed 55%.',
-      share:'Like Greece, your nation promised more than it produced, and its people paid the bill in lost jobs and lost hope.'}
-  },
-  ed:{
-    com:{flag:'\u{1F1E8}\u{1F1F3}',name:'China’s Cultural Revolution',years:'1966 – 1976',
-      what:'Universities closed, teachers were persecuted, and a decade of students, the "lost generation", never finished school. China only began recovering after restoring exams in 1977 and freeing parts of its economy.',
-      share:'Your schools, like China’s, became casualties of politics placed above learning.'},
-    soc:{flag:'\u{1F1FB}\u{1F1EA}',name:'Venezuela’s school collapse',years:'2014 – today',
-      what:'As the state-run economy failed, teachers’ pay fell to a few dollars a month and an estimated million-plus children dropped out of school or emigrated with their families.',
-      share:'Education collapsed in your nation for the same reason: when the system fails, schools fail with it.'},
-    def:{flag:'\u{1F52C}',name:'Soviet Lysenkoism',years:'1930s – 1960s',
-      what:'The USSR declared genetics "bourgeois pseudoscience" and made Trofim Lysenko’s politically approved biology the official truth. Crop failures followed, dissenting scientists were jailed, and Soviet science was set back decades.',
-      share:'When education dropped below the danger line, truth in your nation answered to politics, same experiment, same result.'}
-  }
-};
-
-function renderGameOver(key){
-  document.getElementById('over-text').textContent=`${nationName}'s ${STAT_NAMES[key]} collapsed to ${S.stats[key]}%, below the danger threshold of ${THRESHOLD}%. Citizens are in crisis. Policy choices have real, lasting consequences.`;
-  const gov=govType();
-  document.getElementById('over-ideo-pill').textContent=gov.label;
-  document.getElementById('over-ideo-desc').textContent=gov.desc;
-  const variant=gov.key==='soc'?'soc':gov.key==='com'?'com':'def';
-  const group=HIST_PARALLELS[key]||HIST_PARALLELS.e;
-  const p=group[variant]||group.def;
-  document.getElementById('over-hist').innerHTML=
-    '<h3>\u{1F4DC} History Has Seen This Before</h3>'+
-    '<div class="hist-card">'+
-      '<div class="hist-head"><span class="hist-flag">'+p.flag+'</span>'+
-        '<div><div class="hist-name">'+p.name+'</div><div class="hist-years">'+p.years+'</div></div></div>'+
-      '<p class="hist-what">'+p.what+'</p>'+
-      '<div class="hist-share">⚠️ '+p.share+'</div>'+
-    '</div>';
-  const rev=document.getElementById('over-review');rev.innerHTML='';renderReview(rev);
-  renderCity('ruined','city-panel-over');
-  renderAchievements('ach-grid-over');
-  const salvaged=Math.floor(S.score/2);bankStars(salvaged,false);renderBankPanel('bank-panel-over',salvaged,false);maybeAskFeedback();
-  sfx('lose');
-}
+// (Old game-over/loss screen removed — open-world mode never triggers it.)
 
 function checkOver(){
   // Open-world mode: never show the game-over screen. Players stay in the town
@@ -2964,13 +2863,6 @@ const QUIZ_QS=[
 ];
 let MG={};
 function miniDone(type){return !!(S&&S.mini&&S.mini[type]);}
-function awardMiniStars(type,amount){
-  if(!P)return '';
-  S.mini=S.mini||{};
-  if(miniDone(type)){ return 'You already earned stars here this term — come back next term!'; }
-  if(amount>0){ S.mini[type]=true; P.stars=(P.stars||0)+amount; saveProfiles(); if(typeof updateBankUI==='function')updateBankUI(); return '⭐ +'+amount.toLocaleString()+' stars banked!'; }
-  return '';
-}
 function openMiniGame(type){
   const ov=document.getElementById('minigame-overlay'); if(!ov)return;
   const bar=document.getElementById('mg-bar'); if(bar)bar.textContent=MINI_LABEL[type]||'🕹️ Mini-Game';
@@ -2980,6 +2872,7 @@ function openMiniGame(type){
     b.innerHTML='<div style="text-align:center;"><div style="font-size:2.3rem;">🔒</div><div style="font-weight:800;font-size:1.05rem;margin:8px 0;">You already played here this term.</div><div style="color:#7A6A4F;margin-bottom:16px;">Come back next term to play again!</div><button class="btn btn-gold" onclick="closeMiniGame()">OK →</button></div>';
     return;
   }
+  S.mini=S.mini||{}; S.mini[type]=true; // one play per term: entering uses this building's turn
   if(type==='hall')mgQuiz();
   else if(type==='market')mgReflex();
   else if(type==='bank')mgMemory();
@@ -3364,6 +3257,7 @@ function openStore(from){storeFrom=(from==='town')?'town':'title';renderStore();
 function storeBack(){if(storeFrom==='town'&&S&&S.stats){renderTown();showScreen('town');}else{showScreen('title');}sfx('click');}
 function renderStore(){
   const bal=document.getElementById('store-balance');if(bal)bal.textContent=(P?(P.stars||0):0).toLocaleString();
+  const ab=document.getElementById('arcade-btn'); if(ab){ const md=miniDone('market'); ab.disabled=md; ab.textContent=md?'🕹️ Arcade played — back next term':'🕹️ Play the Market Arcade'; }
   const prog=document.getElementById('store-progress');if(prog)prog.textContent=(P?P.owned.length:0)+'/'+STORE_ITEMS.length;
   const all=P&&P.owned.length>=STORE_ITEMS.length;
   const btn=document.getElementById('buy-box-btn');
@@ -4038,8 +3932,8 @@ function townTick(){
     else if(nearShop&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent='SPACE · Shop';TC.pr.setAttribute('transform','translate('+SHOP_SPOT[0]+','+(SHOP_SPOT[1]-40)+')');}
     else if(nearHome&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent='SPACE · Home';TC.pr.setAttribute('transform','translate('+HOME_SPOT[0]+','+(HOME_SPOT[1]-40)+')');}
     else if(nearSchool&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent='SPACE · Learn';TC.pr.setAttribute('transform','translate('+SCHOOL_SPOT[0]+','+(SCHOOL_SPOT[1]-40)+')');}
-    else if(nearBank&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent='SPACE · Bank Game';TC.pr.setAttribute('transform','translate('+BANK_SPOT[0]+','+(BANK_SPOT[1]-40)+')');}
-    else if(nearHall&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent='SPACE · Quiz';TC.pr.setAttribute('transform','translate('+HALL_SPOT[0]+','+(HALL_SPOT[1]-40)+')');}
+    else if(nearBank&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent=miniDone('bank')?'✓ Played · next term':'SPACE · Bank Game';TC.pr.setAttribute('transform','translate('+BANK_SPOT[0]+','+(BANK_SPOT[1]-40)+')');}
+    else if(nearHall&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent=miniDone('hall')?'✓ Played · next term':'SPACE · Quiz';TC.pr.setAttribute('transform','translate('+HALL_SPOT[0]+','+(HALL_SPOT[1]-40)+')');}
     else TC.pr.style.display='none';}
 }
 function ensureTownLoop(){

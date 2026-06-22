@@ -794,7 +794,7 @@
     </div>
     <div class="data-chart" id="data-chart"></div>
     <div class="fb-body" id="fb-text"></div>
-    <div class="learn-more">
+    <div class="learn-more" id="fb-learnmore">
       <div class="lm-head">📚 Learn More at Cato.org</div>
       <div class="lm-links" id="lm-links"></div>
     </div>
@@ -2616,6 +2616,7 @@ function showFeedback(c,q){
   document.getElementById('fb-text').textContent=c.feedback;
   const lmLinks=document.getElementById('lm-links');lmLinks.innerHTML='';
   (q.links||[]).forEach(lk=>{const a=document.createElement('a');a.href=lk.url;a.target='_blank';a.rel='noopener noreferrer';a.className='lm-link';a.textContent=lk.text+' ↗';lmLinks.appendChild(a);});
+  const lmBox=document.getElementById('fb-learnmore');if(lmBox)lmBox.style.display=(q.links&&q.links.length)?'':'none';
   document.getElementById('feedback').classList.add('show');
 }
 
@@ -6515,9 +6516,22 @@ const CATO_QUOTES=[
  {m:function(q){return q.npc===8 && /criticiz|criticism|official|speaker|recite|affirmation|online post|approve online|posts before/i.test(q.body);},fig:Q_hall},
  {m:function(q){return q.npc===9 && /sole provider|only place for care|single .*provider|government .*provider/i.test(q.body);},fig:Q_fr_sahara}
 ];
+/* Source article for each chart → shown as a "Learn More at Cato.org" link under charted questions */
+const CHART_LINKS={
+ "GDP per Person: Freest vs. Least-Free Economies (US$)":{text:"Cato: Global Economic Freedom Rises",url:"https://www.cato.org/policy-report/november/december-2016/global-economic-freedom-rises"},
+ "Life Expectancy: Freest vs. Least-Free Economies":{text:"Cato: Global Economic Freedom Rises",url:"https://www.cato.org/policy-report/november/december-2016/global-economic-freedom-rises"},
+ "2018 U.S. Steel Tariffs (per year, US$ billions)":{text:"Cato: Steeled for Protectionism",url:"https://www.cato.org/policy-analysis/steeled-protectionism"},
+ "Share of U.S. Income Taxes Paid by the Top 10% of Earners":{text:"Cato: Good Luck and High Taxes",url:"https://www.cato.org/commentary/good-luck-high-taxes"},
+ "High-School Graduation: Voucher vs. Public School":{text:"Cato Handbook: School Choice",url:"https://www.cato.org/cato-handbook-policymakers/cato-handbook-policymakers-9th-edition-2022/school-choice"},
+ "Share of U.S. Jobs Requiring a Government License":{text:"Cato: Do We Really Need to License Your Lawncare Guy?",url:"https://www.cato.org/commentary/do-we-really-need-license-lawncare-guy"},
+ "$15 Federal Minimum Wage — CBO Estimate (millions of jobs)":{text:"Cato: The Case against a $15 Federal Minimum Wage",url:"https://www.cato.org/commentary/case-against-15-federal-minimum-wage-qa"},
+ "San Francisco Rent Control: Measured Effects":{text:"Cato: Housing Affordability",url:"https://www.cato.org/publications/housing-affordability"},
+ "How Much Zoning Raises Apartment Costs":{text:"Cato: Housing Markets First",url:"https://www.cato.org/briefing-paper/housing-markets-first-housing-supply-affordability-are-key-reducing-homelessness"}
+};
 (function(){
   function apply(arr){ if(!arr)return; arr.forEach(function(q){
     if(!q.chart){ for(var i=0;i<CATO_CHARTS.length;i++){ if(CATO_CHARTS[i].match(q)){ q.chart=CATO_CHARTS[i].chart; break; } } }
+    if(q.chart && (!q.links||!q.links.length) && CHART_LINKS[q.chart.title]){ q.links=[CHART_LINKS[q.chart.title]]; }
     if(!q.figure){ for(var j=0;j<CATO_QUOTES.length;j++){ if(CATO_QUOTES[j].m(q)){ q.figure=CATO_QUOTES[j].fig; break; } } }
   }); }
   try{ [6,7,8,9,10,11,12].forEach(function(g){apply(QG[g]);}); ['A','B','C'].forEach(function(b){apply(QGB[b]);}); }catch(e){}

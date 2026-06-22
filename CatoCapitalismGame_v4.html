@@ -6420,6 +6420,33 @@ MQ(7,'Banking & Saving','🏦',"Officials propose capping how much depositors ma
 MQ(8,'Free Speech & Civil Liberties','🗽',"Some propose mandating official pre-approval of online posts. How do you respond?",["Permit people to post without prior approval",{h:3,e:1,ed:2,f:9},"Free people express themselves without seeking permission."],["Permit posts but pre-screen a subset",{h:1,e:0,ed:0,f:-4},"Pre-screening chills expression."],["Require approval before posting",{h:-3,e:-2,ed:-2,f:-12},"Prior restraint is censorship."],["Authorize only sanctioned messages online",{h:-6,e:-3,ed:-3,f:-15},"A sanctioned-only feed negates free expression."],"Free people express themselves without prior permission."),
 MQ(9,'Health Care','🏥',"A charity clinic provides low-cost care; the board moves to close it. How do you respond?",["Permit the clinic to continue serving patients",{h:4,e:3,ed:0,f:6},"A wider array of providers best serves patients."],["Permit it under onerous regulation",{h:2,e:-1,ed:0,f:-2},"Onerous regulation can shutter beneficial clinics."],["Restrict the clinic to protect hospitals",{h:-2,e:-6,ed:0,f:-6},"Protecting hospitals over patients inverts the priority."],["Close the charity clinic",{h:-5,e:-10,ed:0,f:-11},"Closing care harms those who depend on it."],"A wider array of providers best serves patients.")
 );
+/* ── Cato-sourced data charts (figures stated directly in Cato Institute articles) ──
+   Auto-attached to matching grade-leveled questions; shown in the feedback panel after answering. */
+const CATO_CHARTS=[
+ {match:function(q){return q.npc===0 && (/everything ourselves|self-suffic|autarky|produce everything/i.test(q.body));},
+  chart:{title:"GDP per Person: Freest vs. Least-Free Economies (US$)",unit:"",source:"Cato / Economic Freedom of the World (2014)",rows:[
+    {label:"Most-free economies",value:41228,pct:100,color:"#30d158"},
+    {label:"Least-free economies",value:5471,pct:13,color:"#ff453a"}]}},
+ {match:function(q){return q.npc===0 && /tariff/i.test(q.body);},
+  chart:{title:"2018 U.S. Steel Tariffs (per year, US$ billions)",unit:"B",source:"Cato, “Steeled for Protectionism”",rows:[
+    {label:"Cost to steel buyers",value:6,pct:100,color:"#ff453a"},
+    {label:"Gain to steel industry",value:2.4,pct:40,color:"#ffd60a"}]}},
+ {match:function(q){return q.npc===5 && (/minimum wage|lowest wage/i.test(q.body));},
+  chart:{title:"$15 Federal Minimum Wage — CBO Estimate (millions of jobs)",unit:"M",source:"Cato, citing CBO (2021)",rows:[
+    {label:"Workers given a raise",value:27,pct:100,color:"#4ade80"},
+    {label:"Jobs eliminated",value:1.4,pct:6,color:"#ff453a"}]}},
+ {match:function(q){return q.npc===6 && /rent/i.test(q.body);},
+  chart:{title:"San Francisco Rent Control: Measured Effects",unit:"%",source:"Cato; Diamond, McQuade & Qian (2018)",rows:[
+    {label:"Rental housing supply",value:-15,pct:75,color:"#ff453a"},
+    {label:"Citywide rents",value:5,pct:25,color:"#ff9f0a"}]}},
+ {match:function(q){return q.npc===6 && /zoning|new homes|building new/i.test(q.body);},
+  chart:{title:"How Much Zoning Raises Apartment Costs",unit:"%",source:"Cato; Manhattan, S.F. & San Jose studies",rows:[
+    {label:"Added apartment cost",value:50,pct:100,color:"#ff453a"}]}}
+];
+(function(){
+  function apply(arr){ if(!arr)return; arr.forEach(function(q){ if(q.chart)return; for(var i=0;i<CATO_CHARTS.length;i++){ if(CATO_CHARTS[i].match(q)){ q.chart=CATO_CHARTS[i].chart; break; } } }); }
+  try{ [6,7,8,9,10,11,12].forEach(function(g){apply(QG[g]);}); ['A','B','C'].forEach(function(b){apply(QGB[b]);}); }catch(e){}
+})();
 function continueTerm(){
   if(P){
     var _lg=computeGrade().letter;

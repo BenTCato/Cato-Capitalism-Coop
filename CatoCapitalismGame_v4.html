@@ -783,7 +783,7 @@
   <div class="feedback" id="feedback">
     <h4 id="fb-title"></h4>
     <div class="badges" id="fb-badges"></div>
-    <div class="fig-quote">
+    <div class="fig-quote" id="fb-figure">
       <div class="fig-avatar" id="fig-avatar">AS</div>
       <div class="fig-meta">
         <div class="fig-name" id="fig-name">Adam Smith</div>
@@ -2603,12 +2603,14 @@ function showFeedback(c,q){
   document.getElementById('fb-title').textContent=TYPE_LABELS[c.type]||'Result';
   const badges=document.getElementById('fb-badges');badges.innerHTML='';
   [{key:'h',label:'😊 Happiness'},{key:'e',label:'💰 Economy'},{key:'ed',label:'📚 Education'},{key:'f',label:'🗽 Freedom'}].forEach(({key,label})=>{const v=c.fx[key];if(v!==0){const b=document.createElement('span');b.className='badge '+(v>0?'up':'down');b.textContent=label+' '+(v>0?'+':'')+v;badges.appendChild(b);}});
-  const f=c.figure;
+  const f=c.figure||q.figure;
+  const figBox=document.getElementById('fb-figure');
   if(f){
     document.getElementById('fig-avatar').textContent=f.initials;document.getElementById('fig-name').textContent=f.name;
     document.getElementById('fig-years').textContent=f.years+' · '+f.title;document.getElementById('fig-text').textContent='"'+f.quote+'"';
     document.getElementById('fig-src').textContent=', '+f.source;
-  }
+    if(figBox)figBox.style.display='';
+  } else if(figBox){ figBox.style.display='none'; }
   // Render data chart for this question
   renderChart(S.qIdx);
   document.getElementById('fb-text').textContent=c.feedback;
@@ -4032,7 +4034,8 @@ function dlgPick(letter){
   const dx=document.querySelector('#dlg .dlg-x');if(dx)dx.style.display='none';
   const chart=document.getElementById('data-chart').innerHTML;
   const fb=document.getElementById('dlg-feedback');
-  const figHtml=c.figure?('<div class="fig-quote"><div class="fig-avatar">'+c.figure.initials+'</div><div class="fig-meta"><div class="fig-name">'+c.figure.name+'</div><div class="fig-years">'+c.figure.years+' · '+c.figure.title+'</div><div class="fig-text">“'+c.figure.quote+'”</div><cite class="fig-src">, '+c.figure.source+'</cite></div></div>'):'';
+  const fg=c.figure||q.figure;
+  const figHtml=fg?('<div class="fig-quote"><div class="fig-avatar">'+fg.initials+'</div><div class="fig-meta"><div class="fig-name">'+fg.name+'</div><div class="fig-years">'+fg.years+' · '+fg.title+'</div><div class="fig-text">“'+fg.quote+'”</div><cite class="fig-src">, '+fg.source+'</cite></div></div>'):'';
   const lm=document.getElementById('lm-links').innerHTML;
   const lmHtml=lm?('<div class="learn-more"><div class="lm-head">📚 Learn More at Cato.org</div><div class="lm-links">'+lm+'</div></div>'):'';
   fb.innerHTML='<div class="badges">'+document.getElementById('fb-badges').innerHTML+'</div>'+
@@ -6431,6 +6434,20 @@ const CATO_CHARTS=[
   chart:{title:"2018 U.S. Steel Tariffs (per year, US$ billions)",unit:"B",source:"Cato, “Steeled for Protectionism”",rows:[
     {label:"Cost to steel buyers",value:6,pct:100,color:"#ff453a"},
     {label:"Gain to steel industry",value:2.4,pct:40,color:"#ffd60a"}]}},
+ {match:function(q){return q.npc===1 && /progressive|wealth tax|higher tax rates|steeply|top earner/i.test(q.body);},
+  chart:{title:"Share of U.S. Income Taxes Paid by the Top 10% of Earners",unit:"%",source:"Cato, “Good Luck and High Taxes”",rows:[
+    {label:"1986",value:54.7,pct:78,color:"#4ade80"},
+    {label:"Recent",value:69.8,pct:100,color:"#30d158"}]}},
+ {match:function(q){return q.npc===2 && /voucher|charter|education savings|savings account|private school/i.test(q.body);},
+  chart:{title:"High-School Graduation: Voucher vs. Public School",unit:"%",source:"Cato; Wolf et al. 2013, Cowen et al. 2013",rows:[
+    {label:"City A — Vouchers",value:82,pct:100,color:"#30d158"},
+    {label:"City A — Public",value:70,pct:85,color:"#ff453a"},
+    {label:"City B — Vouchers",value:77,pct:94,color:"#4ade80"},
+    {label:"City B — Public",value:74,pct:90,color:"#ff9f0a"}]}},
+ {match:function(q){return q.npc===4 && /red tape|forms and permits|licen|braid|mover|moving|food.?cart/i.test(q.body);},
+  chart:{title:"Share of U.S. Jobs Requiring a Government License",unit:"%",source:"Cato, “Do We Really Need to License Your Lawncare Guy”",rows:[
+    {label:"1950s",value:5,pct:23,color:"#4ade80"},
+    {label:"2021",value:22,pct:100,color:"#ff453a"}]}},
  {match:function(q){return q.npc===5 && (/minimum wage|lowest wage/i.test(q.body));},
   chart:{title:"$15 Federal Minimum Wage — CBO Estimate (millions of jobs)",unit:"M",source:"Cato, citing CBO (2021)",rows:[
     {label:"Workers given a raise",value:27,pct:100,color:"#4ade80"},
@@ -6441,10 +6458,68 @@ const CATO_CHARTS=[
     {label:"Citywide rents",value:5,pct:25,color:"#ff9f0a"}]}},
  {match:function(q){return q.npc===6 && /zoning|new homes|building new/i.test(q.body);},
   chart:{title:"How Much Zoning Raises Apartment Costs",unit:"%",source:"Cato; Manhattan, S.F. & San Jose studies",rows:[
-    {label:"Added apartment cost",value:50,pct:100,color:"#ff453a"}]}}
+    {label:"Added apartment cost",value:50,pct:100,color:"#ff453a"}]}},
+ {match:function(q){return q.npc===9 && /sole provider|only place for care|single .*provider|government .*provider/i.test(q.body);},
+  chart:{title:"Life Expectancy: Freest vs. Least-Free Economies",unit:" yrs",source:"Cato / Economic Freedom of the World",rows:[
+    {label:"Most-free economies",value:80,pct:100,color:"#30d158"},
+    {label:"Least-free economies",value:64,pct:80,color:"#ff453a"}]}}
+];
+/* ── Quote cards: real, attributed quotations, shown with the chosen answer's feedback ── */
+const Q_smith_inv={name:"Adam Smith",initials:"AS",years:"1723–1790",title:"Philosopher & Economist",quote:"By pursuing his own interest he frequently promotes that of the society more effectually than when he really intends to promote it.",source:"The Wealth of Nations, 1776"};
+const Q_george={name:"Henry George",initials:"HG",years:"1839–1897",title:"Political Economist",quote:"What protection teaches us, is to do to ourselves in time of peace what enemies seek to do to us in time of war.",source:"Protection or Free Trade, 1886"};
+const Q_marshall={name:"John Marshall",initials:"JM",years:"1755–1835",title:"U.S. Chief Justice",quote:"The power to tax involves the power to destroy.",source:"McCulloch v. Maryland, 1819"};
+const Q_bastiat={name:"Frédéric Bastiat",initials:"FB",years:"1801–1850",title:"Economist",quote:"Government is the great fiction through which everybody endeavors to live at the expense of everybody else.",source:"“Government,” 1848"};
+const Q_fr_spend={name:"Milton Friedman",initials:"MF",years:"1912–2006",title:"Nobel Economist",quote:"Nobody spends somebody else's money as carefully as he spends his own.",source:"Free to Choose, 1980"};
+const Q_fr_temp={name:"Milton Friedman",initials:"MF",years:"1912–2006",title:"Nobel Economist",quote:"Nothing is so permanent as a temporary government program.",source:"Milton Friedman"};
+const Q_fr_free={name:"Milton Friedman",initials:"MF",years:"1912–2006",title:"Nobel Economist",quote:"Underlying most arguments against the free market is a lack of belief in freedom itself.",source:"Capitalism and Freedom, 1962"};
+const Q_fr_infl={name:"Milton Friedman",initials:"MF",years:"1912–2006",title:"Nobel Economist",quote:"Inflation is always and everywhere a monetary phenomenon.",source:"The Counter-Revolution in Monetary Theory, 1970"};
+const Q_fr_infltax={name:"Milton Friedman",initials:"MF",years:"1912–2006",title:"Nobel Economist",quote:"Inflation is the one form of taxation that can be imposed without legislation.",source:"Milton Friedman"};
+const Q_fr_sahara={name:"Milton Friedman",initials:"MF",years:"1912–2006",title:"Nobel Economist",quote:"If you put the federal government in charge of the Sahara Desert, in five years there'd be a shortage of sand.",source:"Milton Friedman"};
+const Q_keynes={name:"John Maynard Keynes",initials:"JK",years:"1883–1946",title:"Economist",quote:"Lenin is said to have declared that the best way to destroy the capitalist system was to debauch the currency.",source:"The Economic Consequences of the Peace, 1919"};
+const Q_smith_trade={name:"Adam Smith",initials:"AS",years:"1723–1790",title:"Philosopher & Economist",quote:"People of the same trade seldom meet together, even for merriment and diversion, but the conversation ends in a conspiracy against the public, or in some contrivance to raise prices.",source:"The Wealth of Nations, 1776"};
+const Q_reagan={name:"Ronald Reagan",initials:"RR",years:"1911–2004",title:"U.S. President",quote:"The nine most terrifying words in the English language are: I'm from the government, and I'm here to help.",source:"News conference, 1986"};
+const Q_sowell={name:"Thomas Sowell",initials:"TS",years:"b. 1930",title:"Economist",quote:"Unfortunately, the real minimum wage is always zero.",source:"Basic Economics"};
+const Q_hazlitt={name:"Henry Hazlitt",initials:"HH",years:"1894–1993",title:"Economist & Journalist",quote:"The art of economics consists in looking not merely at the immediate but at the longer effects of any act or policy.",source:"Economics in One Lesson, 1946"};
+const Q_churchill={name:"Winston Churchill",initials:"WC",years:"1874–1965",title:"British Prime Minister",quote:"The inherent vice of capitalism is the unequal sharing of blessings; the inherent virtue of socialism is the equal sharing of miseries.",source:"Speech, 1945"};
+const Q_aristotle={name:"Aristotle",initials:"AR",years:"384–322 BC",title:"Philosopher",quote:"That which is common to the greatest number has the least care bestowed upon it.",source:"Politics, Book II"};
+const Q_locke={name:"John Locke",initials:"JL",years:"1632–1704",title:"Philosopher",quote:"The great and chief end of men's uniting into commonwealths is the preservation of their property.",source:"Second Treatise of Government, 1689"};
+const Q_penny={name:"Benjamin Franklin",initials:"BF",years:"1706–1790",title:"Founding Father",quote:"A penny saved is a penny earned.",source:"Benjamin Franklin"};
+const Q_borman={name:"Frank Borman",initials:"FB",years:"1928–2023",title:"Astronaut & Airline CEO",quote:"Capitalism without bankruptcy is like Christianity without hell.",source:"Attributed, 1986"};
+const Q_liberty={name:"Benjamin Franklin",initials:"BF",years:"1706–1790",title:"Founding Father",quote:"Those who would give up essential liberty, to purchase a little temporary safety, deserve neither liberty nor safety.",source:"1755"};
+const Q_hall={name:"Evelyn Beatrice Hall",initials:"EH",years:"1868–1956",title:"Writer, on Voltaire",quote:"I disapprove of what you say, but I will defend to the death your right to say it.",source:"The Friends of Voltaire, 1906"};
+const Q_douglass={name:"Frederick Douglass",initials:"FD",years:"1818–1895",title:"Abolitionist & Statesman",quote:"To suppress free speech is a double wrong. It violates the rights of the hearer as well as those of the speaker.",source:"A Plea for Freedom of Speech, 1860"};
+const Q_jefferson={name:"Thomas Jefferson",initials:"TJ",years:"1743–1826",title:"U.S. President",quote:"Were it left to me to decide whether we should have a government without newspapers, or newspapers without a government, I should not hesitate to prefer the latter.",source:"Letter to Edward Carrington, 1787"};
+const CATO_QUOTES=[
+ {m:function(q){return q.npc===0 && /everything ourselves|self-suffic|autarky|produce everything/i.test(q.body);},fig:Q_smith_inv},
+ {m:function(q){return q.npc===0 && /tariff/i.test(q.body);},fig:Q_george},
+ {m:function(q){return q.npc===1 && /progressive|wealth tax|higher tax rates|steeply|top earner|tax rates on (higher|top)/i.test(q.body);},fig:Q_marshall},
+ {m:function(q){return q.npc===1 && /subsidy|stadium|special tax money|favored/i.test(q.body);},fig:Q_bastiat},
+ {m:function(q){return q.npc===1 && /send everyone|distribute an equal|transfer|hand out all income|free cash|universal cash|welfare|withdraw from work|stop working/i.test(q.body);},fig:Q_fr_spend},
+ {m:function(q){return q.npc===1 && /borrow|deficit/i.test(q.body);},fig:Q_fr_temp},
+ {m:function(q){return q.npc===2 && /voucher|charter|education savings|savings account|private school/i.test(q.body);},fig:Q_fr_free},
+ {m:function(q){return q.npc===3 && /print/i.test(q.body);},fig:Q_keynes},
+ {m:function(q){return q.npc===3 && /debas|coins|currency.s value|fix the value|digital currency|abolishing cash|banning cash/i.test(q.body);},fig:Q_fr_infltax},
+ {m:function(q){return q.npc===3 && /inflation|freeze (a|all)|prices are (rising|climbing)|year-long freeze|price freeze/i.test(q.body);},fig:Q_fr_infl},
+ {m:function(q){return q.npc===4 && /red tape|forms and permits/i.test(q.body);},fig:Q_reagan},
+ {m:function(q){return q.npc===4 && /licen|braid|mover|moving|food.?cart/i.test(q.body);},fig:Q_smith_trade},
+ {m:function(q){return q.npc===5 && /minimum wage|lowest wage/i.test(q.body);},fig:Q_sowell},
+ {m:function(q){return q.npc===5 && /machine|automation|mechaniz/i.test(q.body);},fig:Q_hazlitt},
+ {m:function(q){return q.npc===5 && /government job|guarantee.*employment|employment guarantee/i.test(q.body);},fig:Q_churchill},
+ {m:function(q){return q.npc===6 && /lake|overfish|well|aquifer|\bwater\b/i.test(q.body);},fig:Q_aristotle},
+ {m:function(q){return q.npc===6 && /eminent domain|idle|sits empty|sits unused|public access|public passage|lies idle|seize/i.test(q.body);},fig:Q_locke},
+ {m:function(q){return q.npc===7 && /saving|interest people earn|withdraw|fee on money/i.test(q.body);},fig:Q_penny},
+ {m:function(q){return q.npc===7 && /bail|insolvent|rescue/i.test(q.body);},fig:Q_borman},
+ {m:function(q){return q.npc===8 && /\bbook\b/i.test(q.body);},fig:Q_douglass},
+ {m:function(q){return q.npc===8 && /newspaper|publish|press/i.test(q.body);},fig:Q_jefferson},
+ {m:function(q){return q.npc===8 && /march|protest|assemble|permit before/i.test(q.body);},fig:Q_liberty},
+ {m:function(q){return q.npc===8 && /criticiz|criticism|official|speaker|recite|affirmation|online post|approve online|posts before/i.test(q.body);},fig:Q_hall},
+ {m:function(q){return q.npc===9 && /sole provider|only place for care|single .*provider|government .*provider/i.test(q.body);},fig:Q_fr_sahara}
 ];
 (function(){
-  function apply(arr){ if(!arr)return; arr.forEach(function(q){ if(q.chart)return; for(var i=0;i<CATO_CHARTS.length;i++){ if(CATO_CHARTS[i].match(q)){ q.chart=CATO_CHARTS[i].chart; break; } } }); }
+  function apply(arr){ if(!arr)return; arr.forEach(function(q){
+    if(!q.chart){ for(var i=0;i<CATO_CHARTS.length;i++){ if(CATO_CHARTS[i].match(q)){ q.chart=CATO_CHARTS[i].chart; break; } } }
+    if(!q.figure){ for(var j=0;j<CATO_QUOTES.length;j++){ if(CATO_QUOTES[j].m(q)){ q.figure=CATO_QUOTES[j].fig; break; } } }
+  }); }
   try{ [6,7,8,9,10,11,12].forEach(function(g){apply(QG[g]);}); ['A','B','C'].forEach(function(b){apply(QGB[b]);}); }catch(e){}
 })();
 function continueTerm(){

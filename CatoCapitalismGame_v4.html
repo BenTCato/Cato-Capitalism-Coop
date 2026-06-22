@@ -683,11 +683,15 @@
     </div>
     <div class="store-cta"><button class="btn btn-navy" onclick="openStore()">🎁 Star Store</button><span class="bank-chip" id="bank-chip">⭐ 0</span><button class="btn btn-navy" onclick="openHistory()">📜 History</button></div>
     <div class="diff-section">
-      <div class="nb-col-label" style="margin-bottom:10px;">⚖️ Choose Your Challenge</div>
-      <div class="diff-row">
-        <button class="diff-card" id="diff-easy" onclick="setDifficulty('easy')">😌<strong>Easy</strong><span>Start 75% · Danger 20%</span></button>
-        <button class="diff-card sel" id="diff-normal" onclick="setDifficulty('normal')">🙂<strong>Normal</strong><span>Start 65% · Danger 25%</span></button>
-        <button class="diff-card" id="diff-hard" onclick="setDifficulty('hard')">😈<strong>Hard</strong><span>Start 55% · Danger 30%</span></button>
+      <div class="nb-col-label" style="margin-bottom:10px;">🎓 Reading Level — pick your grade</div>
+      <div class="diff-row" id="grade-row">
+        <button class="diff-card" id="grade-6" onclick="setGrade(6)">📗<strong>Grade 6</strong></button>
+        <button class="diff-card" id="grade-7" onclick="setGrade(7)">📗<strong>Grade 7</strong></button>
+        <button class="diff-card sel" id="grade-8" onclick="setGrade(8)">📘<strong>Grade 8</strong></button>
+        <button class="diff-card" id="grade-9" onclick="setGrade(9)">📘<strong>Grade 9</strong></button>
+        <button class="diff-card" id="grade-10" onclick="setGrade(10)">📕<strong>Grade 10</strong></button>
+        <button class="diff-card" id="grade-11" onclick="setGrade(11)">📕<strong>Grade 11</strong></button>
+        <button class="diff-card" id="grade-12" onclick="setGrade(12)">🎓<strong>Grade 12</strong></button>
       </div>
     </div>
     <div class="nb-actions">
@@ -2241,6 +2245,15 @@ function setDifficulty(k,silent){
   if(!silent)sfx('click');
 }
 
+// ── Grade level (reading level) — replaces easy/normal/hard. Stats stay at a fixed baseline. ──
+let GRADE_KEY=8;
+function setGrade(g,silent){
+  GRADE_KEY=g;
+  document.querySelectorAll('#grade-row .diff-card').forEach(function(c){c.classList.remove('sel');});
+  const el=document.getElementById('grade-'+g); if(el)el.classList.add('sel');
+  if(!silent)sfx('click');
+}
+
 let sfxOn=true,audioCtx=null;
 function toggleSfx(){sfxOn=!sfxOn;const b=document.getElementById('sfx-btn');if(b)b.textContent=sfxOn?'\u{1F50A}':'\u{1F507}';if(sfxOn)sfx('click');}
 function sfx(type){
@@ -2591,14 +2604,16 @@ function showFeedback(c,q){
   const badges=document.getElementById('fb-badges');badges.innerHTML='';
   [{key:'h',label:'😊 Happiness'},{key:'e',label:'💰 Economy'},{key:'ed',label:'📚 Education'},{key:'f',label:'🗽 Freedom'}].forEach(({key,label})=>{const v=c.fx[key];if(v!==0){const b=document.createElement('span');b.className='badge '+(v>0?'up':'down');b.textContent=label+' '+(v>0?'+':'')+v;badges.appendChild(b);}});
   const f=c.figure;
-  document.getElementById('fig-avatar').textContent=f.initials;document.getElementById('fig-name').textContent=f.name;
-  document.getElementById('fig-years').textContent=f.years+' · '+f.title;document.getElementById('fig-text').textContent='"'+f.quote+'"';
-  document.getElementById('fig-src').textContent=', '+f.source;
+  if(f){
+    document.getElementById('fig-avatar').textContent=f.initials;document.getElementById('fig-name').textContent=f.name;
+    document.getElementById('fig-years').textContent=f.years+' · '+f.title;document.getElementById('fig-text').textContent='"'+f.quote+'"';
+    document.getElementById('fig-src').textContent=', '+f.source;
+  }
   // Render data chart for this question
   renderChart(S.qIdx);
   document.getElementById('fb-text').textContent=c.feedback;
   const lmLinks=document.getElementById('lm-links');lmLinks.innerHTML='';
-  q.links.forEach(lk=>{const a=document.createElement('a');a.href=lk.url;a.target='_blank';a.rel='noopener noreferrer';a.className='lm-link';a.textContent=lk.text+' ↗';lmLinks.appendChild(a);});
+  (q.links||[]).forEach(lk=>{const a=document.createElement('a');a.href=lk.url;a.target='_blank';a.rel='noopener noreferrer';a.className='lm-link';a.textContent=lk.text+' ↗';lmLinks.appendChild(a);});
   document.getElementById('feedback').classList.add('show');
 }
 
@@ -2632,6 +2647,7 @@ function nextQ(){
   const last=S.answers[S.answers.length-1];
   if(!last){doNextQ();return;}
   const q=Q[last.qi];const c=q.choices.find(x=>x.letter===last.letter);
+  if(!c||!c.headline){doNextQ();return;} // compact (quote-free) questions skip the newspaper beat
   pendingNext=true;openPaper(c,q);
 }
 function doNextQ(){if(S.answers.length>=Q.length){buildResults();showScreen('results');launchConfetti();sfx('win');}else{renderTown();showScreen('town');maybeWorldEvent();}}
@@ -4016,11 +4032,14 @@ function dlgPick(letter){
   const dx=document.querySelector('#dlg .dlg-x');if(dx)dx.style.display='none';
   const chart=document.getElementById('data-chart').innerHTML;
   const fb=document.getElementById('dlg-feedback');
+  const figHtml=c.figure?('<div class="fig-quote"><div class="fig-avatar">'+c.figure.initials+'</div><div class="fig-meta"><div class="fig-name">'+c.figure.name+'</div><div class="fig-years">'+c.figure.years+' · '+c.figure.title+'</div><div class="fig-text">“'+c.figure.quote+'”</div><cite class="fig-src">, '+c.figure.source+'</cite></div></div>'):'';
+  const lm=document.getElementById('lm-links').innerHTML;
+  const lmHtml=lm?('<div class="learn-more"><div class="lm-head">📚 Learn More at Cato.org</div><div class="lm-links">'+lm+'</div></div>'):'';
   fb.innerHTML='<div class="badges">'+document.getElementById('fb-badges').innerHTML+'</div>'+
-    '<div class="fig-quote"><div class="fig-avatar">'+c.figure.initials+'</div><div class="fig-meta"><div class="fig-name">'+c.figure.name+'</div><div class="fig-years">'+c.figure.years+' · '+c.figure.title+'</div><div class="fig-text">“'+c.figure.quote+'”</div><cite class="fig-src">, '+c.figure.source+'</cite></div></div>'+
+    figHtml+
     '<div class="data-chart">'+chart+'</div>'+
     '<div class="fb-body">'+c.feedback+'</div>'+
-    '<div class="learn-more"><div class="lm-head">📚 Learn More at Cato.org</div><div class="lm-links">'+document.getElementById('lm-links').innerHTML+'</div></div>'+
+    lmHtml+
     '<div class="next-wrap" style="margin-top:14px;"><button class="btn btn-gold" onclick="dlgContinue()">'+(S.answers.length>=Q.length?'Finish the Term →':'Continue →')+'</button></div>';
   fb.style.display='block';
   fb.querySelectorAll('.dc-bar').forEach(function(b){b.style.width=(b.getAttribute('data-pct')||0)+'%';});
@@ -4392,12 +4411,558 @@ function renderAvatarPreview(){
 // ─────────────────────────────────────────────────────────────
 // START / RESTART
 // ─────────────────────────────────────────────────────────────
+// Each of the 10 citizens owns a policy topic; QG holds grade-leveled question pools per topic.
+const NPC_TOPICS=['Free Markets & Trade','Taxes & Spending','Education & School Choice','Money & Inflation','Business & Regulation','Jobs & Wages','Property & Environment','Banking & Saving','Free Speech & Civil Liberties','Health Care'];
+const QG={}; // QG[grade] = [ {npc:0-9, tag,title,icon,gradient,body,choices:[{letter,type,label,fx,feedback}],best,explain}, ... ]
+function gradePool(grade,npcIndex){ return (QG[grade]||[]).filter(function(q){return q.npc===npcIndex;}); }
 function dealTerm(exclude){
-  let pool=QBANK.map(function(_,i){return i;});
-  if(exclude)pool=pool.filter(function(i){return exclude.indexOf(QBANK[i])<0;});
-  pool=shuffle(pool);
-  return pool.slice(0,10).map(function(i){return QBANK[i];});
+  // One question per citizen (Q[i] = NPC i). Pull from that citizen's grade pool; fall back to the original bank.
+  const term=[],used=[];
+  for(let i=0;i<10;i++){
+    const pool=gradePool(GRADE_KEY,i);
+    let pick;
+    if(pool.length){ pick=pool[Math.floor(Math.random()*pool.length)]; }
+    else { const fb=QBANK.filter(function(q){return used.indexOf(q)<0;}); const src=fb.length?fb:QBANK; pick=src[Math.floor(Math.random()*src.length)]; }
+    used.push(pick); term.push(pick);
+  }
+  return term;
 }
+// ════════ GRADE-LEVELED QUESTION POOLS (compact; free-market framing; no invented quotes/stats) ════════
+// Helper to keep entries short: cap=A (best), mix=B, soc=C, com=D.
+function MQ(npc,tag,icon,body,A,B,C,D,explain){
+  return {npc:npc,tag:tag,title:tag,icon:icon,gradient:'linear-gradient(135deg,#1b3a6b,#2d6fd6)',body:body,best:'A',explain:explain,
+    choices:[
+      {letter:'A',type:'cap',label:A[0],fx:A[1],feedback:A[2]},
+      {letter:'B',type:'mix',label:B[0],fx:B[1],feedback:B[2]},
+      {letter:'C',type:'soc',label:C[0],fx:C[1],feedback:C[2]},
+      {letter:'D',type:'com',label:D[0],fx:D[1],feedback:D[2]}
+    ]};
+}
+QG[8]=[
+// NPC0 — Free Markets & Trade
+MQ(0,'Free Markets','🤝',"Two neighboring towns each make something the other wants. Some leaders want to tax goods crossing the border. What should your town do?",
+ ["Let the towns trade freely with no border tax",{h:4,e:7,ed:0,f:6},"When people trade freely, both sides get what they value more, so both towns end up better off."],
+ ["Allow trade but add a small fee on imports",{h:1,e:-2,ed:0,f:-2},"A fee raises a little money but makes goods cost more for your own people and invites the other town to do the same."],
+ ["Tax imports heavily to protect local sellers",{h:-2,e:-8,ed:0,f:-5},"High import taxes shield a few local sellers but everyone else pays higher prices and has fewer choices."],
+ ["Ban outside goods and have the town control all trade",{h:-6,e:-14,ed:0,f:-13},"When government controls all trade, shortages and favoritism usually follow, and people lose the freedom to choose."],
+ "Free trade lets both sides specialize in what they do best and raises everyone's standard of living."),
+MQ(0,'Free Markets','💰',"A new shop wants to sell cheaper shoes than the old shop in town. The old shop asks you to stop the newcomer. What do you do?",
+ ["Let both shops compete for customers",{h:5,e:6,ed:0,f:6},"Competition pushes shops to offer better prices and quality, and customers decide the winner."],
+ ["Let them compete but give the old shop a subsidy",{h:2,e:-4,ed:0,f:-3},"Subsidies take money from taxpayers to prop up one business instead of letting customers choose."],
+ ["Set one fixed price both shops must charge",{h:-2,e:-7,ed:0,f:-6},"Price controls remove the reason to improve and often cause shortages or lower quality."],
+ ["Have the town run the only shoe store",{h:-6,e:-13,ed:0,f:-12},"A single government store faces no competition, so it has little reason to keep prices low or quality high."],
+ "Competition, not protection, is what gives shoppers better deals over time."),
+// NPC1 — Taxes & Spending
+MQ(1,'Taxes & Spending','💵',"Your town has money saved up. Some leaders want to spend it all on new programs. Others want to keep taxes low. What's your plan?",
+ ["Keep taxes low and spend carefully on core needs",{h:3,e:6,ed:1,f:5},"Low, simple taxes leave more money in people's hands to spend, save, and start businesses."],
+ ["Raise taxes a little to fund several new programs",{h:3,e:-5,ed:1,f:-4},"New programs sound helpful, but each one costs money and is hard to shrink later."],
+ ["Raise taxes a lot to fund many programs",{h:1,e:-10,ed:0,f:-8},"Heavy taxes leave families and businesses with less to invest, slowing the whole town down."],
+ ["Have the government take over and direct most spending",{h:-6,e:-14,ed:-2,f:-13},"When government directs most spending, waste and political favoritism tend to grow."],
+ "Lower, simpler taxes leave more resources with the people who earned them and grow the economy."),
+MQ(1,'Taxes & Spending','📊',"The town wants to build something new. Leaders argue about how to pay for it. What do you choose?",
+ ["Fund only what the town can afford without new debt",{h:3,e:6,ed:0,f:4},"Living within a budget avoids debt that future taxpayers would have to repay with interest."],
+ ["Borrow a moderate amount and pay it back slowly",{h:2,e:-3,ed:0,f:-2},"Some borrowing can work, but debt means paying extra in interest and less freedom later."],
+ ["Borrow heavily now and worry about it later",{h:0,e:-9,ed:0,f:-6},"Piling up debt shifts today's costs onto tomorrow and can lead to a crisis."],
+ ["Print or seize money to pay for it",{h:-5,e:-15,ed:0,f:-12},"Creating money out of thin air or seizing it destroys savings and trust."],
+ "Spending within your means protects both today's taxpayers and tomorrow's."),
+// NPC2 — Education & School Choice
+MQ(2,'Education','🏫',"Some families are unhappy with the only school in town. What policy gives students the best shot?",
+ ["Let families choose among different schools",{h:5,e:2,ed:8,f:7},"When families can choose, schools must improve to attract students, and kids find the fit that works."],
+ ["Add charter or specialty schools inside the system",{h:4,e:0,ed:6,f:4},"More options inside the public system add useful variety and a bit of healthy competition."],
+ ["Just give the existing school much more money",{h:3,e:-7,ed:2,f:-4},"Funding matters, but more money without choice or accountability often doesn't raise results."],
+ ["Force every school to follow one strict government plan",{h:-5,e:-4,ed:-8,f:-12},"One rigid plan removes the flexibility teachers need to help different students."],
+ "School choice gives families power and pushes all schools to get better."),
+MQ(2,'Education','🎓',"A talented student wants a program your town's school doesn't offer. What do you do?",
+ ["Let the student use funds at a school that offers it",{h:4,e:1,ed:7,f:6},"Letting education money follow the student helps each child get what they actually need."],
+ ["Ask the school to add the program if it can",{h:3,e:-1,ed:4,f:2},"Adding programs can help, but one school can't be great at everything for everyone."],
+ ["Tell the student to take what's offered",{h:-3,e:0,ed:-4,f:-5},"Forcing one path ignores that students learn and dream differently."],
+ ["Have the government assign all students and programs",{h:-6,e:-3,ed:-8,f:-12},"Central assignment treats students like parts in a machine instead of individuals."],
+ "When money follows the child, families can match the school to the student."),
+// NPC3 — Money & Inflation
+MQ(3,'Money & Inflation','🪙',"Prices in town keep rising fast. People's savings buy less each month. What's your move?",
+ ["Stop creating extra money so prices can settle",{h:3,e:7,ed:1,f:4},"Inflation usually comes from too much money chasing the same goods; slowing money growth calms prices."],
+ ["Create money more slowly while watching prices",{h:2,e:1,ed:0,f:0},"Going slower helps, but as long as you keep adding money faster than goods, prices keep climbing."],
+ ["Order shops to freeze their prices",{h:-2,e:-9,ed:0,f:-7},"Price freezes hide the problem and cause shortages because shops can't cover their costs."],
+ ["Print lots of money to hand out to everyone",{h:-5,e:-15,ed:0,f:-10},"Printing more money makes each dollar worth less, hurting savers the most."],
+ "Stable money protects the value of what people earn and save."),
+// NPC4 — Business & Regulation
+MQ(4,'Business & Rules','🏪',"A young baker wants to open a shop, but the permits take a year and cost a lot. What do you do?",
+ ["Cut the red tape so honest businesses can open fast",{h:3,e:7,ed:0,f:6},"Simpler permits remove barriers without lowering real safety rules, helping newcomers most."],
+ ["Keep the rules but offer a grant to a few bakers",{h:4,e:-5,ed:0,f:-4},"Grants help the chosen few while everyone else still faces the same heavy barriers."],
+ ["Add even more inspections and paperwork",{h:-2,e:-9,ed:0,f:-9},"Extra paperwork hits small businesses hardest, since big firms can afford lawyers to handle it."],
+ ["Have the town open its own bakery instead",{h:-5,e:-13,ed:0,f:-12},"A government bakery with no competition has little reason to control costs or improve."],
+ "Clear, light rules let good ideas reach customers instead of dying in paperwork."),
+// NPC5 — Jobs & Wages
+MQ(5,'Jobs & Wages','👷',"Some workers in town earn low wages. Leaders want to force a much higher minimum wage. What do you do?",
+ ["Grow the economy so employers compete for workers",{h:4,e:6,ed:1,f:5},"When businesses grow and compete for workers, wages rise without anyone losing their job."],
+ ["Raise the minimum wage a small, careful amount",{h:3,e:-2,ed:0,f:-2},"A small raise may help some, but set it too high and employers cut hours or jobs."],
+ ["Force a large minimum wage increase right away",{h:1,e:-8,ed:0,f:-6},"A big forced raise can price low-skill and young workers out of their first jobs."],
+ ["Have the government set everyone's pay",{h:-5,e:-13,ed:0,f:-12},"Government-set pay ignores what work people actually do and kills the incentive to improve."],
+ "More jobs and competition for workers lift wages better than mandates that can cut jobs."),
+// NPC6 — Property & Environment
+MQ(6,'Property & Land','🏡',"A factory is dumping waste into the town river, hurting neighbors downstream. What's the fair fix?",
+ ["Hold the factory responsible for the harm it causes",{h:4,e:3,ed:0,f:5},"Clear property rights mean polluters must pay for the damage they do to others' land and water."],
+ ["Write detailed rules for exactly how to operate",{h:2,e:-2,ed:0,f:-2},"Rules can help, but rigid ones are easy to game and may miss the real harm."],
+ ["Have the government run the factory itself",{h:-3,e:-8,ed:0,f:-7},"Government-run factories often pollute too, with less accountability than private owners."],
+ ["Seize the factory and the land around it",{h:-5,e:-12,ed:0,f:-13},"Seizing property destroys the trust and investment that a prosperous town needs."],
+ "Protecting property rights makes polluters pay and gives owners reason to care for resources."),
+// NPC7 — Banking & Saving
+MQ(7,'Banking & Saving','🏦',"Families want a safe place to save and borrow. How should banking work in your town?",
+ ["Let trustworthy banks compete and be honest with savers",{h:3,e:6,ed:1,f:5},"Competition and honest rules give savers good options and push banks to serve customers well."],
+ ["Let banks operate but guarantee every risky loan",{h:2,e:-4,ed:0,f:-3},"Guaranteeing risky bets encourages reckless lending, since someone else covers the losses."],
+ ["Have the government run the only bank",{h:-3,e:-8,ed:0,f:-7},"A single government bank faces no competition and often lends based on politics, not sense."],
+ ["Control all money and lending from the top",{h:-6,e:-13,ed:0,f:-12},"Top-down control of money invites favoritism and puts everyone's savings at risk."],
+ "Honest competition among banks serves savers better than government-run finance."),
+// NPC8 — Free Speech & Civil Liberties
+MQ(8,'Free Speech','🗽',"A newspaper prints an article criticizing town leaders. Some want it shut down. What do you do?",
+ ["Protect the right to speak, even when it's critical",{h:4,e:1,ed:2,f:9},"Free speech lets people question power and find the truth; silencing critics is how mistakes hide."],
+ ["Allow it but require articles be approved first",{h:0,e:-2,ed:-1,f:-6},"Approval-first rules are a soft form of censorship that scares people away from honest debate."],
+ ["Ban articles that make leaders look bad",{h:-4,e:-3,ed:-3,f:-12},"Banning criticism protects the powerful, not the people, and ends real accountability."],
+ ["Take over the press and control the news",{h:-7,e:-5,ed:-4,f:-16},"State-controlled news is propaganda; people lose the ability to know what's really happening."],
+ "Free speech and a free press keep leaders honest and let truth compete with falsehood."),
+// NPC9 — Health Care
+MQ(9,'Health Care','🏥',"Care in town is getting expensive. People disagree on how to make it affordable. What do you choose?",
+ ["Let providers compete and let prices be clear",{h:4,e:5,ed:0,f:6},"Competition and clear prices push quality up and costs down, like in other markets."],
+ ["Keep the system but add government subsidies",{h:4,e:-5,ed:0,f:-3},"Subsidies help some people afford care but can hide costs and push prices even higher."],
+ ["Tighten rules and limit which treatments are allowed",{h:-2,e:-7,ed:0,f:-7},"Heavy limits can cause waiting lines and block care that patients and doctors want."],
+ ["Have the government run all care and set all prices",{h:-5,e:-12,ed:0,f:-12},"Fully government-run care often means long waits and less choice for patients."],
+ "Competition and price transparency tend to make care both better and cheaper.")
+];
+QG[6]=[
+MQ(0,'Free Markets','🤝',"A kid in town wants to trade his apples for another kid's oranges. Both kids are happy to swap. Should you let them?",
+ ["Let them trade. Both kids are happy.",{h:5,e:6,ed:0,f:6},"When two people trade because they both want to, they both end up happier."],
+ ["Let them trade, but take one apple as a fee.",{h:1,e:-2,ed:0,f:-2},"A fee makes trading cost more, so kids will trade less."],
+ ["Tell them what they are allowed to trade.",{h:-2,e:-7,ed:0,f:-6},"Bossing people around takes away their choice."],
+ ["Take the fruit and hand it out yourself.",{h:-6,e:-13,ed:0,f:-12},"Taking people's stuff is not fair and makes them stop sharing."],
+ "Free trade helps both sides because they each get what they want more."),
+MQ(1,'Taxes & Spending','💵',"The town has some saved money. Do you spend it all, or keep taxes low?",
+ ["Keep taxes low and spend only on what's needed.",{h:3,e:6,ed:1,f:5},"Low taxes let people keep more of their own money."],
+ ["Raise taxes a little for some new programs.",{h:3,e:-5,ed:1,f:-4},"New programs cost money every year and are hard to stop."],
+ ["Raise taxes a lot for many programs.",{h:1,e:-10,ed:0,f:-8},"High taxes leave families with less money to use."],
+ ["Let the town control most of the money.",{h:-6,e:-13,ed:-2,f:-12},"When one group controls the money, waste grows."],
+ "Low taxes leave more money with the people who earned it."),
+MQ(2,'Education','🏫',"Some families do not like the only school. How do you help the kids?",
+ ["Let families pick the school they want.",{h:5,e:2,ed:8,f:7},"When families can choose, schools work harder to be good."],
+ ["Open a few new kinds of schools to try.",{h:4,e:0,ed:6,f:4},"More choices give kids more ways to learn."],
+ ["Just give the old school more money.",{h:3,e:-7,ed:2,f:-4},"More money alone often does not fix the problem."],
+ ["Make every school follow one strict plan.",{h:-5,e:-4,ed:-8,f:-12},"One plan for all cannot fit every kid."],
+ "Letting families choose pushes schools to get better."),
+MQ(3,'Money','🪙',"Prices keep going up. People's saved money buys less. What do you do?",
+ ["Stop making extra money so prices calm down.",{h:3,e:7,ed:1,f:4},"Too much money makes prices rise. Less new money calms them."],
+ ["Make new money more slowly.",{h:2,e:1,ed:0,f:0},"Slower is better, but prices still rise if you keep adding money."],
+ ["Tell shops to freeze their prices.",{h:-2,e:-9,ed:0,f:-7},"Frozen prices cause empty shelves."],
+ ["Print lots of money for everyone.",{h:-5,e:-15,ed:0,f:-10},"Printing money makes each dollar worth less."],
+ "Stable money keeps people's savings safe."),
+MQ(4,'Business & Rules','🏪',"A kid wants to open a lemonade stand, but the rules take forever. What do you do?",
+ ["Make the rules quick and simple.",{h:3,e:7,ed:0,f:6},"Simple rules let good ideas start without a long wait."],
+ ["Keep the rules but give a few kids money.",{h:4,e:-5,ed:0,f:-4},"Helping only a few leaves everyone else stuck."],
+ ["Add even more rules and forms.",{h:-2,e:-9,ed:0,f:-9},"Too many rules hurt small sellers the most."],
+ ["Let the town run the only stand.",{h:-5,e:-13,ed:0,f:-12},"One town stand has no reason to be good or cheap."],
+ "Simple rules let new businesses get started."),
+MQ(5,'Jobs & Wages','👷',"Some workers earn low pay. Leaders want to force much higher pay. What do you do?",
+ ["Grow the town so bosses compete for workers.",{h:4,e:6,ed:1,f:5},"When jobs grow, bosses raise pay to keep good workers."],
+ ["Raise the lowest pay a small amount.",{h:3,e:-2,ed:0,f:-2},"A small raise can help, but too big a jump cuts jobs."],
+ ["Force a big pay raise right now.",{h:1,e:-8,ed:0,f:-6},"A big forced raise can cost new workers their jobs."],
+ ["Let the town set everyone's pay.",{h:-5,e:-13,ed:0,f:-12},"Set pay ignores the real work people do."],
+ "More jobs and competition raise pay without killing jobs."),
+MQ(6,'Property & Land','🏡',"A factory dumps trash in the river and hurts neighbors. What is fair?",
+ ["Make the factory pay for the harm it caused.",{h:4,e:3,ed:0,f:5},"If you damage someone's property, you should pay to fix it."],
+ ["Write strict rules for how it must work.",{h:2,e:-2,ed:0,f:-2},"Rules help, but they can miss the real harm."],
+ ["Have the town run the factory.",{h:-3,e:-8,ed:0,f:-7},"Town-run factories can pollute too, with less blame."],
+ ["Take the factory away from the owner.",{h:-5,e:-12,ed:0,f:-13},"Taking property scares away people who build things."],
+ "Owners who must pay for harm take better care."),
+MQ(7,'Banking & Saving','🏦',"Families want a safe place to save money. How should banks work?",
+ ["Let honest banks compete for savers.",{h:3,e:6,ed:1,f:5},"Banks that compete treat savers well to keep them."],
+ ["Let banks make risky loans the town pays for.",{h:2,e:-4,ed:0,f:-3},"Covering bad bets makes banks careless."],
+ ["Let the town run the only bank.",{h:-3,e:-8,ed:0,f:-7},"One bank has no reason to give a good deal."],
+ ["Control all money from the top.",{h:-6,e:-13,ed:0,f:-12},"Top control puts everyone's savings at risk."],
+ "Honest banks that compete give savers the best deal."),
+MQ(8,'Free Speech','🗽',"A newspaper says town leaders made a mistake. Some want it shut down. What do you do?",
+ ["Let people speak, even when it stings.",{h:4,e:1,ed:2,f:9},"Free speech lets people point out mistakes and fix them."],
+ ["Make them get the article approved first.",{h:0,e:-2,ed:-1,f:-6},"Approving first is a quiet way to silence people."],
+ ["Ban anything that makes leaders look bad.",{h:-4,e:-3,ed:-3,f:-12},"Banning bad news only protects the powerful."],
+ ["Take over the newspaper.",{h:-7,e:-5,ed:-4,f:-16},"A town-run paper just prints what leaders want."],
+ "Free speech keeps leaders honest."),
+MQ(9,'Health Care','🏥',"Doctor visits cost a lot in town. How do you make care cheaper?",
+ ["Let clinics compete and show clear prices.",{h:4,e:5,ed:0,f:6},"Clear prices and competition push costs down."],
+ ["Keep things the same but help pay the bills.",{h:4,e:-5,ed:0,f:-3},"Help can hide costs and push prices higher."],
+ ["Add strict rules on what care is allowed.",{h:-2,e:-7,ed:0,f:-7},"Strict limits cause long waits."],
+ ["Have the town run all care and set prices.",{h:-5,e:-12,ed:0,f:-12},"Town-run care often means long lines."],
+ "Competition and clear prices make care cheaper.")
+];
+QG[12]=[
+MQ(0,'Free Markets & Trade','🤝',"Domestic producers, facing competition from a neighboring region, lobby your administration to impose protective tariffs. Consumers and exporters warn of retaliation and higher prices. How do you weigh the competing interests?",
+ ["Maintain open trade; let comparative advantage allocate production efficiently",{h:4,e:8,ed:0,f:6},"Open exchange lets each region specialize where it is most productive, expanding total output and consumer welfare despite concentrated losses for protected firms."],
+ ["Permit trade but levy a modest tariff to cushion local industry",{h:1,e:-3,ed:0,f:-2},"Even modest tariffs are a tax on consumers that distorts prices and invites reciprocal barriers abroad."],
+ ["Erect substantial tariffs to shield incumbent producers",{h:-2,e:-9,ed:0,f:-6},"Protectionism preserves a visible few jobs while imposing diffuse, larger costs on consumers and downstream industries."],
+ ["Nationalize trade and centrally administer all cross-border exchange",{h:-6,e:-15,ed:0,f:-14},"Central administration of trade severs the price signals that coordinate supply and demand, producing shortages and rent-seeking."],
+ "Comparative advantage and voluntary exchange maximize aggregate prosperity even when protected interests lobby otherwise."),
+MQ(1,'Taxes & Spending','💵',"A budget surplus tempts legislators toward expansive new entitlements, while fiscal conservatives urge restraint. Each program carries recurring obligations. What fiscal posture do you adopt?",
+ ["Hold the line on low, broad-based taxes and fund only essential functions",{h:3,e:7,ed:1,f:5},"Low, neutral taxes preserve private capital for investment and reduce the deadweight loss that distortionary taxation imposes."],
+ ["Modestly raise revenue to finance a few targeted programs",{h:3,e:-5,ed:1,f:-4},"Targeted programs create durable constituencies and recurring costs that are politically difficult to unwind."],
+ ["Substantially expand spending and taxation to fund broad entitlements",{h:1,e:-11,ed:0,f:-8},"Large entitlement commitments crowd out private investment and embed structural deficits."],
+ ["Centralize fiscal authority and direct most economic resources",{h:-6,e:-15,ed:-2,f:-13},"Centralized resource allocation lacks the feedback of profit and loss, breeding waste and political favoritism."],
+ "Restrained, neutral taxation leaves capital in the hands of those who allocate it most productively."),
+MQ(2,'Education & School Choice','🏫',"Persistent underperformance in the district's monopoly schools prompts calls for reform. Stakeholders dispute whether the remedy is funding, competition, or centralization. What policy do you pursue?",
+ ["Enact portable funding so families choose among competing schools",{h:5,e:2,ed:8,f:7},"Attaching funding to students introduces competitive pressure and lets diverse providers serve heterogeneous needs."],
+ ["Expand chartered and specialized options within the public system",{h:4,e:0,ed:6,f:4},"Internal pluralism adds innovation and modest competition while retaining public funding."],
+ ["Substantially increase appropriations to the existing monopoly",{h:3,e:-7,ed:2,f:-4},"Absent competitive accountability, marginal spending increases have shown weak correlation with achievement gains."],
+ ["Impose a uniform national curriculum and centralized control",{h:-5,e:-4,ed:-8,f:-12},"Centralized mandates eliminate the local adaptation and experimentation that drive educational improvement."],
+ "Choice harnesses competition and parental knowledge to discipline schools and match students to fitting environments."),
+MQ(3,'Money & Inflation','🪙',"Sustained inflation is eroding real wages and savings. Advisers split between monetary restraint, price controls, and further expansion. What is your response?",
+ ["Restrain monetary growth to anchor prices and protect savers",{h:3,e:7,ed:1,f:4},"Inflation is fundamentally a monetary phenomenon; constraining money growth stabilizes the unit of account and protects savers."],
+ ["Decelerate monetary expansion gradually while monitoring prices",{h:2,e:1,ed:0,f:0},"Gradualism eases the transition, but persistent expansion above output growth perpetuates inflation."],
+ ["Impose statutory price controls across key goods",{h:-2,e:-9,ed:0,f:-7},"Price ceilings suppress the signaling function of prices and generate shortages and black markets."],
+ ["Expand the money supply and distribute it broadly",{h:-5,e:-15,ed:0,f:-10},"Further expansion debases the currency, transferring wealth from savers to early recipients of new money."],
+ "Sound, predictable money preserves the integrity of prices and the value of earnings and savings."),
+MQ(4,'Business & Regulation','🏪',"A would-be entrepreneur confronts a costly, year-long licensing gauntlet. Incumbents defend the barriers as quality assurance. How do you reconcile safety with entry?",
+ ["Streamline licensing to remove barriers while retaining genuine safety standards",{h:3,e:7,ed:0,f:6},"Distinguishing real safety requirements from rent-protecting red tape lowers entry costs without sacrificing legitimate protections."],
+ ["Preserve the regime but offer selective grants to a few applicants",{h:4,e:-5,ed:0,f:-4},"Discretionary grants benefit the chosen while the underlying barrier continues to deter the many."],
+ ["Intensify inspections and compliance requirements",{h:-2,e:-9,ed:0,f:-9},"Compliance costs fall disproportionately on small entrants, entrenching incumbents and inviting regulatory capture."],
+ ["Establish a government-operated enterprise to meet demand",{h:-5,e:-13,ed:0,f:-12},"State enterprises, lacking competitive discipline, tend toward inefficiency and chronic cost overruns."],
+ "Lowering unnecessary regulatory barriers expands competition and entrepreneurship while preserving real safety."),
+MQ(5,'Jobs & Wages','👷',"Advocates demand a steep statutory minimum wage to address low pay. Economists warn of disemployment effects on low-skill workers. What do you choose?",
+ ["Pursue growth and competition so employers bid up wages",{h:4,e:6,ed:1,f:5},"Tight labor markets driven by growth raise compensation without legislating workers out of employment."],
+ ["Raise the minimum wage modestly and monitor employment",{h:3,e:-2,ed:0,f:-2},"Modest increases may have limited effects, but aggressive floors risk pricing out marginal workers."],
+ ["Mandate a steep, immediate wage floor",{h:1,e:-8,ed:0,f:-6},"A binding wage floor above market-clearing levels reduces hours and entry-level opportunities for the least experienced."],
+ ["Have the state administer all compensation",{h:-5,e:-13,ed:0,f:-12},"Administered wages ignore marginal productivity and extinguish the incentive to acquire skills."],
+ "Productivity-driven labor demand raises wages more durably than mandates that risk disemployment."),
+MQ(6,'Property & Environment','🏡',"An upstream facility's discharge imposes costs on downstream residents, a classic externality. Proposals range from liability to nationalization. What is the principled remedy?",
+ ["Enforce property rights so the polluter bears the cost of harm",{h:4,e:3,ed:0,f:5},"Well-defined property rights internalize externalities, compelling polluters to account for the damage they impose on others."],
+ ["Promulgate detailed command-and-control regulations",{h:2,e:-2,ed:0,f:-2},"Prescriptive rules can be gamed and often target processes rather than the actual harm."],
+ ["Transfer the facility to public operation",{h:-3,e:-8,ed:0,f:-7},"Publicly operated enterprises frequently pollute as well, with diminished accountability."],
+ ["Expropriate the facility and surrounding land",{h:-5,e:-12,ed:0,f:-13},"Expropriation undermines the security of property on which investment and stewardship depend."],
+ "Secure property rights and liability internalize environmental costs and incentivize stewardship."),
+MQ(7,'Banking & Saving','🏦',"Households seek secure savings and credit. Policymakers debate competition, blanket guarantees, and state banking. What framework do you establish?",
+ ["Foster competitive, transparently regulated private banking",{h:3,e:6,ed:1,f:5},"Competition under transparent rules disciplines institutions to serve depositors and price risk accurately."],
+ ["Permit private banking but guarantee all risky lending",{h:2,e:-4,ed:0,f:-3},"Blanket guarantees create moral hazard, subsidizing imprudent risk-taking at public expense."],
+ ["Establish a monopoly state bank",{h:-3,e:-8,ed:0,f:-7},"A monopoly lender allocates credit politically rather than by productive merit."],
+ ["Centralize all monetary and credit authority",{h:-6,e:-13,ed:0,f:-12},"Centralized credit control concentrates risk and invites allocation by political favor."],
+ "Competitive banking under honest rules allocates credit more efficiently than state monopoly."),
+MQ(8,'Free Speech & Civil Liberties','🗽',"Critical press coverage prompts officials to seek restrictions. Tensions arise between governmental reputation and the public's right to information. How do you respond?",
+ ["Safeguard expression and a free press, including dissent",{h:4,e:1,ed:2,f:9},"Robust speech protections enable accountability and the contestation of ideas essential to discovering truth."],
+ ["Permit publication subject to prior review",{h:0,e:-2,ed:-1,f:-6},"Prior restraint chills legitimate inquiry and functions as de facto censorship."],
+ ["Prohibit coverage that discredits officials",{h:-4,e:-3,ed:-3,f:-12},"Suppressing criticism insulates power from scrutiny and forecloses accountability."],
+ ["Place the press under state control",{h:-7,e:-5,ed:-4,f:-16},"State-controlled media supplant journalism with propaganda, depriving citizens of reliable information."],
+ "Free expression and an independent press are indispensable checks on power and engines of truth-seeking."),
+MQ(9,'Health Care','🏥',"Escalating costs strain households. Proposals span market competition, subsidies, rationing, and single-payer control. What approach do you adopt?",
+ ["Enable provider competition and price transparency",{h:4,e:5,ed:0,f:6},"Competition and transparent pricing realign incentives toward quality and cost-containment, as in functioning markets."],
+ ["Retain the system but expand subsidies",{h:4,e:-5,ed:0,f:-3},"Subsidies improve access at the margin but obscure true costs and can inflate prices system-wide."],
+ ["Tighten regulation and restrict permissible treatments",{h:-2,e:-7,ed:0,f:-7},"Administrative rationing produces queues and forecloses care that patients and physicians would choose."],
+ ["Establish single-payer control of provision and pricing",{h:-5,e:-12,ed:0,f:-12},"Monopsony control commonly yields waiting lists and constrained patient choice."],
+ "Competition and transparency tend to improve quality while restraining costs more effectively than centralized control.")
+];
+QG[7]=[
+MQ(0,'Free Markets','🤝',"Your town and the next town both make goods the other wants. Some leaders want a tax on goods that cross the line. What do you do?",
+ ["Let the towns trade freely, with no border tax",{h:4,e:7,ed:0,f:6},"Free trade lets each town focus on what it makes best, so both gain."],
+ ["Allow trade but charge a small import fee",{h:1,e:-2,ed:0,f:-2},"A fee makes goods cost more and the other town may strike back."],
+ ["Put a big tax on imports to protect local sellers",{h:-2,e:-8,ed:0,f:-5},"Big import taxes help a few sellers but raise prices for everyone."],
+ ["Ban outside goods and control all trade",{h:-6,e:-14,ed:0,f:-13},"Government-run trade leads to shortages and favoritism."],
+ "Free trade lets both towns specialize and raises living standards."),
+MQ(1,'Taxes & Spending','💵',"The town has savings. Some want to spend it on new programs; others want low taxes. Your call?",
+ ["Keep taxes low and spend only on key needs",{h:3,e:6,ed:1,f:5},"Low taxes leave more money with families to spend and invest."],
+ ["Raise taxes a bit for a few new programs",{h:3,e:-5,ed:1,f:-4},"Each program costs money every year and is hard to end."],
+ ["Raise taxes a lot for many programs",{h:1,e:-10,ed:0,f:-8},"High taxes slow the whole town by leaving less to invest."],
+ ["Let the town direct most spending",{h:-6,e:-13,ed:-2,f:-12},"Centralized spending tends to grow waste and favoritism."],
+ "Lower taxes keep money with the people who earned it."),
+MQ(2,'Education','🏫',"Families are unhappy with the only school. How do you give students the best shot?",
+ ["Let families choose among different schools",{h:5,e:2,ed:8,f:7},"Choice makes schools compete to keep students, so they improve."],
+ ["Add a few charter or special schools",{h:4,e:0,ed:6,f:4},"More options add variety and some healthy competition."],
+ ["Just give the school more money",{h:3,e:-7,ed:2,f:-4},"Money alone, without accountability, often doesn't raise results."],
+ ["Force one strict plan on every school",{h:-5,e:-4,ed:-8,f:-12},"One plan can't fit students who learn differently."],
+ "Choice gives families power and pushes schools to get better."),
+MQ(3,'Money','🪙',"Prices keep rising and savings buy less. What do you do?",
+ ["Stop making extra money so prices settle",{h:3,e:7,ed:1,f:4},"Too much money causes inflation; slowing it calms prices."],
+ ["Slow down new money while watching prices",{h:2,e:1,ed:0,f:0},"Slower helps, but adding money faster than goods keeps prices rising."],
+ ["Order shops to freeze prices",{h:-2,e:-9,ed:0,f:-7},"Frozen prices cause shortages and empty shelves."],
+ ["Print lots of money to hand out",{h:-5,e:-15,ed:0,f:-10},"Printing money makes each dollar worth less, hurting savers."],
+ "Stable money protects the value of what people save."),
+MQ(4,'Business & Rules','🏪',"A young baker wants to open up, but permits take a year and cost a lot. What do you do?",
+ ["Cut the red tape so honest shops can open fast",{h:3,e:7,ed:0,f:6},"Simpler permits remove barriers without dropping real safety rules."],
+ ["Keep the rules but give a few bakers a grant",{h:4,e:-5,ed:0,f:-4},"Grants help a chosen few while barriers block everyone else."],
+ ["Add more inspections and paperwork",{h:-2,e:-9,ed:0,f:-9},"Paperwork hits small businesses hardest."],
+ ["Have the town run its own bakery",{h:-5,e:-13,ed:0,f:-12},"A town bakery with no competition has little reason to improve."],
+ "Light, clear rules let good ideas reach customers."),
+MQ(5,'Jobs & Wages','👷',"Some workers earn low pay. Leaders want to force much higher pay. What do you do?",
+ ["Grow the economy so employers compete for workers",{h:4,e:6,ed:1,f:5},"When jobs grow, employers raise pay to keep good workers."],
+ ["Raise the minimum wage a small amount",{h:3,e:-2,ed:0,f:-2},"A small raise may help, but too big a jump cuts jobs."],
+ ["Force a big raise right away",{h:1,e:-8,ed:0,f:-6},"A big forced raise can price new workers out of jobs."],
+ ["Let the government set everyone's pay",{h:-5,e:-13,ed:0,f:-12},"Set pay ignores the work people actually do."],
+ "More jobs and competition lift pay without cutting jobs."),
+MQ(6,'Property & Land','🏡',"A factory dumps waste in the river and harms neighbors. What's fair?",
+ ["Make the factory pay for the harm it causes",{h:4,e:3,ed:0,f:5},"Clear property rights mean polluters must pay for the damage they do."],
+ ["Write strict rules for how it must run",{h:2,e:-2,ed:0,f:-2},"Rules help but can miss the real harm or be gamed."],
+ ["Have the town run the factory",{h:-3,e:-8,ed:0,f:-7},"Town-run factories can pollute too, with less accountability."],
+ ["Seize the factory and the land",{h:-5,e:-12,ed:0,f:-13},"Seizing property scares away the people who build and invest."],
+ "Owners who must pay for harm take better care of resources."),
+MQ(7,'Banking & Saving','🏦',"Families want a safe place to save and borrow. How should banking work?",
+ ["Let honest banks compete for savers",{h:3,e:6,ed:1,f:5},"Competition and honest rules give savers good options."],
+ ["Let banks make risky loans the town backs",{h:2,e:-4,ed:0,f:-3},"Backing risky bets makes banks careless with money."],
+ ["Have the town run the only bank",{h:-3,e:-8,ed:0,f:-7},"One government bank often lends by politics, not sense."],
+ ["Control all money and lending from the top",{h:-6,e:-13,ed:0,f:-12},"Top-down money control invites favoritism and risk."],
+ "Honest competition serves savers better than a state bank."),
+MQ(8,'Free Speech','🗽',"A newspaper criticizes town leaders. Some want it shut down. What do you do?",
+ ["Protect the right to speak, even when it's critical",{h:4,e:1,ed:2,f:9},"Free speech lets people question power and find the truth."],
+ ["Allow it but require approval first",{h:0,e:-2,ed:-1,f:-6},"Approval-first rules are a quiet form of censorship."],
+ ["Ban articles that make leaders look bad",{h:-4,e:-3,ed:-3,f:-12},"Banning criticism protects the powerful, not the people."],
+ ["Take over the press and control the news",{h:-7,e:-5,ed:-4,f:-16},"State news is propaganda; people lose the real story."],
+ "A free press keeps leaders honest."),
+MQ(9,'Health Care','🏥',"Care is getting expensive. How do you make it affordable?",
+ ["Let providers compete and show clear prices",{h:4,e:5,ed:0,f:6},"Competition and clear prices push quality up and costs down."],
+ ["Keep the system but add subsidies",{h:4,e:-5,ed:0,f:-3},"Subsidies help some afford care but can hide and raise costs."],
+ ["Tighten rules and limit treatments",{h:-2,e:-7,ed:0,f:-7},"Heavy limits cause waiting lines."],
+ ["Have the government run all care and set prices",{h:-5,e:-12,ed:0,f:-12},"Fully government-run care often means long waits."],
+ "Competition and clear prices make care better and cheaper.")
+];
+QG[9]=[
+MQ(0,'Free Markets & Trade','🤝',"Local producers ask you to tax goods from the next region to shield them from competition. Shoppers and exporters warn of higher prices and payback. What do you decide?",
+ ["Keep trade open so each region makes what it does best",{h:4,e:8,ed:0,f:6},"Open trade lets regions specialize, lowering prices and widening choice for consumers."],
+ ["Allow trade but add a modest tariff",{h:1,e:-3,ed:0,f:-2},"Tariffs are a tax on your own shoppers and often trigger retaliation."],
+ ["Impose high tariffs to protect local firms",{h:-2,e:-9,ed:0,f:-6},"Protection saves a few visible jobs while raising costs for everyone else."],
+ ["Have the government run all trade",{h:-6,e:-15,ed:0,f:-14},"Central control of trade kills the price signals that match supply to demand."],
+ "Open exchange and specialization raise prosperity for the whole town."),
+MQ(1,'Taxes & Spending','💵',"A surplus tempts leaders to launch new programs; others want to keep taxes low. Each program adds yearly costs. Your fiscal plan?",
+ ["Keep taxes low and fund only essential services",{h:3,e:7,ed:1,f:5},"Low, simple taxes leave more capital for families and businesses to invest."],
+ ["Raise revenue a bit for a few targeted programs",{h:3,e:-5,ed:1,f:-4},"Targeted programs build constituencies and recurring costs that are hard to cut."],
+ ["Expand spending and taxes for broad programs",{h:1,e:-11,ed:0,f:-8},"Large commitments crowd out private investment and lock in deficits."],
+ ["Centralize control of most spending",{h:-6,e:-15,ed:-2,f:-13},"Central allocation lacks profit-and-loss feedback, so waste grows."],
+ "Restrained, simple taxation keeps capital with those who use it most productively."),
+MQ(2,'Education & School Choice','🏫',"The district's only schools keep underperforming. People debate funding, competition, or central control. What reform do you choose?",
+ ["Let funding follow students to schools they choose",{h:5,e:2,ed:8,f:7},"When money follows the student, competition and parental choice push schools to improve."],
+ ["Expand charter and specialty schools",{h:4,e:0,ed:6,f:4},"Internal options add innovation and competition without leaving the public system."],
+ ["Pour more money into the current system",{h:3,e:-7,ed:2,f:-4},"Without accountability, extra spending shows weak ties to better results."],
+ ["Impose one standardized curriculum",{h:-5,e:-4,ed:-8,f:-12},"Central mandates remove the local flexibility that drives improvement."],
+ "Choice uses competition and family knowledge to raise school quality."),
+MQ(3,'Money & Inflation','🪙',"Ongoing inflation is shrinking real wages and savings. Advisers split between restraint, price controls, and more money. Your response?",
+ ["Restrain money growth to steady prices",{h:3,e:7,ed:1,f:4},"Inflation is mainly a monetary issue; limiting money growth stabilizes prices and protects savers."],
+ ["Slow money growth gradually",{h:2,e:1,ed:0,f:0},"Going slow eases the shift, but expansion above output keeps inflation alive."],
+ ["Impose price controls on key goods",{h:-2,e:-9,ed:0,f:-7},"Price controls block price signals and create shortages."],
+ ["Expand the money supply broadly",{h:-5,e:-15,ed:0,f:-10},"More money debases the currency and transfers wealth from savers."],
+ "Sound, predictable money preserves the value of earnings and savings."),
+MQ(4,'Business & Regulation','🏪',"An entrepreneur faces a costly, year-long licensing process. Incumbents call the barriers 'quality control.' How do you balance safety and entry?",
+ ["Streamline licensing while keeping real safety rules",{h:3,e:7,ed:0,f:6},"Separating genuine safety from protectionist red tape lowers entry costs without losing protections."],
+ ["Keep the rules but grant a few exceptions",{h:4,e:-5,ed:0,f:-4},"Exceptions help a chosen few while the barrier still blocks the many."],
+ ["Add more inspections and compliance steps",{h:-2,e:-9,ed:0,f:-9},"Compliance costs fall hardest on small entrants and protect incumbents."],
+ ["Open a government-run business instead",{h:-5,e:-13,ed:0,f:-12},"State enterprises, lacking competition, tend toward waste and overruns."],
+ "Cutting needless barriers expands competition while keeping real safety."),
+MQ(5,'Jobs & Wages','👷',"Advocates want a steep minimum wage; economists warn it could cut jobs for low-skill workers. Your choice?",
+ ["Pursue growth so employers compete and raise wages",{h:4,e:6,ed:1,f:5},"A growing, tight labor market raises pay without legislating workers out of jobs."],
+ ["Raise the minimum modestly and watch employment",{h:3,e:-2,ed:0,f:-2},"Modest raises may have small effects; steep ones risk pricing out beginners."],
+ ["Mandate a steep wage floor now",{h:1,e:-8,ed:0,f:-6},"A high floor above market rates cuts hours and entry-level jobs."],
+ ["Have the state set all pay",{h:-5,e:-13,ed:0,f:-12},"Administered pay ignores productivity and ends the incentive to gain skills."],
+ "Productivity-driven demand raises wages more durably than mandates."),
+MQ(6,'Property & Environment','🏡',"An upstream plant's discharge harms downstream residents, a textbook externality. Options run from liability to takeover. The principled fix?",
+ ["Enforce property rights so the polluter pays for harm",{h:4,e:3,ed:0,f:5},"Clear property rights make polluters account for the costs they impose on others."],
+ ["Write detailed command-and-control rules",{h:2,e:-2,ed:0,f:-2},"Prescriptive rules can be gamed and often miss the real harm."],
+ ["Put the plant under public operation",{h:-3,e:-8,ed:0,f:-7},"Public plants often pollute too, with less accountability."],
+ ["Seize the plant and surrounding land",{h:-5,e:-12,ed:0,f:-13},"Seizing property undermines the investment and stewardship a town needs."],
+ "Secure property rights make polluters pay and reward stewardship."),
+MQ(7,'Banking & Saving','🏦',"Households want secure savings and credit. Leaders debate competition, blanket guarantees, or a state bank. Your framework?",
+ ["Support competitive, transparently regulated banks",{h:3,e:6,ed:1,f:5},"Competition under clear rules pushes banks to serve depositors and price risk well."],
+ ["Allow banks but guarantee all risky loans",{h:2,e:-4,ed:0,f:-3},"Blanket guarantees create moral hazard and subsidize reckless lending."],
+ ["Create a single state bank",{h:-3,e:-8,ed:0,f:-7},"A monopoly lender allocates credit by politics, not merit."],
+ ["Centralize all credit decisions",{h:-6,e:-13,ed:0,f:-12},"Central credit control concentrates risk and favoritism."],
+ "Competitive banking under honest rules allocates credit better than a state monopoly."),
+MQ(8,'Free Speech & Civil Liberties','🗽',"Critical coverage leads officials to seek restrictions. The public's right to information clashes with the government's image. Your response?",
+ ["Protect free expression and a free press, including dissent",{h:4,e:1,ed:2,f:9},"Strong speech protections enable accountability and the testing of ideas needed to find truth."],
+ ["Allow publication but review it first",{h:0,e:-2,ed:-1,f:-6},"Prior review chills honest reporting and acts as censorship."],
+ ["Ban coverage that discredits officials",{h:-4,e:-3,ed:-3,f:-12},"Suppressing criticism shields power from scrutiny."],
+ ["Put the press under state control",{h:-7,e:-5,ed:-4,f:-16},"State media replace journalism with propaganda."],
+ "A free, independent press is a vital check on power."),
+MQ(9,'Health Care','🏥',"Rising costs strain families. Proposals span competition, subsidies, rationing, and single-payer control. Your approach?",
+ ["Enable provider competition and price transparency",{h:4,e:5,ed:0,f:6},"Competition and clear prices push quality up and costs down, as in other markets."],
+ ["Keep the system but expand subsidies",{h:4,e:-5,ed:0,f:-3},"Subsidies aid access but can hide costs and raise prices overall."],
+ ["Tighten rules and restrict treatments",{h:-2,e:-7,ed:0,f:-7},"Rationing by rule creates queues and blocks wanted care."],
+ ["Establish single-payer control of care and prices",{h:-5,e:-12,ed:0,f:-12},"Single-payer control commonly brings waiting lists and less choice."],
+ "Competition and transparency improve care while restraining costs.")
+];
+QG[10]=[
+MQ(0,'Free Markets & Trade','🤝',"Local manufacturers press you to tax imports from a rival region to limit competition. Consumers and exporters caution that prices will rise and the rival may retaliate. What do you decide?",
+ ["Keep trade open so each region specializes in its strengths",{h:4,e:8,ed:0,f:6},"Open trade lets regions specialize, lowering prices and widening choice even as protected firms object."],
+ ["Allow trade but apply a moderate tariff",{h:1,e:-3,ed:0,f:-2},"A tariff taxes your own consumers and often provokes retaliation."],
+ ["Impose high tariffs to protect existing firms",{h:-2,e:-9,ed:0,f:-6},"Protection saves a visible few jobs while raising costs broadly."],
+ ["Have the government administer all trade",{h:-6,e:-15,ed:0,f:-14},"Central control severs the price signals that coordinate supply and demand."],
+ "Specialization and open exchange raise overall prosperity."),
+MQ(1,'Taxes & Spending','💵',"A budget surplus invites new programs, while others urge keeping taxes low. Each program creates lasting costs. Your fiscal stance?",
+ ["Hold taxes low and fund only essential functions",{h:3,e:7,ed:1,f:5},"Low, neutral taxes preserve private capital for investment and reduce economic distortion."],
+ ["Raise revenue modestly for targeted programs",{h:3,e:-5,ed:1,f:-4},"Targeted programs build durable constituencies and recurring costs."],
+ ["Expand taxes and spending for broad entitlements",{h:1,e:-11,ed:0,f:-8},"Large commitments crowd out investment and embed deficits."],
+ ["Centralize control of most economic resources",{h:-6,e:-15,ed:-2,f:-13},"Central allocation lacks profit-and-loss feedback, breeding waste."],
+ "Restrained, neutral taxation leaves capital with its most productive users."),
+MQ(2,'Education & School Choice','🏫',"The district's monopoly schools keep underperforming. Stakeholders dispute funding, competition, and central control. Your policy?",
+ ["Make funding portable so families choose schools",{h:5,e:2,ed:8,f:7},"Portable funding introduces competition and lets diverse schools meet different needs."],
+ ["Expand chartered and specialized public options",{h:4,e:0,ed:6,f:4},"Internal variety adds innovation and competition within public funding."],
+ ["Increase appropriations to the existing system",{h:3,e:-7,ed:2,f:-4},"Without accountability, more spending weakly correlates with results."],
+ ["Impose a uniform mandated curriculum",{h:-5,e:-4,ed:-8,f:-12},"Central mandates remove local adaptation and experimentation."],
+ "Choice harnesses competition and parental knowledge to improve schools."),
+MQ(3,'Money & Inflation','🪙',"Sustained inflation erodes real wages and savings. Advisers split among restraint, price controls, and expansion. Your response?",
+ ["Restrain monetary growth to anchor prices",{h:3,e:7,ed:1,f:4},"Inflation is fundamentally monetary; restraining money growth stabilizes prices and protects savers."],
+ ["Decelerate expansion gradually",{h:2,e:1,ed:0,f:0},"Gradualism eases the transition, but ongoing over-expansion sustains inflation."],
+ ["Impose price controls on key goods",{h:-2,e:-9,ed:0,f:-7},"Price controls suppress signals and produce shortages."],
+ ["Expand and distribute the money supply",{h:-5,e:-15,ed:0,f:-10},"Expansion debases the currency and transfers wealth from savers."],
+ "Sound money preserves the value of earnings and savings."),
+MQ(4,'Business & Regulation','🏪',"An entrepreneur faces costly, year-long licensing; incumbents defend it as quality assurance. How do you balance safety and entry?",
+ ["Streamline licensing while keeping genuine safety rules",{h:3,e:7,ed:0,f:6},"Separating real safety from protectionist red tape lowers entry costs without losing protections."],
+ ["Keep the regime but grant selective exemptions",{h:4,e:-5,ed:0,f:-4},"Exemptions help a few while the barrier deters the many."],
+ ["Intensify inspections and compliance",{h:-2,e:-9,ed:0,f:-9},"Compliance costs fall hardest on small entrants and entrench incumbents."],
+ ["Create a government-run enterprise",{h:-5,e:-13,ed:0,f:-12},"State enterprises lack competitive discipline and tend toward inefficiency."],
+ "Reducing needless barriers expands competition while preserving safety."),
+MQ(5,'Jobs & Wages','👷',"Advocates demand a steep minimum wage; economists warn of job losses for low-skill workers. Your choice?",
+ ["Pursue growth so employers compete and bid up wages",{h:4,e:6,ed:1,f:5},"Tight labor markets from growth raise pay without legislating workers out of jobs."],
+ ["Raise the minimum modestly and monitor jobs",{h:3,e:-2,ed:0,f:-2},"Modest raises may have small effects; aggressive ones risk pricing out entrants."],
+ ["Mandate a steep wage floor immediately",{h:1,e:-8,ed:0,f:-6},"A binding floor above market levels cuts hours and entry-level jobs."],
+ ["Have the state administer all wages",{h:-5,e:-13,ed:0,f:-12},"Administered wages ignore productivity and end the incentive to gain skills."],
+ "Productivity-driven demand raises wages more durably than mandates."),
+MQ(6,'Property & Environment','🏡',"An upstream facility's discharge harms downstream residents, a classic externality. Remedies span liability to public takeover. The principled choice?",
+ ["Enforce property rights so the polluter pays for harm",{h:4,e:3,ed:0,f:5},"Property rights internalize externalities, making polluters account for damage they impose."],
+ ["Write detailed command-and-control rules",{h:2,e:-2,ed:0,f:-2},"Prescriptive rules can be gamed and may target process over harm."],
+ ["Transfer the facility to public operation",{h:-3,e:-8,ed:0,f:-7},"Public operation often pollutes too, with less accountability."],
+ ["Expropriate the facility and land",{h:-5,e:-12,ed:0,f:-13},"Expropriation undermines the security that investment depends on."],
+ "Secure property rights make polluters pay and reward stewardship."),
+MQ(7,'Banking & Saving','🏦',"Households want secure savings and credit. Leaders debate competition, blanket guarantees, and state banking. Your framework?",
+ ["Foster competitive, transparently regulated banking",{h:3,e:6,ed:1,f:5},"Competition under clear rules disciplines banks to serve depositors and price risk."],
+ ["Permit banking but guarantee all risky lending",{h:2,e:-4,ed:0,f:-3},"Blanket guarantees create moral hazard at public expense."],
+ ["Establish a monopoly state bank",{h:-3,e:-8,ed:0,f:-7},"A monopoly lender allocates credit politically, not by merit."],
+ ["Centralize all monetary and credit authority",{h:-6,e:-13,ed:0,f:-12},"Central credit control concentrates risk and favoritism."],
+ "Competitive banking under honest rules allocates credit efficiently."),
+MQ(8,'Free Speech & Civil Liberties','🗽',"Critical press coverage prompts officials to seek restrictions, pitting the public's right to know against government reputation. Your response?",
+ ["Safeguard expression and a free press, including dissent",{h:4,e:1,ed:2,f:9},"Strong speech protections enable accountability and the contest of ideas needed to find truth."],
+ ["Permit publication subject to prior review",{h:0,e:-2,ed:-1,f:-6},"Prior review chills inquiry and operates as censorship."],
+ ["Prohibit coverage that discredits officials",{h:-4,e:-3,ed:-3,f:-12},"Suppressing criticism insulates power from scrutiny."],
+ ["Place the press under state control",{h:-7,e:-5,ed:-4,f:-16},"State media supplant journalism with propaganda."],
+ "A free, independent press is an essential check on power."),
+MQ(9,'Health Care','🏥',"Escalating costs strain households. Proposals span competition, subsidies, rationing, and single-payer. Your approach?",
+ ["Enable provider competition and price transparency",{h:4,e:5,ed:0,f:6},"Competition and transparent pricing align incentives toward quality and cost control."],
+ ["Retain the system but expand subsidies",{h:4,e:-5,ed:0,f:-3},"Subsidies improve access but can obscure costs and inflate prices."],
+ ["Tighten regulation and restrict treatments",{h:-2,e:-7,ed:0,f:-7},"Administrative rationing produces queues and forecloses chosen care."],
+ ["Establish single-payer control of care and prices",{h:-5,e:-12,ed:0,f:-12},"Single-payer control commonly yields waiting lists and less choice."],
+ "Competition and transparency improve quality while restraining costs.")
+];
+QG[11]=[
+MQ(0,'Free Markets & Trade','🤝',"Domestic producers lobby for protective tariffs against a competing region; consumers and exporters warn of higher prices and retaliation. How do you weigh these interests?",
+ ["Maintain open trade so comparative advantage allocates production",{h:4,e:8,ed:0,f:6},"Open exchange lets each region specialize where most productive, expanding output and consumer welfare."],
+ ["Permit trade but levy a moderate tariff",{h:1,e:-3,ed:0,f:-2},"Even moderate tariffs tax consumers and invite reciprocal barriers."],
+ ["Erect substantial tariffs to shield incumbents",{h:-2,e:-9,ed:0,f:-6},"Protectionism preserves visible jobs while imposing larger diffuse costs."],
+ ["Nationalize and centrally administer trade",{h:-6,e:-15,ed:0,f:-14},"Central administration severs the price signals that coordinate exchange."],
+ "Comparative advantage and voluntary exchange maximize prosperity."),
+MQ(1,'Taxes & Spending','💵',"A surplus tempts legislators toward new entitlements while conservatives urge restraint; each program carries recurring obligations. Your posture?",
+ ["Hold low, broad-based taxes and fund essential functions",{h:3,e:7,ed:1,f:5},"Low, neutral taxes preserve capital for investment and reduce deadweight loss."],
+ ["Raise revenue modestly for targeted programs",{h:3,e:-5,ed:1,f:-4},"Targeted programs create durable constituencies and recurring costs."],
+ ["Expand spending and taxation for broad entitlements",{h:1,e:-11,ed:0,f:-8},"Large entitlements crowd out investment and embed structural deficits."],
+ ["Centralize fiscal authority over resources",{h:-6,e:-15,ed:-2,f:-13},"Centralized allocation lacks profit-and-loss feedback, breeding waste."],
+ "Restrained, neutral taxation leaves capital with its most productive users."),
+MQ(2,'Education & School Choice','🏫',"Persistent underperformance in monopoly schools prompts reform debate over funding, competition, and centralization. Your policy?",
+ ["Enact portable funding so families choose among schools",{h:5,e:2,ed:8,f:7},"Attaching funds to students introduces competition and serves heterogeneous needs."],
+ ["Expand chartered and specialized options",{h:4,e:0,ed:6,f:4},"Internal pluralism adds innovation and competition while retaining public funding."],
+ ["Increase appropriations to the monopoly",{h:3,e:-7,ed:2,f:-4},"Without competitive accountability, spending weakly tracks achievement."],
+ ["Impose a uniform curriculum and central control",{h:-5,e:-4,ed:-8,f:-12},"Central mandates eliminate adaptation and experimentation."],
+ "Choice disciplines schools through competition and parental knowledge."),
+MQ(3,'Money & Inflation','🪙',"Sustained inflation erodes real wages and savings; advisers split among restraint, controls, and expansion. Your response?",
+ ["Restrain monetary growth to anchor prices",{h:3,e:7,ed:1,f:4},"Inflation is a monetary phenomenon; constraining money growth stabilizes the unit of account."],
+ ["Decelerate expansion gradually",{h:2,e:1,ed:0,f:0},"Gradualism eases adjustment, but persistent over-expansion perpetuates inflation."],
+ ["Impose statutory price controls",{h:-2,e:-9,ed:0,f:-7},"Price ceilings suppress signaling and generate shortages."],
+ ["Expand the money supply broadly",{h:-5,e:-15,ed:0,f:-10},"Expansion debases the currency, transferring wealth from savers."],
+ "Sound, predictable money preserves the integrity of prices."),
+MQ(4,'Business & Regulation','🏪',"A would-be entrepreneur confronts costly, year-long licensing; incumbents defend the barriers. How do you reconcile safety with entry?",
+ ["Streamline licensing while retaining genuine safety standards",{h:3,e:7,ed:0,f:6},"Distinguishing real safety from rent-protecting red tape lowers entry costs without sacrificing protections."],
+ ["Preserve the regime but grant selective exemptions",{h:4,e:-5,ed:0,f:-4},"Discretionary exemptions benefit the chosen while barriers deter the many."],
+ ["Intensify inspections and compliance",{h:-2,e:-9,ed:0,f:-9},"Compliance costs fall on small entrants and invite regulatory capture."],
+ ["Establish a government-operated enterprise",{h:-5,e:-13,ed:0,f:-12},"State enterprises lack competitive discipline and tend toward overruns."],
+ "Lowering unnecessary barriers expands entrepreneurship while preserving safety."),
+MQ(5,'Jobs & Wages','👷',"Advocates demand a steep statutory minimum wage; economists warn of disemployment among low-skill workers. Your choice?",
+ ["Pursue growth so employers bid up wages",{h:4,e:6,ed:1,f:5},"Tight labor markets driven by growth raise compensation without legislating workers out of jobs."],
+ ["Raise the minimum modestly and monitor employment",{h:3,e:-2,ed:0,f:-2},"Modest increases may have limited effects; aggressive floors risk disemployment."],
+ ["Mandate a steep wage floor immediately",{h:1,e:-8,ed:0,f:-6},"A binding floor above market-clearing levels reduces hours and entry-level opportunity."],
+ ["Have the state administer compensation",{h:-5,e:-13,ed:0,f:-12},"Administered wages ignore marginal productivity and deter skill acquisition."],
+ "Productivity-driven labor demand raises wages more durably than mandates."),
+MQ(6,'Property & Environment','🏡',"An upstream facility's discharge imposes costs on downstream residents, a classic externality. Remedies range from liability to nationalization. The principled remedy?",
+ ["Enforce property rights so the polluter bears the cost",{h:4,e:3,ed:0,f:5},"Well-defined property rights internalize externalities, compelling polluters to account for harm."],
+ ["Promulgate command-and-control regulations",{h:2,e:-2,ed:0,f:-2},"Prescriptive rules can be gamed and often target process rather than harm."],
+ ["Transfer the facility to public operation",{h:-3,e:-8,ed:0,f:-7},"Public operation frequently pollutes with diminished accountability."],
+ ["Expropriate the facility and surrounding land",{h:-5,e:-12,ed:0,f:-13},"Expropriation undermines the security of property that investment requires."],
+ "Secure property rights and liability internalize environmental costs."),
+MQ(7,'Banking & Saving','🏦',"Households seek secure savings and credit; policymakers debate competition, guarantees, and state banking. Your framework?",
+ ["Foster competitive, transparently regulated private banking",{h:3,e:6,ed:1,f:5},"Competition under transparent rules disciplines institutions to serve depositors and price risk."],
+ ["Permit banking but guarantee all risky lending",{h:2,e:-4,ed:0,f:-3},"Blanket guarantees create moral hazard, subsidizing imprudent risk at public expense."],
+ ["Establish a monopoly state bank",{h:-3,e:-8,ed:0,f:-7},"A monopoly lender allocates credit politically rather than by merit."],
+ ["Centralize all monetary and credit authority",{h:-6,e:-13,ed:0,f:-12},"Centralized credit control concentrates risk and political favoritism."],
+ "Competitive banking under honest rules allocates credit more efficiently than monopoly."),
+MQ(8,'Free Speech & Civil Liberties','🗽',"Critical coverage prompts officials to seek restrictions, pitting governmental reputation against the public's right to information. Your response?",
+ ["Safeguard expression and a free press, including dissent",{h:4,e:1,ed:2,f:9},"Robust speech protections enable accountability and the contestation of ideas essential to truth."],
+ ["Permit publication subject to prior restraint",{h:0,e:-2,ed:-1,f:-6},"Prior restraint chills inquiry and functions as censorship."],
+ ["Prohibit coverage that discredits officials",{h:-4,e:-3,ed:-3,f:-12},"Suppressing criticism insulates power and forecloses accountability."],
+ ["Place the press under state control",{h:-7,e:-5,ed:-4,f:-16},"State-controlled media supplant journalism with propaganda."],
+ "Free expression and an independent press are indispensable checks on power."),
+MQ(9,'Health Care','🏥',"Escalating costs strain households; proposals span competition, subsidies, rationing, and single-payer control. Your approach?",
+ ["Enable provider competition and price transparency",{h:4,e:5,ed:0,f:6},"Competition and transparent pricing realign incentives toward quality and cost-containment."],
+ ["Retain the system but expand subsidies",{h:4,e:-5,ed:0,f:-3},"Subsidies improve access at the margin but obscure costs and can inflate prices."],
+ ["Tighten regulation and restrict treatments",{h:-2,e:-7,ed:0,f:-7},"Administrative rationing produces queues and forecloses chosen care."],
+ ["Establish single-payer control of provision and pricing",{h:-5,e:-12,ed:0,f:-12},"Monopsony control commonly yields waiting lists and constrained choice."],
+ "Competition and transparency improve quality while restraining costs.")
+];
+// Grade 8 — second set (different scenarios per citizen, for replay variety)
+QG[8].push(
+MQ(0,'Free Markets','🤝',"A trader buys goods cheaply in one town and sells them in yours for more. Some call it unfair. What do you do?",
+ ["Allow it; the trader took a risk and moved goods to where they're wanted",{h:4,e:6,ed:0,f:6},"Traders who move goods to where people want them add value and help supply meet demand."],
+ ["Allow it but cap how much profit they can make",{h:1,e:-4,ed:0,f:-3},"Profit caps remove the reward for taking risks, so fewer goods get moved."],
+ ["Ban reselling for more than the buying price",{h:-2,e:-8,ed:0,f:-6},"Banning markup ignores the cost and risk of transporting and storing goods."],
+ ["Have the town control who can buy and sell",{h:-6,e:-13,ed:0,f:-12},"Government control of buying and selling leads to shortages and favoritism."],
+ "Traders earn profit by moving goods to where they're valued most, which helps everyone."),
+MQ(1,'Taxes & Spending','💵',"Leaders propose a special extra tax only on the town's richest families. What do you do?",
+ ["Keep one fair, low tax rule that applies broadly",{h:3,e:6,ed:1,f:4},"Simple, broad taxes are predictable and don't push successful people and their money away."],
+ ["Add a small extra tax on the very richest",{h:3,e:-4,ed:1,f:-3},"Targeting a few may raise some money, but the wealthy can move, taking jobs and investment with them."],
+ ["Add a large extra tax on the richest",{h:1,e:-9,ed:0,f:-7},"Heavy targeted taxes often shrink investment and the very revenue they aimed to raise."],
+ ["Have the town decide each person's share",{h:-6,e:-13,ed:-1,f:-12},"Letting officials set each person's tax invites unfairness and abuse."],
+ "Low, broad, predictable taxes keep investment and people from leaving."),
+MQ(2,'Education','🏫',"A group of parents wants to teach their kids at home or in small learning pods. What do you do?",
+ ["Let families choose home or pod learning if they want",{h:4,e:1,ed:6,f:7},"Letting families pick how their kids learn respects that every child is different."],
+ ["Allow it but require heavy paperwork and check-ins",{h:2,e:-1,ed:2,f:-2},"Some oversight is fine, but heavy rules can scare families away from good options."],
+ ["Discourage it and steer everyone to the main school",{h:-2,e:-2,ed:-3,f:-6},"Pushing one path ignores that some kids do better in other settings."],
+ ["Ban it so all children attend the same school",{h:-5,e:-3,ed:-6,f:-12},"Forcing one option removes parents' say in their own children's learning."],
+ "Letting families choose how to educate their kids fits each child better."),
+MQ(3,'Money','🪙',"The town wants a big festival and some leaders suggest printing new money to pay for it. What do you do?",
+ ["Pay for it from real savings or skip it this year",{h:3,e:5,ed:0,f:4},"Paying with real money keeps prices stable and avoids hidden costs."],
+ ["Print a little new money just this once",{h:1,e:-4,ed:0,f:-3},"Even a little extra money chips away at everyone's savings."],
+ ["Print whatever the festival needs",{h:-3,e:-11,ed:0,f:-8},"Printing money to spend makes each dollar worth less."],
+ ["Print money often to fund fun events",{h:-5,e:-15,ed:0,f:-10},"Regular printing leads to fast-rising prices that hurt everyone."],
+ "Spending real money, not printed money, protects savings and prices."),
+MQ(4,'Business & Rules','🏪',"To run a food cart, the town requires an expensive license that takes months. What do you do?",
+ ["Make the food-cart license cheap, quick, and focused on safety",{h:3,e:6,ed:0,f:6},"A simple license focused on real safety lets people work without a costly wait."],
+ ["Keep the license but waive it for a few carts",{h:3,e:-4,ed:0,f:-3},"Waiving it for a few still blocks everyone else from a first job."],
+ ["Add more fees and required classes",{h:-2,e:-8,ed:0,f:-8},"Extra fees and classes keep low-income people out of starting a business."],
+ ["Only let the town sell food in public spaces",{h:-5,e:-12,ed:0,f:-11},"A town monopoly on food carts removes choice and competition."],
+ "Simple, safety-focused licenses let more people work and serve customers."),
+MQ(5,'Jobs & Wages','👷',"Some leaders want to ban part-time and gig work to 'protect' full-time jobs. What do you do?",
+ ["Let people choose part-time, gig, or full-time work",{h:4,e:5,ed:0,f:6},"Flexible work lets students, parents, and others earn in ways that fit their lives."],
+ ["Allow flexible work but add lots of rules",{h:2,e:-3,ed:0,f:-3},"Heavy rules on flexible work can make employers stop offering it."],
+ ["Limit gig and part-time work sharply",{h:-2,e:-7,ed:0,f:-6},"Limiting flexible work takes away jobs that many people actually prefer."],
+ ["Allow only government-approved full-time jobs",{h:-5,e:-12,ed:0,f:-12},"Banning other work removes choices and cuts off income for many."],
+ "Flexible work gives people more ways to earn and build skills."),
+MQ(6,'Property & Land','🏡',"The town wants to take some families' homes to build a shopping center. What do you do?",
+ ["Protect homeowners; build only on land sold willingly",{h:4,e:3,ed:0,f:6},"Respecting property means people aren't forced off land they own."],
+ ["Take the homes but pay the owners",{h:0,e:-3,ed:0,f:-5},"Even with payment, forcing people out overrides their right to their home."],
+ ["Take the homes for the 'greater good'",{h:-3,e:-7,ed:0,f:-10},"'Greater good' takings are easy to abuse and punish ordinary owners."],
+ ["Seize whatever land the town wants",{h:-6,e:-12,ed:0,f:-14},"Seizing land at will destroys the security people need to invest and build."],
+ "Strong property rights protect families from being forced off their land."),
+MQ(7,'Banking & Saving','🏦',"Leaders want to cap how much interest banks can charge on loans. What do you do?",
+ ["Let interest rates reflect real risk and demand",{h:3,e:6,ed:1,f:5},"Rates that reflect risk keep banks willing to lend to many kinds of borrowers."],
+ ["Cap rates a little for certain loans",{h:2,e:-3,ed:0,f:-2},"Caps can feel kind but make banks refuse riskier borrowers entirely."],
+ ["Cap all loan rates well below the market",{h:-2,e:-8,ed:0,f:-6},"Hard caps dry up credit, pushing borrowers to worse options."],
+ ["Have the town set every interest rate",{h:-5,e:-12,ed:0,f:-11},"Government-set rates ignore real risk and shrink lending."],
+ "Letting rates reflect risk keeps credit available to more people."),
+MQ(8,'Free Speech','🗽',"A controversial speaker wants to talk in the town square. Some residents want them banned. What do you do?",
+ ["Allow the speech; let people listen, argue, or walk away",{h:3,e:1,ed:2,f:9},"Letting ideas be heard, even unpopular ones, lets people judge them for themselves."],
+ ["Allow it but require approval of the topic first",{h:0,e:-1,ed:-1,f:-6},"Approving topics first lets officials quietly block ideas they dislike."],
+ ["Ban speakers most people disagree with",{h:-3,e:-2,ed:-3,f:-11},"Banning unpopular speech today sets the rule that your speech can be banned tomorrow."],
+ ["Allow only town-approved speakers",{h:-6,e:-4,ed:-4,f:-15},"Only approved speakers means only approved ideas, which isn't real free speech."],
+ "Protecting even unpopular speech protects everyone's right to speak."),
+MQ(9,'Health Care','🏥',"Skilled nurses could handle more basic care, but strict rules say only doctors may. What do you do?",
+ ["Let trained nurses do more of what they're qualified for",{h:4,e:4,ed:1,f:5},"Letting qualified people do more care lowers costs and shortens waits."],
+ ["Loosen the rules a little for some tasks",{h:2,e:-1,ed:0,f:-1},"Small changes help, but tight limits still leave patients waiting."],
+ ["Keep strict limits on who can treat patients",{h:-2,e:-6,ed:0,f:-6},"Strict scope limits protect a few jobs but raise costs and waits for patients."],
+ ["Have the government assign all care tasks",{h:-5,e:-11,ed:0,f:-11},"Central control of who does what care reduces flexibility and choice."],
+ "Letting qualified professionals do more care cuts costs and waits.")
+);
 function continueTerm(){
   if(P){
     var _lg=computeGrade().letter;
@@ -4423,7 +4988,7 @@ function startGame(){Q=dealTerm(null);S=freshState();shuffleMap=[];pendingNext=f
 function restartGame(){const wrap=document.getElementById('creator-wrap'),slot=document.getElementById('creator-slot-title');if(wrap&&slot&&wrap.parentElement!==slot)slot.appendChild(wrap);showScreen('title');setTimeout(function(){renderAvatarPreview();renderAvCreator();},50);}
 
 // Init on page load
-document.addEventListener('DOMContentLoaded',function(){setDifficulty('normal',true);loadProfiles();initTownControls();});
+document.addEventListener('DOMContentLoaded',function(){setDifficulty('normal',true);setGrade(8,true);loadProfiles();initTownControls();});
 </script>
 </body>
 </html>

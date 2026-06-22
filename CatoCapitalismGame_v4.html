@@ -480,6 +480,10 @@
     .dlg.open{display:block;animation:fadeUp .22s ease;}
     #emote-fab{position:absolute;right:14px;bottom:14px;z-index:30;width:50px;height:50px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(16,22,40,.85);color:#fff;font-size:1.5rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);}
     #emote-fab:hover{background:rgba(30,40,70,.95);}
+    #minimap{position:absolute;top:12px;right:12px;width:150px;height:100px;background:rgba(16,22,40,.62);border:2px solid rgba(255,255,255,.28);border-radius:8px;z-index:25;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,.35);}
+    #minimap .mm-label{position:absolute;top:2px;left:6px;font-size:8px;font-weight:800;letter-spacing:1px;color:rgba(255,255,255,.55);z-index:3;}
+    #minimap .mm-dot{position:absolute;transform:translate(-50%,-50%);font-size:11px;line-height:1;}
+    #minimap-player{position:absolute;width:9px;height:9px;background:#FFD43B;border:1.5px solid #1a1456;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 5px #FFD43B;z-index:2;}
     #emote-tray{position:absolute;right:14px;bottom:74px;z-index:30;display:none;flex-direction:column;gap:6px;background:rgba(16,22,40,.94);padding:10px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.45);}
     #emote-tray.open{display:flex;}
     #emote-tray button{font-size:1.7rem;line-height:1;background:transparent;border:none;cursor:pointer;padding:4px;border-radius:8px;}
@@ -728,6 +732,7 @@
       <div class="dlg-choices choices" id="dlg-choices"></div>
       <div class="dlg-feedback" id="dlg-feedback" style="display:none;"></div>
     </div></div>
+    <div id="minimap"><div class="mm-label">MAP</div></div>
     <button id="emote-fab" onclick="toggleEmoteTray()" title="Emotes">🎭</button>
     <div id="emote-tray"></div>
   </div>
@@ -3751,6 +3756,20 @@ function buildWorld(tiers){
   return w;}
 
 function npcLayer(){let s='';for(let i=0;i<Q.length&&i<NPC_POS.length;i++)s+=npcSVG(i,S.answers.some(function(a){return a.qi===i;}));return s;}
+// ── Minimap (overview of the whole town + the player's live position) ──
+const MINIMAP_W=150, MINIMAP_H=100;
+const MM_MARKERS=[
+  {x:900,y:392,ic:'🏛️'},{x:1300,y:712,ic:'🏦'},{x:775,y:1000,ic:'🛒'},
+  {x:1325,y:322,ic:'🏫'},{x:240,y:900,ic:'🏠'},{x:1640,y:890,ic:'📰'},{x:900,y:600,ic:'⛲'}
+];
+function buildMinimap(){
+  const mm=document.getElementById('minimap'); if(!mm)return;
+  const sx=MINIMAP_W/WORLD_W, sy=MINIMAP_H/WORLD_H;
+  let s='<div class="mm-label">MAP</div>';
+  MM_MARKERS.forEach(function(m){ s+='<span class="mm-dot" style="left:'+(m.x*sx).toFixed(1)+'px;top:'+(m.y*sy).toFixed(1)+'px;">'+m.ic+'</span>'; });
+  s+='<div id="minimap-player"></div>';
+  mm.innerHTML=s;
+}
 function renderTown(){
   const map=document.getElementById('town-map');if(!map)return;
   const st=S.stats||{h:65,e:65,ed:65,f:65};
@@ -3786,6 +3805,7 @@ function renderTown(){
   if(TC.svg)TC.svg.style.filter=GFX.grade[tiers.avg];
   fxInit();
   TC.fountainTier=tiers.h;
+  buildMinimap(); TC.mmp=document.getElementById('minimap-player');
   ensureTownLoop();
 }
 // GFX engine config (skill: never hardcode values)
@@ -3869,6 +3889,7 @@ function townTick(){
     const ph=Math.sin(player.step/14)*4;
     if(TC.l1&&TC.l2){TC.l1.setAttribute('y',18+(player.moving?ph:0));TC.l2.setAttribute('y',18-(player.moving?ph:0));}
     if(TC.bob)TC.bob.setAttribute('transform','translate(0,'+(player.moving?(Math.sin(player.step/12)*1.4).toFixed(2):'0')+')');}
+  if(TC.mmp){TC.mmp.style.left=(player.x*MINIMAP_W/WORLD_W).toFixed(1)+'px';TC.mmp.style.top=(player.y*MINIMAP_H/WORLD_H).toFixed(1)+'px';}
   TC.svg.setAttribute('viewBox',camX()+' '+camY()+' '+VIEW_W+' '+VIEW_H);
   // particles (pooled; stepped at half rate; camera-culled)
   if(tickFrame%GFX.fxEvery===0){

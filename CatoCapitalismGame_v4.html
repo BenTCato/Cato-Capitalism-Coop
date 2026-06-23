@@ -3096,7 +3096,7 @@ function exportProfile(){
   let code;
   try{code='CATO~'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));}
   catch(e){code='CATO~'+JSON.stringify(data);}
-  try{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(code);}catch(e){}
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){var _cw=navigator.clipboard.writeText(code);if(_cw&&_cw.catch)_cw.catch(function(){});}}catch(e){}
   sfx('good');
   window.prompt('Your leader code is copied! Press Ctrl+C / Cmd+C to be sure, then paste it into another game with Import:',code);
 }

@@ -2165,9 +2165,6 @@ const NEWQ6=[
    ],best:"A",explain:"Cato's regulatory scholars track the Federal Register's growth from 2,620 pages (1936) toward the 95,894-page record (2016) as lawmaking shifted to unelected agencies. REINS-style votes and sunset clauses are their flagship reforms for restoring accountable lawmaking."}
 ];
 
-const NEWQ=NEWQ1.concat(NEWQ2,NEWQ3,NEWQ4,NEWQ5,NEWQ6);
-QBANK.push.apply(QBANK,NEWQ);
-CHARTS.forEach(function(c,i){if(QBANK[i]&&!QBANK[i].chart)QBANK[i].chart=c;});
 let Q=[];
 
 // Kid-friendly question prompts (short sentences, simple words, no em dashes)
@@ -2213,7 +2210,6 @@ const SIMPLE_BODIES={
 "Aid, Trade, or Neither?":"World leaders want you to send much more money to poor countries. But countries like China and South Korea got rich through trade, not aid. Your taxes on their goods make it hard for them to sell to you. What do you do?",
 "Eighty Thousand Pages":"Government agencies write thousands of rules every year that nobody voted on. The rule book is now over 80,000 pages. Citizens can be fined for breaking rules they never heard of. What do you do?"
 };
-QBANK.forEach(function(q){if(SIMPLE_BODIES[q.title])q.body=SIMPLE_BODIES[q.title];});
 
 const RESULT_RESOURCES=[
   {tag:"Cato Analysis",title:"Capitalism Saves Lives, Socialism Always Fails",src:"Cato Institute",url:"https://www.cato.org/commentary/capitalism-saves-lives-socialism-always-fails"},
@@ -2510,7 +2506,7 @@ function buildDots(){const c=document.getElementById('dots');c.innerHTML='';Q.fo
 function updateDots(){Q.forEach((_,i)=>{const d=document.getElementById('dot-'+i);if(!d)return;d.className='dot';if(S.answers.some(a=>a.qi===i))d.classList.add('done');else if(i===S.qIdx)d.classList.add('current');});}
 
 // ─────────────────────────────────────────────────────────────
-// CHART RENDERER, builds an animated bar chart from CHARTS data
+// CHART RENDERER, builds an animated bar chart from a question's chart data
 // ─────────────────────────────────────────────────────────────
 function renderChart(qi){
   const container=document.getElementById('data-chart');
@@ -4429,14 +4425,14 @@ const QGB={A:[],B:[],C:[]};
 function bandOf(g){ return g<=8?'A':(g<=10?'B':'C'); }
 function gradePool(grade,npcIndex){ return (QG[grade]||[]).concat(QGB[bandOf(grade)]||[]).filter(function(q){return q.npc===npcIndex;}); }
 function dealTerm(exclude){
-  // One question per citizen (Q[i] = NPC i). Pull from that citizen's grade pool; fall back to the original bank.
+  // One question per citizen (Q[i] = NPC i). Pull from that citizen's grade pool.
+  // Safety fallback (pools are always full): any question for this grade+band.
   const term=[],used=[];
   for(let i=0;i<10;i++){
-    const pool=gradePool(GRADE_KEY,i);
-    let pick;
-    if(pool.length){ pick=pool[Math.floor(Math.random()*pool.length)]; }
-    else { const fb=QBANK.filter(function(q){return used.indexOf(q)<0;}); const src=fb.length?fb:QBANK; pick=src[Math.floor(Math.random()*src.length)]; }
-    used.push(pick); term.push(pick);
+    let pool=gradePool(GRADE_KEY,i);
+    if(!pool.length){ pool=(QG[GRADE_KEY]||[]).concat(QGB[bandOf(GRADE_KEY)]||[]); }
+    let pick=pool.length?pool[Math.floor(Math.random()*pool.length)]:null;
+    if(pick){ used.push(pick); term.push(pick); }
   }
   return term;
 }

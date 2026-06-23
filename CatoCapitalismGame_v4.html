@@ -3145,16 +3145,6 @@ function updateBankUI(){
   const c=document.getElementById('bank-chip');
   if(c)c.textContent='⭐ '+(P?(P.stars||0).toLocaleString():'0');
 }
-function bankStars(amount,won){
-  if(!P)return;
-  P.stars=(P.stars||0)+amount;
-  P.runs=(P.runs||0)+1;
-  P.best=Math.max(P.best||0,S.score||0);
-  P.history=P.history||[];
-  P.history.unshift({d:Date.now(),name:nationName,score:S.score||0,earned:amount,won:!!won,grade:computeGrade().letter,best:S.bestCount||0,diff:DIFF_KEY});
-  if(P.history.length>25)P.history.length=25;
-  saveProfiles();updateBankUI();
-}
 // Stars are banked live per answer (see pickChoice), so at term end we only record the
 // round's history/stats — without re-adding stars (which would double-count the balance).
 function recordTerm(amount,won){
@@ -4043,7 +4033,6 @@ function openDialog(i){
   document.getElementById('dlg').classList.add('open');
   sfx('click');
 }
-function startCitizenQ(i){openDialog(i);}
 function dlgPick(letter){
   if(S.locked)return;
   pickChoice(letter); // stats/score/history/checkOver via hidden engine

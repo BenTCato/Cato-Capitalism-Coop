@@ -2301,7 +2301,7 @@ function spawnScorePop(pts,dbl){
   sfx('pop');
 }
 function updateScoreHUD(){
-  const sv=document.getElementById('score-val');if(sv)sv.textContent='⭐ '+(((P&&P.lifetimeScore)||0)+(S.score||0)).toLocaleString();
+  const sv=document.getElementById('score-val');if(sv)sv.textContent='⭐ '+(((P&&P.stars)||0)).toLocaleString();
   const st=document.getElementById('streak-chip');
   if(st){if(S.streak>=2){st.style.display='inline-block';st.textContent='\u{1F525} ×'+S.streak;}else st.style.display='none';}
 }
@@ -2587,7 +2587,11 @@ function pickChoice(letter){
   const finalRound=S.answers.length>=Q.length;
   if(finalRound)pts*=2;
   S.score+=pts;
-  updateScoreHUD();spawnScorePop(pts,finalRound);spawnStatChips(c.fx);
+  // Stars are the spendable currency — bank them live as each question is answered
+  // (same totals as before: 250 per best answer + 50 per answer). Reverted by "Back".
+  const starsEarned=50+(isBest?250:0);
+  if(P){P.stars=(P.stars||0)+starsEarned;saveProfiles();}
+  updateScoreHUD();updateBankUI();spawnScorePop(starsEarned,false);spawnStatChips(c.fx);
   sfx(net>=0?'good':'bad');
   const btns=document.querySelectorAll('#choices .choice');
   btns.forEach((b,i)=>{if(i===vi)b.classList.add(net>=0?'chosen-pos':'chosen-neg');else b.classList.add('dimmed');});
@@ -2683,7 +2687,7 @@ function buildResults(){
   document.getElementById('grade-score').textContent='⭐ '+S.score.toLocaleString()+' pts · '+S.bestCount+'/10 best answers · longest streak '+S.maxStreak;
   document.getElementById('grade-note').textContent=g.note;
   renderAchievements('ach-grid');
-  const earned=S.bestCount*250+S.answers.length*50;bankStars(earned,true);renderBankPanel('bank-panel',earned,true);maybeAskFeedback();
+  const earned=S.bestCount*250+S.answers.length*50;recordTerm(earned,true);renderBankPanel('bank-panel',earned,true);maybeAskFeedback();
   setFinalBars();
   const t=S.answers.length||1;['cap','mix','soc','com'].forEach(k=>{document.getElementById('if-'+k).style.width=(S.counts[k]/t*100)+'%';document.getElementById('ic-'+k).textContent=S.counts[k]+'/'+t;});
 }
@@ -2721,7 +2725,8 @@ function pushHistory(){
     answers:[...S.answers],
     counts:{...S.counts},
     score:S.score,streak:S.streak,maxStreak:S.maxStreak,bestCount:S.bestCount,
-    minStats:{...S.minStats}
+    minStats:{...S.minStats},
+    stars:(P&&P.stars)||0
   });
 }
 
@@ -2730,6 +2735,7 @@ function goBack(){
   const prev=stateHistory.pop();
   S.stats=prev.stats;S.qIdx=prev.qIdx;S.answers=prev.answers;S.counts=prev.counts;S.locked=false;
   S.score=prev.score;S.streak=prev.streak;S.maxStreak=prev.maxStreak;S.bestCount=prev.bestCount;S.minStats=prev.minStats;
+  if(P&&typeof prev.stars==='number'){P.stars=prev.stars;saveProfiles();updateBankUI();updateScoreHUD();}
   pendingNext=false;
   document.getElementById('paper-overlay').classList.remove('open');
   document.getElementById('event-overlay').classList.remove('open');
@@ -3142,6 +3148,17 @@ function updateBankUI(){
 function bankStars(amount,won){
   if(!P)return;
   P.stars=(P.stars||0)+amount;
+  P.runs=(P.runs||0)+1;
+  P.best=Math.max(P.best||0,S.score||0);
+  P.history=P.history||[];
+  P.history.unshift({d:Date.now(),name:nationName,score:S.score||0,earned:amount,won:!!won,grade:computeGrade().letter,best:S.bestCount||0,diff:DIFF_KEY});
+  if(P.history.length>25)P.history.length=25;
+  saveProfiles();updateBankUI();
+}
+// Stars are banked live per answer (see pickChoice), so at term end we only record the
+// round's history/stats — without re-adding stars (which would double-count the balance).
+function recordTerm(amount,won){
+  if(!P)return;
   P.runs=(P.runs||0)+1;
   P.best=Math.max(P.best||0,S.score||0);
   P.history=P.history||[];
@@ -3810,7 +3827,7 @@ function renderTown(){
     '</svg>';
   const tn=document.getElementById('town-name');if(tn)tn.textContent=nationName;
   const tp=document.getElementById('town-progress');if(tp)tp.textContent='Term '+(S.term||1)+' · '+S.answers.length+'/'+Q.length+' citizens helped';
-  const ts=document.getElementById('town-score');if(ts)ts.textContent='⭐ '+(((P&&P.lifetimeScore)||0)+(S.score||0)).toLocaleString();
+  const ts=document.getElementById('town-score');if(ts)ts.textContent='⭐ '+(((P&&P.stars)||0)).toLocaleString();
   const strip=document.getElementById('town-statstrip');
   if(strip){strip.innerHTML=[['😊',st.h],['💰',st.e],['📚',st.ed],['🗽',st.f]].map(function(r){
       const cls=r[1]<=THRESHOLD?'critical':r[1]<=50?'bad':r[1]<=70?'ok':'great';
@@ -4047,7 +4064,7 @@ function dlgPick(letter){
     '<div class="next-wrap" style="margin-top:14px;"><button class="btn btn-gold" onclick="dlgContinue()">'+(S.answers.length>=Q.length?'Finish the Term →':'Continue →')+'</button></div>';
   fb.style.display='block';
   fb.querySelectorAll('.dc-bar').forEach(function(b){b.style.width=(b.getAttribute('data-pct')||0)+'%';});
-  const ts=document.getElementById('town-score');if(ts)ts.textContent='⭐ '+(((P&&P.lifetimeScore)||0)+(S.score||0)).toLocaleString();
+  const ts=document.getElementById('town-score');if(ts)ts.textContent='⭐ '+(((P&&P.stars)||0)).toLocaleString();
   document.querySelector('#dlg .dlg-card').scrollTop=0;
 }
 function dlgContinue(){

@@ -3839,9 +3839,9 @@ const MM_MARKERS=[
 ];
 function buildMinimap(){
   const mm=document.getElementById('minimap'); if(!mm)return;
-  const sx=MINIMAP_W/WORLD_W, sy=MINIMAP_H/WORLD_H;
+  const sx=100/WORLD_W, sy=100/WORLD_H;
   let s='<div class="mm-label">MAP</div>';
-  MM_MARKERS.forEach(function(m){ s+='<span class="mm-dot" style="left:'+(m.x*sx).toFixed(1)+'px;top:'+(m.y*sy).toFixed(1)+'px;">'+m.ic+'</span>'; });
+  MM_MARKERS.forEach(function(m){ s+='<span class="mm-dot" style="left:'+(m.x*sx).toFixed(2)+'%;top:'+(m.y*sy).toFixed(2)+'%;">'+m.ic+'</span>'; });
   s+='<div id="minimap-player"></div>';
   mm.innerHTML=s;
 }
@@ -3965,7 +3965,7 @@ function townTick(){
     const ph=Math.sin(player.step/14)*4;
     if(TC.l1&&TC.l2){TC.l1.setAttribute('y',18+(player.moving?ph:0));TC.l2.setAttribute('y',18-(player.moving?ph:0));}
     if(TC.bob)TC.bob.setAttribute('transform','translate(0,'+(player.moving?(Math.sin(player.step/12)*1.4).toFixed(2):'0')+')');}
-  if(TC.mmp){TC.mmp.style.left=(player.x*MINIMAP_W/WORLD_W).toFixed(1)+'px';TC.mmp.style.top=(player.y*MINIMAP_H/WORLD_H).toFixed(1)+'px';}
+  if(TC.mmp){TC.mmp.style.left=(player.x*100/WORLD_W).toFixed(2)+'%';TC.mmp.style.top=(player.y*100/WORLD_H).toFixed(2)+'%';}
   TC.svg.setAttribute('viewBox',camX()+' '+camY()+' '+VIEW_W+' '+VIEW_H);
   // particles (pooled; stepped at half rate; camera-culled)
   if(tickFrame%GFX.fxEvery===0){

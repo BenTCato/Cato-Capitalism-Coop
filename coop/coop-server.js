@@ -5,8 +5,9 @@
    What it does:
    • Serves the game to every student (same wifi, or hosted online).
    • Each student plays their own city; their live stats stream here.
-   • Teacher opens /host for a live leaderboard + grid of every city.
-   • The town is a shared world: students see each other walking around.
+   • Teacher opens /host, clicks "Start a Class" → gets a JOIN CODE.
+   • Students enter that code → they share one private world (room).
+   • Different classes use different codes, so worlds never mix.
 
    Run locally with the double-click launcher, or:  node coop-server.js
    In the cloud (Render/Railway/etc.) it binds to the assigned PORT.
@@ -23,18 +24,14 @@ const ROOT       = path.join(__dirname, '..');     // project folder (holds the 
 const COOP_DIR   = __dirname;                       // this /coop folder
 const START_PORT = 3000;
 const STALE_MS   = 8000;                            // drop a player after 8s of silence
-// In the cloud (Render/Railway/etc.) the host assigns a port via PORT.
 const ENV_PORT   = process.env.PORT ? Number(process.env.PORT) : null;
 const IS_CLOUD   = ENV_PORT !== null;
 
 // ── choose which game file to serve ───────────────────────────────
-// Prefer the highest version (…_v4 > …_v3 > FINAL > unlabeled). Timestamps
-// are NOT reliable after a git checkout (all files share one mtime), so we
-// rank by the version in the filename. Override with the GAME_FILE env var.
 function gameScore(f) {
   const m = f.match(/_v(\d+)/i);
-  if (m) return 1000 + Number(m[1]);   // versioned wins, highest number first
-  if (/final/i.test(f)) return 100;    // FINAL beats unlabeled
+  if (m) return 1000 + Number(m[1]);
+  if (/final/i.test(f)) return 100;
   return 1;
 }
 function findGameFile() {
@@ -51,7 +48,7 @@ function findGameFile() {
   return path.join(ROOT, all[0]);
 }
 
-// ── pick a real LAN ip (192.168.x / 10.x / 172.x preferred) ───────
+// ── pick a real LAN ip ────────────────────────────────────────────
 function lanIP() {
   const ifaces = os.networkInterfaces();
   let fallback = null;
@@ -65,19 +62,49 @@ function lanIP() {
   return fallback || '127.0.0.1';
 }
 
-// ── in-memory player table ────────────────────────────────────────
-// id -> { ...summary, lastSeen }
-const players = new Map();
+// ── ROOMS: each join code is its own private world ────────────────
+// rooms: code -> { name, players: Map(id -> state{...,lastSeen}) }
+const rooms = new Map();
+const DEFAULT_ROOM = 'MAIN';           // players with no code share this open world
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no easily-confused chars (O/0, I/1)
 
-function prune() {
-  const now = Date.now();
-  for (const [id, p] of players) if (now - p.lastSeen > STALE_MS) players.delete(id);
+function normCode(c) {
+  c = String(c == null ? '' : c).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  return c || DEFAULT_ROOM;
 }
-
-function publicList() {
-  prune();
+function getRoom(code, create) {
+  code = normCode(code);
+  let r = rooms.get(code);
+  if (!r && (create || code === DEFAULT_ROOM)) {
+    r = { name: code === DEFAULT_ROOM ? 'Class World' : ('Class ' + code), players: new Map() };
+    rooms.set(code, r);
+  }
+  return r;
+}
+function newCode() {
+  let code;
+  do {
+    code = '';
+    for (let i = 0; i < 4; i++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  } while (rooms.has(code));
+  return code;
+}
+function pruneRoom(r) {
   const now = Date.now();
-  return [...players.values()].map(p => ({
+  for (const [id, p] of r.players) if (now - p.lastSeen > STALE_MS) r.players.delete(id);
+}
+function pruneAll() {
+  const now = Date.now();
+  for (const [code, r] of rooms) {
+    pruneRoom(r);
+    // forget empty, idle, non-default rooms so memory never grows unbounded
+    if (code !== DEFAULT_ROOM && r.players.size === 0 && (now - (r.touched || 0) > 60000)) rooms.delete(code);
+  }
+}
+function publicList(r) {
+  pruneRoom(r);
+  const now = Date.now();
+  return [...r.players.values()].map(p => ({
     id: p.id, name: p.name, avatar: p.avatar,
     stats: p.stats, house: p.house, houseName: p.houseName,
     vanity: p.vanity, vanityTotal: p.vanityTotal,
@@ -110,13 +137,13 @@ function readBody(req) {
 }
 
 // ── inject the co-op client into the served game ──────────────────
-function injectedGame(worldName) {
+function injectedGame() {
   const file = findGameFile();
   if (!file) return null;
   let html = fs.readFileSync(file, 'utf8');
   const tag =
     '\n<!-- co-op injected -->\n' +
-    '<script>window.COOP={world:' + JSON.stringify(worldName) + '};</script>\n' +
+    '<script>window.COOP={world:"Class World"};</script>\n' +
     '<script src="/__coop/client.js"></script>\n';
   if (html.includes('</body>')) html = html.replace('</body>', tag + '</body>');
   else html += tag;
@@ -124,8 +151,6 @@ function injectedGame(worldName) {
 }
 
 // ── server ────────────────────────────────────────────────────────
-let WORLD_NAME = 'Class World';
-
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://localhost');
   const p = u.pathname;
@@ -134,7 +159,7 @@ const server = http.createServer(async (req, res) => {
 
   // student game
   if (p === '/' || p === '/play' || p === '/index.html') {
-    const html = injectedGame(WORLD_NAME);
+    const html = injectedGame();
     if (!html) return send(res, 500, 'text/plain',
       'Could not find the game file (CatoCapitalismGame*.html) in the project folder.');
     return send(res, 200, 'text/html; charset=utf-8', html);
@@ -155,38 +180,56 @@ const server = http.createServer(async (req, res) => {
     return sendFile(res, path.join(COOP_DIR, 'coop-client.js'), 'application/javascript; charset=utf-8');
   }
 
-  // student posts its state, gets back the other town players
+  // teacher creates a private class → returns a fresh join code
+  if (p === '/__coop/create' && req.method === 'POST') {
+    const raw = await readBody(req);
+    let name = '';
+    try { const d = JSON.parse(raw); if (d && typeof d.name === 'string') name = d.name.slice(0, 40); } catch (e) {}
+    const code = newCode();
+    const r = { name: name || ('Class ' + code), players: new Map(), touched: Date.now() };
+    rooms.set(code, r);
+    return send(res, 200, 'application/json', JSON.stringify({ ok: true, code: code, world: r.name }));
+  }
+
+  // student posts its state, gets back the other players IN THE SAME ROOM
   if (p === '/__coop/sync' && req.method === 'POST') {
     const raw = await readBody(req);
     let d; try { d = JSON.parse(raw); } catch (e) { return send(res, 400, 'application/json', '{"error":"bad json"}'); }
     if (!d || !d.id) return send(res, 400, 'application/json', '{"error":"no id"}');
+    const r = getRoom(d.room, true);
+    r.touched = Date.now();
     d.lastSeen = Date.now();
-    players.set(d.id, d);
-    prune();
-    const others = [...players.values()]
+    r.players.set(d.id, d);
+    pruneRoom(r);
+    const others = [...r.players.values()]
       .filter(o => o.id !== d.id && o.inTown)
       .map(o => ({ id: o.id, name: o.name, avatar: o.avatar, pos: o.pos,
                    stats: o.stats, house: o.house, emote: o.emote, emoteAt: o.emoteAt }));
-    return send(res, 200, 'application/json', JSON.stringify({ now: Date.now(), world: WORLD_NAME, players: others }));
+    return send(res, 200, 'application/json', JSON.stringify({ now: Date.now(), world: r.name, room: normCode(d.room), players: others }));
   }
 
-  // dashboard polls full state
+  // dashboard polls full state for one room (?room=CODE; defaults to MAIN)
   if (p === '/__coop/state') {
+    pruneAll();
+    const r = getRoom(u.searchParams.get('room'), true);
+    r.touched = Date.now();
     return send(res, 200, 'application/json',
-      JSON.stringify({ now: Date.now(), world: WORLD_NAME, count: players.size, players: publicList() }));
+      JSON.stringify({ now: Date.now(), world: r.name, room: normCode(u.searchParams.get('room')), count: r.players.size, players: publicList(r) }));
   }
 
-  // set the world name from the dashboard
+  // rename a room's world from the dashboard
   if (p === '/__coop/world' && req.method === 'POST') {
     const raw = await readBody(req);
-    try { const d = JSON.parse(raw); if (d && typeof d.world === 'string') WORLD_NAME = d.world.slice(0, 40) || 'Class World'; } catch (e) {}
-    return send(res, 200, 'application/json', JSON.stringify({ ok: true, world: WORLD_NAME }));
+    try { const d = JSON.parse(raw); const r = getRoom(d && d.room, true);
+      if (d && typeof d.world === 'string') r.name = d.world.slice(0, 40) || r.name;
+      return send(res, 200, 'application/json', JSON.stringify({ ok: true, world: r.name })); } catch (e) {}
+    return send(res, 200, 'application/json', JSON.stringify({ ok: false }));
   }
 
-  // remove a player (kick) — optional dashboard control / clean leave
+  // remove a player (clean leave / kick)
   if (p === '/__coop/kick' && req.method === 'POST') {
     const raw = await readBody(req);
-    try { const d = JSON.parse(raw); if (d && d.id) players.delete(d.id); } catch (e) {}
+    try { const d = JSON.parse(raw); if (d && d.id) { const r = getRoom(d.room, false); if (r) r.players.delete(d.id); } } catch (e) {}
     return send(res, 200, 'application/json', '{"ok":true}');
   }
 
@@ -196,7 +239,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 // ── start ─────────────────────────────────────────────────────────
-// Cloud: bind exactly to the assigned PORT. Local: try 3000, then 3001…
 function start(port, attemptsLeft) {
   server.once('error', (err) => {
     if (!IS_CLOUD && err.code === 'EADDRINUSE' && attemptsLeft > 0) {
@@ -222,15 +264,14 @@ function banner(port) {
   const line = '═'.repeat(58);
 
   if (IS_CLOUD) {
-    // Hosted online — the platform gives the public URL; no LAN ip, no browser.
     console.log('\n' + line);
     console.log('   CATO CAPITALISM GAME — CO-OP SERVER (cloud) LIVE');
     console.log(line);
     console.log('   Game file: ' + (game ? path.basename(game) : 'NOT FOUND'));
     console.log('   Listening on port ' + port);
     console.log('   Open your service URL, then add:');
-    console.log('     /        -> students');
-    console.log('     /host    -> teacher leaderboard');
+    console.log('     /        -> students (enter the class code)');
+    console.log('     /host    -> teacher: Start a Class to get a code');
     console.log('     /join    -> QR + join screen');
     console.log(line + '\n');
     return;
@@ -243,10 +284,10 @@ function banner(port) {
   console.log(line);
   console.log('   Game file:   ' + (game ? path.basename(game) : 'NOT FOUND'));
   console.log('');
-  console.log('   TEACHER  (leaderboard + all cities):');
+  console.log('   TEACHER  (Start a Class, get a join code):');
   console.log('        ' + base + '/host');
   console.log('');
-  console.log('   STUDENTS (share this link / QR):');
+  console.log('   STUDENTS (open this, then enter the code):');
   console.log('        ' + base);
   console.log('');
   console.log('   PROJECT THIS so students can join:');
@@ -254,9 +295,7 @@ function banner(port) {
   console.log(line);
   console.log('   Keep this window open. Close it to end the session.');
   console.log(line + '\n');
-  // open the projector + dashboard for the host automatically
-  openBrowser(base + '/join');
-  setTimeout(() => openBrowser(base + '/host'), 700);
+  openBrowser(base + '/host');
 }
 
 start(IS_CLOUD ? ENV_PORT : START_PORT, 12);

@@ -108,6 +108,27 @@
 </header>
 
 <div class="wrap">
+  <div id="class-bar" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:16px 18px;margin-bottom:18px;">
+    <div id="class-none">
+      <button id="start-class" style="background:linear-gradient(180deg,#FFD43B,#ED8B00);color:#3a2a00;border:none;border-radius:12px;padding:12px 22px;font-family:inherit;font-weight:900;font-size:1.05rem;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.3);">▶ Start a Class</button>
+      <span style="color:#B7AEDB;font-size:.85rem;font-weight:600;margin-left:12px;">Generates a private join code so only your students share this world.</span>
+    </div>
+    <div id="class-active" style="display:none;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-size:.7rem;color:#B7AEDB;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Class code</div>
+        <div id="class-code" style="font-size:2.6rem;font-weight:900;letter-spacing:.3em;color:var(--gold);line-height:1.05;">----</div>
+      </div>
+      <div style="font-size:.92rem;color:#D8D0F0;font-weight:600;line-height:1.5;">
+        Students open <b id="class-host" style="color:#fff;"></b> and enter code <b id="class-code2" style="color:var(--gold);"></b>,<br>or use the direct link:
+        <div style="margin-top:3px;"><a id="class-link" href="#" target="_blank" style="color:var(--gold);font-weight:700;word-break:break-all;"></a></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button id="copy-link" style="background:#2D6FD6;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:inherit;font-weight:800;cursor:pointer;">📋 Copy link</button>
+        <button id="new-class" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:10px 16px;font-family:inherit;font-weight:800;cursor:pointer;">New code</button>
+      </div>
+    </div>
+  </div>
+
   <div id="goal-card" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:16px 18px;margin-bottom:18px;">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
       <div style="display:flex;align-items:center;gap:8px;font-size:1.05rem;font-weight:800;">🎯 Class Goal:
@@ -302,9 +323,31 @@ function render(list){
   document.getElementById('grid').innerHTML=cards;
 }
 
+// ── class room (private world via a join code) ───────────────────
+var ROOM=(function(){try{return localStorage.getItem('coopHostRoom')||'';}catch(e){return '';}})();
+function studentLink(){ return location.origin+'/?room='+encodeURIComponent(ROOM); }
+function renderClassBar(){
+  var none=document.getElementById('class-none'), act=document.getElementById('class-active');
+  if(ROOM){
+    if(none)none.style.display='none'; if(act)act.style.display='flex';
+    var cc=document.getElementById('class-code'); if(cc)cc.textContent=ROOM;
+    var cc2=document.getElementById('class-code2'); if(cc2)cc2.textContent=ROOM;
+    var ch=document.getElementById('class-host'); if(ch)ch.textContent=location.origin;
+    var cl=document.getElementById('class-link'); if(cl){ cl.textContent=studentLink(); cl.href=studentLink(); }
+  } else {
+    if(none)none.style.display='block'; if(act)act.style.display='none';
+  }
+}
+function startClass(){
+  fetch('/__coop/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:(wn?wn.value:'')})})
+    .then(function(r){return r.json();}).then(function(d){
+      if(d&&d.code){ ROOM=d.code; try{localStorage.setItem('coopHostRoom',ROOM);}catch(e){} renderClassBar(); poll(); }
+    }).catch(function(){});
+}
+
 // ── polling ──────────────────────────────────────────────────────
 function poll(){
-  fetch('/__coop/state').then(function(r){return r.json();}).then(function(d){
+  fetch('/__coop/state?room='+encodeURIComponent(ROOM||'MAIN')).then(function(r){return r.json();}).then(function(d){
     if(d.world && document.activeElement!==wn){ wn.value=d.world; }
     render(d.players||[]);
     document.getElementById('updated').textContent='updated '+new Date(d.now).toLocaleTimeString();
@@ -312,8 +355,12 @@ function poll(){
 }
 var wn=document.getElementById('worldname');
 wn.addEventListener('change',function(){
-  fetch('/__coop/world',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({world:wn.value})});
+  fetch('/__coop/world',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:ROOM,world:wn.value})});
 });
+var scBtn=document.getElementById('start-class'); if(scBtn)scBtn.onclick=startClass;
+var ncBtn=document.getElementById('new-class'); if(ncBtn)ncBtn.onclick=startClass;
+var cpBtn=document.getElementById('copy-link'); if(cpBtn)cpBtn.onclick=function(){ try{var w=navigator.clipboard.writeText(studentLink()); if(w&&w.then)w.then(function(){cpBtn.textContent='✓ Copied';setTimeout(function(){cpBtn.textContent='📋 Copy link';},1500);}).catch(function(){}); }catch(e){} };
+renderClassBar();
 var rm=document.getElementById('rankmode');
 rm.addEventListener('change',function(){ rankMode=rm.value; try{localStorage.setItem('coopRankMode',rankMode);}catch(e){} render(LAST); });
 var gStat=document.getElementById('goal-stat'), gTgt=document.getElementById('goal-target');

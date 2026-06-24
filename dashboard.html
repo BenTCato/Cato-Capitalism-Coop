@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher Dashboard · Cato Capitalism Game</title>
+<style>
+  :root{
+    --bg1:#0c0830; --bg2:#1a1456; --gold:#FFB81C; --gold2:#ED8B00;
+    --card:#FFFDF4; --line:#EADFC4; --ink:#2C2440; --ink2:#7A6A4F;
+    --good:#2EB872; --ok:#F2B23E; --bad:#F2762E; --crit:#E03131; --blue:#2D6FD6;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Baloo 2','Segoe UI',Verdana,sans-serif;
+    background:radial-gradient(1200px 600px at 50% -10%,var(--bg2),var(--bg1));
+    color:#fff;min-height:100vh;}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    padding:16px 24px;border-bottom:3px solid rgba(255,184,28,.85);background:rgba(8,6,30,.5);
+    position:sticky;top:0;z-index:5;backdrop-filter:blur(6px);}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand h1{font-size:1.3rem;margin:0;font-weight:800;letter-spacing:.3px;}
+  .brand .sub{font-size:.8rem;color:#C9C0E8;font-weight:600;}
+  .worldname{background:transparent;border:none;color:var(--gold);font-weight:800;font-size:1.3rem;
+    font-family:inherit;border-bottom:2px dashed rgba(255,184,28,.5);max-width:280px;}
+  .worldname:focus{outline:none;border-bottom-color:var(--gold);}
+  .hd-right{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+  .stat-pill{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+    padding:6px 14px;border-radius:999px;font-size:.85rem;font-weight:700;}
+  .join-pill{background:var(--gold);color:#3a2a00;padding:8px 16px;border-radius:999px;
+    font-weight:800;font-size:.9rem;text-decoration:none;display:inline-flex;gap:8px;align-items:center;}
+  .wrap{padding:22px 24px 60px;max-width:1500px;margin:0 auto;}
+  .section-title{display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:800;
+    margin:26px 0 12px;color:#fff;}
+  .section-title .chip{background:rgba(255,255,255,.12);font-size:.72rem;padding:3px 9px;border-radius:999px;color:#D8D0F0;font-weight:700;}
+
+  /* leaderboard */
+  .lb{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:18px;overflow:hidden;}
+  .lb table{width:100%;border-collapse:collapse;}
+  .lb th{font-size:.72rem;text-transform:uppercase;letter-spacing:.6px;color:#B7AEDB;
+    text-align:left;padding:11px 14px;background:rgba(0,0,0,.18);font-weight:700;cursor:pointer;user-select:none;}
+  .lb th.sortable:hover{color:#fff;}
+  .lb th .arrow{opacity:.5;font-size:.7rem;}
+  .lb td{padding:10px 14px;border-top:1px solid rgba(255,255,255,.07);font-size:.92rem;vertical-align:middle;}
+  .lb tr:hover td{background:rgba(255,255,255,.04);}
+  .rank{font-weight:800;font-size:1.05rem;width:42px;text-align:center;}
+  .rank.r1{color:#FFD43B;} .rank.r2{color:#CED4DA;} .rank.r3{color:#E8A87C;}
+  .nation{display:flex;align-items:center;gap:10px;font-weight:700;}
+  .nation .av{width:34px;height:40px;flex-shrink:0;}
+  .bars{display:flex;gap:8px;}
+  .barwrap{width:52px;}
+  .barwrap .lbl{font-size:.62rem;color:#B7AEDB;text-align:center;margin-bottom:2px;}
+  .track{height:8px;background:rgba(255,255,255,.15);border-radius:5px;overflow:hidden;}
+  .fill{height:100%;border-radius:5px;transition:width .5s ease;}
+  .house{font-weight:700;font-size:.85rem;white-space:nowrap;}
+  .house .ico{font-size:1.1rem;margin-right:4px;}
+  .vanity{font-weight:700;}
+  .vanity .vt{color:#B7AEDB;font-weight:600;font-size:.8rem;}
+  .score{font-weight:800;color:var(--gold);font-size:1.02rem;}
+  .grade{display:inline-flex;width:30px;height:30px;border-radius:50%;align-items:center;justify-content:center;
+    font-weight:800;font-size:.95rem;background:rgba(255,255,255,.12);}
+  .grade.S{background:linear-gradient(180deg,#FFD43B,#ED8B00);color:#3a2a00;}
+  .grade.A{background:#2EB872;} .grade.B{background:#2D6FD6;} .grade.C{background:#F2B23E;color:#3a2a00;} .grade.D{background:#9AA0A6;}
+  .idle{opacity:.4;}
+  .dot-live{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block;box-shadow:0 0 6px var(--good);}
+
+  /* city grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+  .city{background:var(--card);color:var(--ink);border-radius:16px;padding:14px;box-shadow:0 8px 22px rgba(0,0,0,.28);
+    border:2px solid var(--line);position:relative;overflow:hidden;}
+  .city.notstarted{opacity:.7;}
+  .city .top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .city .av{width:42px;height:50px;flex-shrink:0;}
+  .city .nm{font-weight:800;font-size:1rem;line-height:1.1;}
+  .city .meta{font-size:.74rem;color:var(--ink2);font-weight:600;}
+  .city .cbars{display:flex;flex-direction:column;gap:6px;margin:8px 0;}
+  .cbar{display:flex;align-items:center;gap:7px;font-size:.74rem;color:var(--ink2);font-weight:700;}
+  .cbar .ct{flex:1;height:9px;background:#EFE7D3;border-radius:5px;overflow:hidden;}
+  .city .foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px;
+    border-top:1px solid var(--line);padding-top:8px;font-size:.8rem;font-weight:700;}
+  .badge-mini{background:#FFF3D6;border:1px solid var(--gold);border-radius:8px;padding:2px 7px;font-size:.72rem;color:#7a5a00;}
+  .empty{text-align:center;color:#B7AEDB;padding:60px 20px;font-size:1rem;}
+  .empty .big{font-size:2.4rem;margin-bottom:10px;}
+  .updated{font-size:.72rem;color:#9890c0;margin-left:6px;}
+  @media(max-width:640px){ .bars{display:none;} }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span style="font-size:1.8rem;">🏛️</span>
+    <div>
+      <h1>Class Leaderboard</h1>
+      <div class="sub">Cato Capitalism Game · live co-op</div>
+    </div>
+  </div>
+  <div class="hd-right">
+    <div>
+      <div style="font-size:.7rem;color:#B7AEDB;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">World name</div>
+      <input id="worldname" class="worldname" value="Class World" maxlength="40" title="Click to rename the world">
+    </div>
+    <div>
+      <div style="font-size:.7rem;color:#B7AEDB;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Rank by</div>
+      <select id="rankmode" class="worldname" style="font-size:1rem;max-width:170px;cursor:pointer;"><option value="lifetime">🏆 Lifetime</option></select>
+    </div>
+    <div class="stat-pill"><span class="dot-live"></span> <span id="online">0</span> online</div>
+    <a class="join-pill" href="/join" target="_blank">📺 Join screen</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="class-bar" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:16px 18px;margin-bottom:18px;">
+    <div id="class-none">
+      <button id="start-class" style="background:linear-gradient(180deg,#FFD43B,#ED8B00);color:#3a2a00;border:none;border-radius:12px;padding:12px 22px;font-family:inherit;font-weight:900;font-size:1.05rem;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.3);">▶ Start a Class</button>
+      <span style="color:#B7AEDB;font-size:.85rem;font-weight:600;margin-left:12px;">Generates a private join code so only your students share this world.</span>
+    </div>
+    <div id="class-active" style="display:none;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-size:.7rem;color:#B7AEDB;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Class code</div>
+        <div id="class-code" style="font-size:2.6rem;font-weight:900;letter-spacing:.3em;color:var(--gold);line-height:1.05;">----</div>
+      </div>
+      <div style="font-size:.92rem;color:#D8D0F0;font-weight:600;line-height:1.5;">
+        Students open <b id="class-host" style="color:#fff;"></b> and enter code <b id="class-code2" style="color:var(--gold);"></b>,<br>or use the direct link:
+        <div style="margin-top:3px;"><a id="class-link" href="#" target="_blank" style="color:var(--gold);font-weight:700;word-break:break-all;"></a></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button id="copy-link" style="background:#2D6FD6;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:inherit;font-weight:800;cursor:pointer;">📋 Copy link</button>
+        <button id="new-class" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:10px 16px;font-family:inherit;font-weight:800;cursor:pointer;">New code</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="goal-card" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:16px 18px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;font-size:1.05rem;font-weight:800;">🎯 Class Goal:
+        <select id="goal-stat" style="background:transparent;border:none;border-bottom:2px dashed rgba(255,184,28,.5);color:var(--gold);font-weight:800;font-family:inherit;font-size:1rem;cursor:pointer;">
+          <option value="f">🗽 Freedom</option><option value="h">😊 Happiness</option><option value="e">💰 Economy</option><option value="ed">📚 Education</option><option value="avg">⭐ Overall health</option>
+        </select>
+        <span style="color:#B7AEDB;font-weight:600;font-size:.9rem;">≥</span>
+        <input id="goal-target" type="number" min="0" max="100" value="75" style="width:56px;background:transparent;border:none;border-bottom:2px dashed rgba(255,184,28,.5);color:var(--gold);font-weight:800;font-family:inherit;font-size:1rem;text-align:center;">
+        <span style="color:#B7AEDB;font-weight:600;font-size:.9rem;">%</span>
+      </div>
+      <div id="goal-status" style="font-weight:800;font-size:.95rem;"></div>
+    </div>
+    <div style="margin-top:12px;height:22px;background:rgba(255,255,255,.12);border-radius:12px;overflow:hidden;position:relative;">
+      <div id="goal-fill" style="height:100%;border-radius:12px;transition:width .6s ease, background .4s ease;width:0%;background:#F2B23E;"></div>
+      <div id="goal-marker" style="position:absolute;top:-3px;bottom:-3px;width:3px;background:#fff;opacity:.85;left:75%;"></div>
+    </div>
+    <div id="goal-detail" style="margin-top:8px;font-size:.82rem;color:#B7AEDB;font-weight:600;"></div>
+  </div>
+
+  <div class="section-title">🏆 Leaderboard <span class="chip">click a column to sort</span><span id="champion" style="font-weight:800;color:#FFD43B;font-size:.92rem;"></span><span class="updated" id="updated"></span></div>
+  <div class="lb">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:42px;">#</th>
+          <th class="sortable" data-k="name">Nation</th>
+          <th class="sortable" data-k="health">City Health</th>
+          <th class="sortable" data-k="house">House</th>
+          <th class="sortable" data-k="vanity">Vanity</th>
+          <th class="sortable" data-k="score">Score <span id="score-scope" style="font-size:.7rem;color:#B7AEDB;font-weight:600;"></span> <span class="arrow">▾</span></th>
+          <th class="sortable" data-k="grade">Grade <span id="grade-scope" style="font-size:.7rem;color:#B7AEDB;font-weight:600;"></span></th>
+        </tr>
+      </thead>
+      <tbody id="lb-body"></tbody>
+    </table>
+  </div>
+
+  <div class="section-title">🏙️ Every City <span class="chip" id="city-count">0</span></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty"><div class="big">🪧</div>No students have joined yet.<br>
+    Open the <a href="/join" target="_blank" style="color:var(--gold);">join screen</a> and share the link.</div>
+</div>
+
+<script>
+// ── avatar art (compact, matches the game's palette) ─────────────
+var SKIN=['#F2CFA6','#E8B88A','#D69F6E','#B5836B','#A06A3F','#8A5A33','#6E4423'];
+var HAIR=['#2B2620','#5A3A22','#8A5A33','#C9912E','#E8C36B','#9AA0A6','#3A2E55','#D7263D'];
+var OUTC=['#14355F','#F2762E','#2EB872','#3C4A63','#19A7CE','#D7263D','#D4A017','#F8FAFC','#2563EB','#B91C1C'];
+function avatarSVG(av,w,h){
+  if(!av) return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 60 72"></svg>';
+  var sk=SKIN[av.skin]||SKIN[0], hc=HAIR[av.hairColor]||HAIR[0], oc=OUTC[av.outfit]||OUTC[0];
+  var s='<svg width="'+w+'" height="'+h+'" viewBox="0 0 60 72">';
+  s+='<ellipse cx="30" cy="68" rx="15" ry="4" fill="rgba(0,0,0,.12)"/>';
+  s+='<rect x="20" y="40" width="20" height="22" rx="9" fill="'+oc+'"/>';                 // body
+  s+='<circle cx="30" cy="24" r="16" fill="'+sk+'"/>';                                     // head
+  if(av.hair!==0) s+='<path d="M14,22 Q14,6 30,6 Q46,6 46,22 Q40,14 30,14 Q20,14 14,22 Z" fill="'+hc+'"/>';
+  s+='<circle cx="24" cy="25" r="2.2" fill="#2B2620"/><circle cx="36" cy="25" r="2.2" fill="#2B2620"/>';
+  s+='<path d="M25,31 Q30,34 35,31" stroke="#2B2620" stroke-width="2" fill="none" stroke-linecap="round"/>';
+  if(av.glasses) s+='<circle cx="24" cy="25" r="4.5" fill="none" stroke="#333" stroke-width="1.4"/><circle cx="36" cy="25" r="4.5" fill="none" stroke="#333" stroke-width="1.4"/><line x1="28.5" y1="25" x2="31.5" y2="25" stroke="#333" stroke-width="1.4"/>';
+  s+='</svg>';
+  return s;
+}
+function hcolor(v){return v<=25?'#E03131':v<=50?'#F2762E':v<=70?'#F2B23E':'#2EB872';}
+function avg(s){return s?Math.round((s.h+s.e+s.ed+s.f)/4):0;}
+function esc(t){return String(t==null?'':t).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
+
+// ── sorting ──────────────────────────────────────────────────────
+var sortKey='score', sortDir=-1;
+var rankMode=(function(){try{return localStorage.getItem('coopRankMode')||'lifetime';}catch(e){return 'lifetime';}})();
+function gradeRank(g){return {S:5,A:4,B:3,C:2,D:1}[g]||0;}
+// Resolve the grade + score to display for a player under the current rank mode.
+function resolve(p){
+  if(rankMode==='lifetime') return {grade:(p.lifetimeGrade||'—'), score:(p.score==null?null:p.score)};
+  var tg=p.termGrades&&p.termGrades[rankMode];
+  return {grade:(tg?tg.grade:'—'), score:(tg?tg.score:null)};
+}
+function sortVal(p,k){
+  if(k==='name') return (p.name||'').toLowerCase();
+  if(k==='health') return avg(p.stats);
+  if(k==='house') return p.house||0;
+  if(k==='vanity') return p.vanity||0;
+  if(k==='grade'){return gradeRank(resolve(p).grade);}
+  var rs=resolve(p).score; return (rs==null?-1:rs);
+}
+document.querySelectorAll('th.sortable').forEach(function(th){
+  th.addEventListener('click',function(){
+    var k=th.dataset.k;
+    if(sortKey===k) sortDir*=-1; else {sortKey=k; sortDir=(k==='name')?1:-1;}
+    document.querySelectorAll('th .arrow').forEach(function(a){a.remove();});
+    var ar=document.createElement('span');ar.className='arrow';ar.textContent=sortDir<0?' ▾':' ▴';th.appendChild(ar);
+    render(LAST);
+  });
+});
+
+// ── class goal ───────────────────────────────────────────────────
+var GOALSTAT=(function(){try{return localStorage.getItem('coopGoalStat')||'f';}catch(e){return 'f';}})();
+var GOALTGT=(function(){try{var v=+localStorage.getItem('coopGoalTarget');return v>0?v:75;}catch(e){return 75;}})();
+function goalStatName(k){return {f:'Freedom',h:'Happiness',e:'Economy',ed:'Education',avg:'overall health'}[k]||k;}
+function playerStatVal(p,k){ if(!p.stats)return null; return k==='avg'?(p.stats.h+p.stats.e+p.stats.ed+p.stats.f)/4 : p.stats[k]; }
+function updateGoal(list){
+  var vals=list.filter(function(p){return p.started&&p.stats;}).map(function(p){return playerStatVal(p,GOALSTAT);}).filter(function(v){return v!=null;});
+  var avg=vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length):0;
+  var meeting=vals.filter(function(v){return v>=GOALTGT;}).length;
+  var met=vals.length>0&&avg>=GOALTGT;
+  var fill=document.getElementById('goal-fill'), marker=document.getElementById('goal-marker'),
+      status=document.getElementById('goal-status'), detail=document.getElementById('goal-detail');
+  if(fill){ fill.style.width=Math.max(0,Math.min(100,avg))+'%'; fill.style.background=met?'#2EB872':'#F2B23E'; }
+  if(marker){ marker.style.left=Math.max(0,Math.min(100,GOALTGT))+'%'; }
+  if(status){ status.textContent=met?'✅ Goal met!':'⏳ In progress'; status.style.color=met?'#2EB872':'#FFD43B'; }
+  if(detail){ detail.textContent=vals.length?('Class average '+goalStatName(GOALSTAT)+': '+avg+'%  ·  '+meeting+' of '+vals.length+' cities at or above '+GOALTGT+'%'):'Waiting for students to start playing…'; }
+}
+
+// ── render ───────────────────────────────────────────────────────
+var LAST=[];
+var BARS=[['😊','h'],['💰','e'],['📚','ed'],['🗽','f']];
+var BARLBL=[['😊','h'],['💰','e'],['📚','ed'],['🗽','f']];
+function houseIcon(name){
+  var m={'Cozy Cottage':'🏠','Family House':'🏡','Mansion':'🏛️','Apartment Complex':'🏢','Skyscraper':'🏙️','Royal Palace':'🏰'};
+  return m[name]||'🏠';
+}
+function render(list){
+  LAST=list;
+  var online=list.filter(function(p){return p.idleMs<6000;}).length;
+  document.getElementById('online').textContent=online;
+  document.getElementById('city-count').textContent=list.length;
+  document.getElementById('empty').style.display=list.length?'none':'block';
+  updateGoal(list);
+
+  // term/lifetime champion = top resolved score in the current rank mode
+  var champ=null, champScore=-1;
+  list.forEach(function(p){ if(!p.started)return; var sc=resolve(p).score; if(sc!=null && sc>champScore){champScore=sc; champ=p;} });
+  var champEl=document.getElementById('champion');
+  if(champEl){ var scopeTxt=(rankMode==='lifetime'?'Lifetime':'Term '+rankMode); champEl.textContent=champ?('👑 '+scopeTxt+' Champion: '+champ.name):''; }
+
+  // build the Rank-by options (Lifetime + every term any student has reached)
+  var maxTerm=0;
+  list.forEach(function(p){ if(p.term&&p.term>maxTerm)maxTerm=p.term;
+    if(p.termGrades) Object.keys(p.termGrades).forEach(function(k){var n=+k; if(n>maxTerm)maxTerm=n;}); });
+  var sel=document.getElementById('rankmode');
+  if(sel && sel.__built!==maxTerm){
+    var opts='<option value="lifetime">🏆 Lifetime</option>';
+    for(var ti=1;ti<=maxTerm;ti++) opts+='<option value="'+ti+'">Term '+ti+'</option>';
+    sel.innerHTML=opts; sel.value=rankMode; sel.__built=maxTerm;
+  }
+  var scopeLbl=(rankMode==='lifetime'?'(Lifetime)':'(Term '+rankMode+')');
+  var ss=document.getElementById('score-scope'); if(ss)ss.textContent=scopeLbl;
+  var gs=document.getElementById('grade-scope'); if(gs)gs.textContent=scopeLbl;
+
+  var sorted=list.slice().sort(function(a,b){
+    var va=sortVal(a,sortKey),vb=sortVal(b,sortKey);
+    if(va<vb)return -1*sortDir; if(va>vb)return 1*sortDir; return 0;
+  });
+
+  // leaderboard
+  var rows=sorted.map(function(p,i){
+    var idle=p.idleMs>6000?' idle':'';
+    var r=resolve(p);
+    var bars=BARLBL.map(function(b){
+      var v=p.stats?p.stats[b[1]]:0;
+      return '<div class="barwrap"><div class="lbl">'+b[0]+'</div><div class="track"><div class="fill" style="width:'+v+'%;background:'+hcolor(v)+'"></div></div></div>';
+    }).join('');
+    var rk=i+1;
+    return '<tr class="'+idle.trim()+'">'+
+      '<td class="rank r'+rk+'">'+(p===champ?'👑 ':'')+rk+'</td>'+
+      '<td><div class="nation"><span class="av">'+avatarSVG(p.avatar,34,40)+'</span><span>'+esc(p.name)+(p.started?'':' <span style="font-size:.7rem;color:#B7AEDB;">(setting up)</span>')+'</span></div></td>'+
+      '<td><div class="bars">'+bars+'</div></td>'+
+      '<td class="house"><span class="ico">'+houseIcon(p.houseName)+'</span>'+esc(p.houseName||'—')+'</td>'+
+      '<td class="vanity">'+(p.vanity||0)+'<span class="vt">/'+(p.vanityTotal||0)+'</span></td>'+
+      '<td class="score">'+(r.score==null?'<span style="color:#B7AEDB;">—</span>':'⭐ '+r.score.toLocaleString())+'</td>'+
+      '<td>'+(r.grade&&r.grade!=='—'?'<span class="grade '+r.grade+'">'+r.grade+'</span>':'<span style="color:#B7AEDB;">—</span>')+'</td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('lb-body').innerHTML=rows;
+
+  // city grid (sorted same way)
+  var cards=sorted.map(function(p){
+    var r=resolve(p);
+    var cb=BARS.map(function(b){
+      var v=p.stats?p.stats[b[1]]:0;
+      return '<div class="cbar">'+b[0]+'<div class="ct"><div class="fill" style="width:'+v+'%;background:'+hcolor(v)+'"></div></div><b>'+v+'</b></div>';
+    }).join('');
+    return '<div class="city'+(p.started?'':' notstarted')+(p.idleMs>6000?' idle':'')+'">'+
+      '<div class="top"><span class="av">'+avatarSVG(p.avatar,42,50)+'</span>'+
+        '<div><div class="nm">'+esc(p.name)+'</div>'+
+        '<div class="meta">'+houseIcon(p.houseName)+' '+esc(p.houseName||'New')+' · Term '+(p.term||1)+'</div></div></div>'+
+      '<div class="cbars">'+cb+'</div>'+
+      '<div class="foot"><span class="badge-mini">🎩 '+(p.vanity||0)+'/'+(p.vanityTotal||0)+'</span>'+
+        '<span class="score" style="color:'+(p.started?'#ED8B00':'#bbb')+'">'+(r.score==null?'—':'⭐ '+r.score.toLocaleString())+'</span>'+
+        (r.grade&&r.grade!=='—'?'<span class="grade '+r.grade+'">'+r.grade+'</span>':'')+'</div>'+
+    '</div>';
+  }).join('');
+  document.getElementById('grid').innerHTML=cards;
+}
+
+// ── class room (private world via a join code) ───────────────────
+var ROOM=(function(){try{return localStorage.getItem('coopHostRoom')||'';}catch(e){return '';}})();
+function studentLink(){ return location.origin+'/?room='+encodeURIComponent(ROOM); }
+function renderClassBar(){
+  var none=document.getElementById('class-none'), act=document.getElementById('class-active');
+  if(ROOM){
+    if(none)none.style.display='none'; if(act)act.style.display='flex';
+    var cc=document.getElementById('class-code'); if(cc)cc.textContent=ROOM;
+    var cc2=document.getElementById('class-code2'); if(cc2)cc2.textContent=ROOM;
+    var ch=document.getElementById('class-host'); if(ch)ch.textContent=location.origin;
+    var cl=document.getElementById('class-link'); if(cl){ cl.textContent=studentLink(); cl.href=studentLink(); }
+  } else {
+    if(none)none.style.display='block'; if(act)act.style.display='none';
+  }
+}
+function startClass(){
+  fetch('/__coop/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:(wn?wn.value:'')})})
+    .then(function(r){return r.json();}).then(function(d){
+      if(d&&d.code){ ROOM=d.code; try{localStorage.setItem('coopHostRoom',ROOM);}catch(e){} renderClassBar(); poll(); }
+    }).catch(function(){});
+}
+
+// ── polling ──────────────────────────────────────────────────────
+function poll(){
+  fetch('/__coop/state?room='+encodeURIComponent(ROOM||'MAIN')).then(function(r){return r.json();}).then(function(d){
+    if(d.world && document.activeElement!==wn){ wn.value=d.world; }
+    render(d.players||[]);
+    document.getElementById('updated').textContent='updated '+new Date(d.now).toLocaleTimeString();
+  }).catch(function(){});
+}
+var wn=document.getElementById('worldname');
+wn.addEventListener('change',function(){
+  fetch('/__coop/world',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:ROOM,world:wn.value})});
+});
+var scBtn=document.getElementById('start-class'); if(scBtn)scBtn.onclick=startClass;
+var ncBtn=document.getElementById('new-class'); if(ncBtn)ncBtn.onclick=startClass;
+var cpBtn=document.getElementById('copy-link'); if(cpBtn)cpBtn.onclick=function(){ try{var w=navigator.clipboard.writeText(studentLink()); if(w&&w.then)w.then(function(){cpBtn.textContent='✓ Copied';setTimeout(function(){cpBtn.textContent='📋 Copy link';},1500);}).catch(function(){}); }catch(e){} };
+renderClassBar();
+var rm=document.getElementById('rankmode');
+rm.addEventListener('change',function(){ rankMode=rm.value; try{localStorage.setItem('coopRankMode',rankMode);}catch(e){} render(LAST); });
+var gStat=document.getElementById('goal-stat'), gTgt=document.getElementById('goal-target');
+if(gStat){ gStat.value=GOALSTAT; gStat.addEventListener('change',function(){ GOALSTAT=gStat.value; try{localStorage.setItem('coopGoalStat',GOALSTAT);}catch(e){} updateGoal(LAST); }); }
+if(gTgt){ gTgt.value=GOALTGT; gTgt.addEventListener('change',function(){ GOALTGT=Math.max(0,Math.min(100,+gTgt.value||0)); try{localStorage.setItem('coopGoalTarget',GOALTGT);}catch(e){} updateGoal(LAST); }); }
+poll();
+setInterval(poll,1200);
+</script>
+</body>
+</html>

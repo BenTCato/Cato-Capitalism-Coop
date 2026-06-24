@@ -21,6 +21,24 @@
   var remotes = {};      // id -> {data, rx, ry, tx, ty, dir, el, body, tag, seen}
   var onlineCount = 1;
 
+  // ── Class room (private world): from ?room=CODE in the URL, else this tab's saved code ──
+  function cleanCode(c){ return String(c==null?'':c).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6); }
+  function readRoom() {
+    var c = '';
+    try { c = new URLSearchParams(location.search).get('room') || ''; } catch (e) {}
+    if (c) { try { sessionStorage.setItem('coopRoom', c); } catch (e) {} }
+    if (!c) { try { c = sessionStorage.getItem('coopRoom') || ''; } catch (e) {} }
+    return cleanCode(c);
+  }
+  var ROOM = readRoom();
+  function setRoom(code) {
+    ROOM = cleanCode(code);
+    try { if (ROOM) sessionStorage.setItem('coopRoom', ROOM); else sessionStorage.removeItem('coopRoom'); } catch (e) {}
+    for (var id in remotes) removeRemote(id);   // leaving a world: clear who we were seeing
+    refreshJoinBtn();
+    sync();                                     // re-announce in the new room immediately
+  }
+
   function g(name, dflt) { try { return eval(name); } catch (e) { return dflt; } }
 
   function townActive() {
@@ -50,6 +68,7 @@
     var STORE = g('STORE_ITEMS', null);
     return {
       id: ID,
+      room: ROOM,
       name: g('nationName', 'A Nation') || 'A Nation',
       avatar: av ? { skin: av.skin, hair: av.hair, hairColor: av.hairColor, beard: av.beard,
                      glasses: av.glasses, extra: av.extra, outfit: av.outfit } : null,
@@ -252,6 +271,54 @@
   }
   window.addEventListener('DOMContentLoaded', function () { document.body.appendChild(badge); });
   if (document.body) document.body.appendChild(badge);
+
+  // ── "Join a Class" code entry — lets a class (or two tabs) share one private world ──
+  var joinBtn, joinOv;
+  function refreshJoinBtn(){ if (joinBtn) joinBtn.textContent = ROOM ? ('🔑 Class ' + ROOM) : '🔑 Join a class'; }
+  function openJoin(){
+    if (!joinOv) return;
+    var inp = document.getElementById('coop-join-input'); if (inp) inp.value = ROOM || '';
+    var leave = document.getElementById('coop-join-leave'); if (leave) leave.style.display = ROOM ? 'inline-block' : 'none';
+    joinOv.style.display = 'flex';
+    if (inp) setTimeout(function(){ inp.focus(); }, 30);
+  }
+  function closeJoin(){ if (joinOv) joinOv.style.display = 'none'; }
+  function buildJoinUI(){
+    if (document.getElementById('coop-join-btn') || !document.body) return;
+    joinBtn = document.createElement('button');
+    joinBtn.id = 'coop-join-btn';
+    joinBtn.style.cssText = 'position:fixed;left:12px;bottom:52px;z-index:9999;font-family:Verdana,sans-serif;font-size:12px;font-weight:800;color:#13234a;background:#FFD166;border:none;cursor:pointer;padding:8px 13px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);';
+    joinBtn.onclick = openJoin;
+    document.body.appendChild(joinBtn);
+
+    joinOv = document.createElement('div');
+    joinOv.id = 'coop-join-ov';
+    joinOv.style.cssText = 'position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:rgba(10,14,28,.6);font-family:Verdana,sans-serif;';
+    joinOv.innerHTML =
+      '<div style="background:#fff;border-radius:18px;padding:26px 24px;width:min(360px,90vw);box-shadow:0 18px 50px rgba(0,0,0,.4);text-align:center;">' +
+      '<div style="font-size:1.25rem;font-weight:900;color:#13234a;margin-bottom:4px;">Join a Class</div>' +
+      '<div style="font-size:.85rem;color:#5a6b8c;margin-bottom:16px;">Enter the code your teacher shows on the board.</div>' +
+      '<input id="coop-join-input" maxlength="6" placeholder="CODE" autocomplete="off" ' +
+        'style="width:100%;box-sizing:border-box;text-align:center;letter-spacing:.35em;text-transform:uppercase;font-size:1.6rem;font-weight:900;color:#13234a;padding:12px;border:2px solid #cdd7ea;border-radius:12px;outline:none;">' +
+      '<div style="display:flex;gap:10px;margin-top:16px;">' +
+        '<button id="coop-join-cancel" style="flex:1;padding:11px;border:none;border-radius:10px;background:#e7ecf5;color:#3a4a6a;font-weight:800;cursor:pointer;font-family:inherit;">Cancel</button>' +
+        '<button id="coop-join-go" style="flex:1;padding:11px;border:none;border-radius:10px;background:#2d6fd6;color:#fff;font-weight:800;cursor:pointer;font-family:inherit;">Join →</button>' +
+      '</div>' +
+      '<button id="coop-join-leave" style="display:none;margin-top:12px;background:none;border:none;color:#b03030;font-weight:700;cursor:pointer;font-size:.8rem;font-family:inherit;text-decoration:underline;">Leave this class</button>' +
+      '</div>';
+    document.body.appendChild(joinOv);
+    var inp = document.getElementById('coop-join-input');
+    var go = function(){ if (inp && cleanCode(inp.value)) setRoom(inp.value); closeJoin(); };
+    document.getElementById('coop-join-go').onclick = go;
+    document.getElementById('coop-join-cancel').onclick = closeJoin;
+    document.getElementById('coop-join-leave').onclick = function(){ setRoom(''); closeJoin(); };
+    if (inp) { inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') go(); });
+               inp.addEventListener('input', function(){ inp.value = cleanCode(inp.value); }); }
+    joinOv.addEventListener('click', function(e){ if (e.target === joinOv) closeJoin(); });
+    refreshJoinBtn();
+  }
+  if (document.body) buildJoinUI();
+  window.addEventListener('DOMContentLoaded', buildJoinUI);
 
   // graceful "leave" so others see you drop fast
   window.addEventListener('beforeunload', function () {

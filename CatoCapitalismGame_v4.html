@@ -490,6 +490,11 @@
     #emote-tray button:hover{background:rgba(255,255,255,.12);}
     @keyframes emoteFloat{0%{transform:translate(-50%,0) scale(.5);opacity:0;}20%{opacity:1;transform:translate(-50%,-12px) scale(1.15);}100%{transform:translate(-50%,-90px) scale(1);opacity:0;}}
     .emote-pop{position:absolute;left:50%;top:46%;font-size:2.6rem;pointer-events:none;z-index:35;animation:emoteFloat 1.6s ease forwards;}
+    .speech-pop{position:absolute;left:50%;top:42%;background:#fff;color:#13234a;font-weight:800;font-size:1rem;padding:8px 14px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.35);white-space:nowrap;pointer-events:none;z-index:35;animation:emoteFloat 1.8s ease forwards;}
+    #emote-tray .qchat-row{display:flex;flex-wrap:wrap;gap:5px;max-width:212px;justify-content:center;}
+    #emote-tray .qchat{background:#fff;color:#13234a;border:none;border-radius:999px;padding:6px 11px;font-family:inherit;font-weight:800;font-size:.8rem;line-height:1.1;cursor:pointer;}
+    #emote-tray .qchat:hover{background:#FFE6A3;}
+    #emote-tray .emoji-row{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;max-width:212px;border-top:1px solid rgba(255,255,255,.16);padding-top:6px;margin-top:3px;}
     #minigame-overlay{display:none;position:fixed;inset:0;z-index:130;background:rgba(10,30,60,.55);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;}
     #minigame-overlay.open{display:flex;animation:fadeIn .25s ease;}
     .mg-opt{background:#FFF9EC;border:2px solid #F2B23E;border-radius:12px;padding:11px 14px;cursor:pointer;font-family:inherit;font-size:.95rem;font-weight:700;color:#4A3B22;text-align:left;transition:background .12s;}
@@ -2876,6 +2881,12 @@ const EMOTES=[
   {id:'think',icon:'🤔',name:'Think',cost:1200},
   {id:'fire',icon:'🔥',name:'Fire',cost:1200}
 ];
+// Free quick-chat phrases (no buying, no typing) — sent like emotes, shown above the avatar in co-op.
+const PHRASES=[
+  {id:'hi',text:'Hi! 👋'},{id:'bye',text:'Bye!'},{id:'gg',text:'Good game!'},{id:'nice',text:'Nice!'},
+  {id:'ty',text:'Thanks!'},{id:'help',text:'Help!'},{id:'follow',text:'Follow me!'},{id:'yes',text:'Yes!'},{id:'no',text:'No!'},{id:'haha',text:'Haha!'}
+];
+function phraseById(id){for(var i=0;i<PHRASES.length;i++){if(PHRASES[i].id===id)return PHRASES[i];}return null;}
 function emoteById(id){return EMOTES.filter(function(e){return e.id===id;})[0];}
 function ownedEmote(id){return !!(P&&P.emotes&&P.emotes.indexOf(id)>=0);}
 function buyEmote(id){
@@ -2888,8 +2899,10 @@ function buyEmote(id){
 function renderEmoteTray(){
   const tray=document.getElementById('emote-tray'); if(!tray)return;
   const owned=(P&&P.emotes)?P.emotes:[];
-  if(!owned.length){ tray.innerHTML='<div style="color:#cbd5e1;font-size:.72rem;max-width:130px;text-align:center;line-height:1.3;">Buy emotes at the 🎁 Market to react here!</div>'; return; }
-  tray.innerHTML=owned.map(function(id){const e=emoteById(id);return e?'<button onclick="playEmote(\''+id+'\')" title="'+e.name+'">'+e.icon+'</button>':'';}).join('');
+  var html='<div class="qchat-row">'+PHRASES.map(function(p){return '<button class="qchat" onclick="sayPhrase(\''+p.id+'\')">'+p.text+'</button>';}).join('')+'</div>';
+  if(owned.length){ html+='<div class="emoji-row">'+owned.map(function(id){const e=emoteById(id);return e?'<button onclick="playEmote(\''+id+'\')" title="'+e.name+'">'+e.icon+'</button>':'';}).join('')+'</div>'; }
+  else { html+='<div style="color:#cbd5e1;font-size:.64rem;max-width:170px;text-align:center;line-height:1.3;margin-top:4px;">Buy emoji at the 🎁 Market for more reactions.</div>'; }
+  tray.innerHTML=html;
 }
 function toggleEmoteTray(){ const t=document.getElementById('emote-tray'); if(!t)return; renderEmoteTray(); t.classList.toggle('open'); sfx('click'); }
 function playEmote(id){
@@ -2897,6 +2910,15 @@ function playEmote(id){
   window.currentEmote={id:id,at:Date.now()};
   const vp=document.querySelector('#screen-town .town-viewport');
   if(vp){ const d=document.createElement('div'); d.className='emote-pop'; d.textContent=e.icon; vp.appendChild(d); setTimeout(function(){ if(d.parentNode)d.parentNode.removeChild(d); },1600); }
+  const t=document.getElementById('emote-tray'); if(t)t.classList.remove('open');
+  sfx('pop');
+}
+function sayPhrase(id){
+  const p=phraseById(id); if(!p)return;
+  // relay over the same channel as emotes, tagged so co-op players render it as text
+  window.currentEmote={id:'say:'+p.text,at:Date.now(),text:p.text};
+  const vp=document.querySelector('#screen-town .town-viewport');
+  if(vp){ const d=document.createElement('div'); d.className='speech-pop'; d.textContent=p.text; vp.appendChild(d); setTimeout(function(){ if(d.parentNode)d.parentNode.removeChild(d); },1800); }
   const t=document.getElementById('emote-tray'); if(t)t.classList.remove('open');
   sfx('pop');
 }
@@ -4009,7 +4031,7 @@ function townTick(){
     else if(nearBank&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent=miniDone('bank')?'✓ Played · next term':'SPACE · Bank Game';TC.pr.setAttribute('transform','translate('+BANK_SPOT[0]+','+(BANK_SPOT[1]-40)+')');}
     else if(nearHall&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent=miniDone('hall')?'✓ Played · next term':'SPACE · Quiz';TC.pr.setAttribute('transform','translate('+HALL_SPOT[0]+','+(HALL_SPOT[1]-40)+')');}
     else TC.pr.style.display='none';}
-  if(IS_TOUCH){var _ab=document.getElementById('act-btn');if(_ab){var _l=null;
+  if(IS_TOUCH){ if(TC.pr)TC.pr.style.display='none'; var _ab=document.getElementById('act-btn');if(_ab){var _l=null;
     if(!overlaysOpen()){ if(nearNPC>=0)_l='💬 Talk'; else if(nearShop)_l='🎁 Shop'; else if(nearHome)_l='🏠 Home'; else if(nearSchool)_l='📚 Learn'; else if(nearBank)_l=miniDone('bank')?null:'🏦 Play'; else if(nearHall)_l=miniDone('hall')?null:'🏛️ Quiz'; }
     if(_l){_ab.textContent=_l;_ab.classList.add('show');}else _ab.classList.remove('show'); }}
 }

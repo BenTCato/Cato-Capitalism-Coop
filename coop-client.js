@@ -215,12 +215,24 @@
   })();
   function showRemoteEmote(r) {
     if (!r.el) return;
-    var t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    t.setAttribute('x', '0'); t.setAttribute('y', '-78'); t.setAttribute('text-anchor', 'middle');
-    t.setAttribute('font-size', '26'); t.setAttribute('class', 'coop-emote');
-    t.textContent = EMOJI[r.data.emote] || '❓';
-    r.el.appendChild(t);
-    setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 1600);
+    var ns = 'http://www.w3.org/2000/svg';
+    var em = r.data.emote || '', node, life = 1600;
+    if (em.indexOf('say:') === 0) {
+      // quick-chat phrase → text bubble above the avatar
+      var txt = em.slice(4); if (txt.length > 22) txt = txt.slice(0, 21) + '…';
+      var w = Math.max(42, txt.length * 7 + 20);
+      node = document.createElementNS(ns, 'g'); node.setAttribute('class', 'coop-emote');
+      node.innerHTML = '<rect x="' + (-w / 2) + '" y="-94" width="' + w + '" height="22" rx="11" fill="#fff" stroke="rgba(16,22,40,.25)"/>' +
+        '<text x="0" y="-79" text-anchor="middle" font-size="12.5" font-weight="800" fill="#13234a" font-family="Verdana, sans-serif">' + escapeXml(txt) + '</text>';
+      life = 1900;
+    } else {
+      node = document.createElementNS(ns, 'text');
+      node.setAttribute('x', '0'); node.setAttribute('y', '-78'); node.setAttribute('text-anchor', 'middle');
+      node.setAttribute('font-size', '26'); node.setAttribute('class', 'coop-emote');
+      node.textContent = EMOJI[em] || '❓';
+    }
+    r.el.appendChild(node);
+    setTimeout(function(){ if (node.parentNode) node.parentNode.removeChild(node); }, life);
   }
 
   // ── render loop (smooth interpolation) ────────────────────────

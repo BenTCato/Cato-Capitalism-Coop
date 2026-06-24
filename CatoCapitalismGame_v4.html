@@ -523,6 +523,29 @@
     .home-sub{font-size:.82rem;color:#8A6038;font-weight:600;margin-bottom:14px;}
     #creator-slot-home .nb-avatar-section{border-top:none;padding-top:0;margin-top:0;}
 
+    /* ===== Mobile / touch: joystick, tap-to-interact button, responsive fill ===== */
+    #joystick{display:none;position:absolute;left:16px;bottom:16px;width:116px;height:116px;z-index:40;touch-action:none;}
+    html.touch #joystick{display:block;}
+    #joystick .jbase{position:absolute;inset:0;border-radius:50%;background:rgba(16,22,40,.32);border:2px solid rgba(255,255,255,.4);}
+    #joystick .jknob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:rgba(255,255,255,.92);border:2px solid rgba(16,22,40,.5);box-shadow:0 4px 12px rgba(0,0,0,.4);will-change:transform;}
+    #act-btn{display:none;position:absolute;right:16px;bottom:78px;z-index:40;min-width:84px;padding:15px 20px;border-radius:999px;border:none;background:linear-gradient(180deg,#FFD43B,#ED8B00);color:#3a2a00;font-family:inherit;font-weight:900;font-size:1.02rem;box-shadow:0 6px 18px rgba(0,0,0,.4);cursor:pointer;}
+    html.touch #act-btn.show{display:block;}
+    #town-mobile-hint{display:none;text-align:center;color:rgba(255,255,255,.85);font-size:.78rem;font-weight:700;margin-top:10px;text-shadow:0 1px 3px rgba(0,0,0,.3);}
+    html.touch .town-hint{display:none;}
+    html.touch #town-mobile-hint{display:block;}
+    html.touch .town-svg{height:60vh;min-height:340px;}
+    @media(max-width:820px){
+      .screen{max-width:none;padding:12px 10px;}
+      .town-name{font-size:1.25rem;}
+      .dlg-card{max-height:64vh;}
+    }
+    @media(max-width:480px){
+      .town-statstrip{gap:6px;padding:8px;}
+      .tstat span{font-size:.82rem;} .tstat b{width:24px;font-size:.58rem;}
+      #minimap{width:104px;height:70px;}
+      #joystick{width:104px;height:104px;left:12px;bottom:12px;}
+      #act-btn{right:12px;bottom:70px;padding:13px 17px;}
+    }
     @media(max-width:600px){
       .town-statstrip{flex-wrap:wrap;}
       .ach-grid{grid-template-columns:1fr;}
@@ -739,8 +762,11 @@
     <div id="minimap"><div class="mm-label">MAP</div></div>
     <button id="emote-fab" onclick="toggleEmoteTray()" title="Emotes">🎭</button>
     <div id="emote-tray"></div>
+    <div id="joystick"><div class="jbase"></div><div class="jknob"></div></div>
+    <button id="act-btn" type="button">Talk</button>
   </div>
   <div class="town-hint">⌨️ <strong>W A S D</strong> to walk · <strong>SPACE</strong> to talk to citizens · the world changes with your choices · visit the <strong>MARKET</strong> to spend your ⭐</div>
+  <div id="town-mobile-hint">🕹️ Drag the joystick to walk · tap the gold <strong>button</strong> to talk or enter buildings</div>
 </div>
 
 <!-- ══ QUESTION SCREEN ══ -->
@@ -3374,6 +3400,10 @@ function randPart(part,base){
 const WORLD_W=1800,WORLD_H=1200,VIEW_W=900,VIEW_H=600;
 let player={x:900,y:700,dir:1,step:0,moving:false};
 let keysDown={},townLoopOn=false,nearNPC=-1,nearShop=false,dlgOpen=false,colliders=[];
+// Mobile/touch support: detect coarse pointers and feed an on-screen joystick into movement.
+var IS_TOUCH=(('ontouchstart' in window)||(navigator.maxTouchPoints>0)||(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches));
+var touchVec={x:0,y:0};
+try{ if(IS_TOUCH) document.documentElement.classList.add('touch'); }catch(e){}
 const SCHOOL_SPOT=[1325,322];
 let nearSchool=false;
 const LEARN_HUBS=[
@@ -3799,7 +3829,7 @@ function renderTown(){
   const tiers={h:tTier(st.h),e:tTier(st.e),ed:tTier(st.ed),f:tTier(st.f),avg:tTier(avgVal),avgVal:avgVal,hVal:st.h};
   const fgStr=GFX.fgTrees.map(function(t){return '<g transform="translate('+t[0]+','+t[1]+') scale('+t[2]+')"><circle cx="3" cy="-30" r="19" fill="'+AP.tree2+'"/><circle cx="-3" cy="-34" r="19" fill="'+AP.tree+'"/></g>';}).join('');
   const glowStr=GFX.lampSpots.map(function(p){return '<circle cx="'+p[0]+'" cy="'+(p[1]-44)+'" r="64" fill="url(#glowG)"/>';}).join('');
-  map.innerHTML='<svg class="town-svg" id="town-world" xmlns="http://www.w3.org/2000/svg" viewBox="'+camX()+' '+camY()+' '+VIEW_W+' '+VIEW_H+'">'+
+  map.innerHTML='<svg class="town-svg" id="town-world" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" viewBox="'+camX()+' '+camY()+' '+VIEW_W+' '+VIEW_H+'">'+
     '<defs><radialGradient id="glowG"><stop offset="0%" stop-color="#FFE9A8" stop-opacity=".55"/><stop offset="100%" stop-color="#FFE9A8" stop-opacity="0"/></radialGradient><filter id="pShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="2" stdDeviation="1.6" flood-color="#13202E" flood-opacity="0.45"/></filter></defs>'+
     '<g id="world-static">'+buildWorld(tiers)+'</g>'+
     '<g class="cloud-sh"><ellipse class="cl cl1" cx="0" cy="260" rx="190" ry="70" fill="#0A1828" opacity=".07"/><ellipse class="cl cl2" cx="0" cy="700" rx="240" ry="86" fill="#0A1828" opacity=".06"/><ellipse class="cl cl3" cx="0" cy="1020" rx="170" ry="60" fill="#0A1828" opacity=".07"/></g>'+
@@ -3894,6 +3924,7 @@ function townTick(){
     if(keysDown.KeyS||keysDown.ArrowDown)dy+=sp;
     if(keysDown.KeyA||keysDown.ArrowLeft){dx-=sp;player.dir=-1;}
     if(keysDown.KeyD||keysDown.ArrowRight){dx+=sp;player.dir=1;}
+    if(touchVec.x||touchVec.y){ dx+=touchVec.x*sp; dy+=touchVec.y*sp; if(touchVec.x<-0.05)player.dir=-1; else if(touchVec.x>0.05)player.dir=1; }
     if(dx&&dy){dx*=0.72;dy*=0.72;}
     if(dx||dy){
       const nx=Math.max(20,Math.min(WORLD_W-20,player.x+dx));
@@ -3978,10 +4009,23 @@ function townTick(){
     else if(nearBank&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent=miniDone('bank')?'✓ Played · next term':'SPACE · Bank Game';TC.pr.setAttribute('transform','translate('+BANK_SPOT[0]+','+(BANK_SPOT[1]-40)+')');}
     else if(nearHall&&!overlaysOpen()){TC.pr.style.display='';if(TC.ptxt)TC.ptxt.textContent=miniDone('hall')?'✓ Played · next term':'SPACE · Quiz';TC.pr.setAttribute('transform','translate('+HALL_SPOT[0]+','+(HALL_SPOT[1]-40)+')');}
     else TC.pr.style.display='none';}
+  if(IS_TOUCH){var _ab=document.getElementById('act-btn');if(_ab){var _l=null;
+    if(!overlaysOpen()){ if(nearNPC>=0)_l='💬 Talk'; else if(nearShop)_l='🎁 Shop'; else if(nearHome)_l='🏠 Home'; else if(nearSchool)_l='📚 Learn'; else if(nearBank)_l=miniDone('bank')?null:'🏦 Play'; else if(nearHall)_l=miniDone('hall')?null:'🏛️ Quiz'; }
+    if(_l){_ab.textContent=_l;_ab.classList.add('show');}else _ab.classList.remove('show'); }}
 }
 function ensureTownLoop(){
   if(townLoopOn)return;townLoopOn=true;
   (function loop(){townTick();requestAnimationFrame(loop);})();
+}
+// Trigger whatever the player is standing next to (used by SPACE and the mobile tap button).
+function interactNearby(){
+  if(dlgOpen||overlaysOpen())return;
+  if(nearNPC>=0)openDialog(nearNPC);
+  else if(nearShop)openStore('town');
+  else if(nearHome)openHome();
+  else if(nearSchool)openLearn();
+  else if(nearBank&&!miniDone('bank'))openMiniGame('bank');
+  else if(nearHall&&!miniDone('hall'))openMiniGame('hall');
 }
 function initTownControls(){
   document.addEventListener('keydown',function(e){
@@ -3989,10 +4033,32 @@ function initTownControls(){
     if(!town||!town.classList.contains('active'))return;
     if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].indexOf(e.code)>=0)e.preventDefault();
     if(e.code==='Escape'&&dlgOpen){closeDialog();return;}
-    if(e.code==='Space'){if(!dlgOpen&&nearNPC>=0)openDialog(nearNPC);else if(!dlgOpen&&nearShop&&!overlaysOpen())openStore('town');else if(!dlgOpen&&nearHome&&!overlaysOpen())openHome();else if(!dlgOpen&&nearSchool&&!overlaysOpen())openLearn();else if(!dlgOpen&&nearBank&&!overlaysOpen())openMiniGame('bank');else if(!dlgOpen&&nearHall&&!overlaysOpen())openMiniGame('hall');return;}
+    if(e.code==='Space'){interactNearby();return;}
     keysDown[e.code]=true;
   });
   document.addEventListener('keyup',function(e){keysDown[e.code]=false;});
+  setupTouchControls();
+}
+// On-screen joystick (movement) + tap button (interaction) for phones/tablets.
+function setupTouchControls(){
+  var btn=document.getElementById('act-btn');
+  if(btn){ var act=function(e){ if(e)e.preventDefault(); interactNearby(); };
+           btn.addEventListener('click',act); btn.addEventListener('touchstart',act,{passive:false}); }
+  var joy=document.getElementById('joystick'), knob=joy?joy.querySelector('.jknob'):null;
+  if(!joy||!knob)return;
+  var active=false, cx=0, cy=0, R=44;
+  function start(px,py){ active=true; var r=joy.getBoundingClientRect(); cx=r.left+r.width/2; cy=r.top+r.height/2; move(px,py); }
+  function move(px,py){ if(!active)return; var dx=px-cx, dy=py-cy; var d=Math.sqrt(dx*dx+dy*dy)||1; var cl=Math.min(d,R);
+    var nx=dx/d, ny=dy/d; knob.style.transform='translate('+(nx*cl).toFixed(1)+'px,'+(ny*cl).toFixed(1)+'px)';
+    touchVec.x=nx*(cl/R); touchVec.y=ny*(cl/R); }
+  function end(){ active=false; touchVec.x=0; touchVec.y=0; knob.style.transform='translate(0,0)'; }
+  joy.addEventListener('touchstart',function(e){e.preventDefault();var t=e.changedTouches[0];start(t.clientX,t.clientY);},{passive:false});
+  joy.addEventListener('touchmove',function(e){e.preventDefault();var t=e.changedTouches[0];move(t.clientX,t.clientY);},{passive:false});
+  joy.addEventListener('touchend',function(e){e.preventDefault();end();},{passive:false});
+  joy.addEventListener('touchcancel',function(){end();});
+  joy.addEventListener('mousedown',function(e){e.preventDefault();start(e.clientX,e.clientY);});
+  window.addEventListener('mousemove',function(e){if(active)move(e.clientX,e.clientY);});
+  window.addEventListener('mouseup',function(){if(active)end();});
 }
 
 // ── In-world dialogue (no separate question screen) ──

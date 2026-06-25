@@ -3569,12 +3569,13 @@ function roadsSVG(list,cap){
 function xwalk(x,y,rot){let s='<g transform="translate('+x+','+y+') rotate('+rot+')" fill="'+AP.dash+'">';for(let i=0;i<6;i++)s+='<rect x="'+(-21+i*8)+'" y="-22" width="5" height="44" rx="1.5"/>';return s+'</g>';}
 
 // ── flat urban buildings ──
-function winGrid(x0,y0,floors,cols,winCol,tier){
+function winGrid(x0,y0,floors,cols,winCol,tier,dz){
   let s='';
   for(let f=0;f<floors;f++)for(let c=0;c<cols;c++){
     if(tier===0&&((f*cols+c)%3!==0))continue; // silhouette: sparse dark windows
     const lit=tier===2&&((f*cols+c)%4===0);
     const gx=x0+c*19, gy=y0+f*24, fill=(tier===0?'#42554F':(lit?'#F8E2A0':winCol)), fo=(tier===0?.45:.92);
+    if(dz&&f===floors-1&&(gx+13.5)>dz[0]&&(gx-1.5)<dz[1])continue; // skip ground-floor windows where the door is (no door/window overlap)
     s+='<rect x="'+(gx-1.5)+'" y="'+(gy-1.5)+'" width="15" height="18" rx="1.5" fill="#FBF7EC" opacity="'+fo+'"/>'+   // frame
        '<rect x="'+gx+'" y="'+gy+'" width="12" height="15" rx="1" fill="'+fill+'"/>'+                                   // glass
        '<rect x="'+gx+'" y="'+gy+'" width="12" height="5" rx="1" fill="rgba(255,255,255,.16)"/>'+                       // top highlight
@@ -3592,9 +3593,13 @@ function urban(x,y,w,floors,cols,t,bodies,winCol,extra){
   s+='<rect x="0" y="0" width="'+w+'" height="8" fill="rgba(255,255,255,.10)"/>';
   s+='<rect x="'+(w-10)+'" y="0" width="10" height="'+h+'" fill="rgba(0,0,0,.13)"/>';
   s+='<rect x="-4" y="-8" width="'+(w+8)+'" height="12" rx="3" fill="'+(t===0?'#4E6260':'rgba(0,0,0,.18)')+'"/>';
-  s+=winGrid(12,14,floors,cols,t===2?'#F4F0E4':'#C9C2B2',t);
-  // ground floor door
+  s+=winGrid(12,14,floors,cols,t===2?'#F4F0E4':'#C9C2B2',t,[w/2-15,w/2+15]);
+  // ground floor door — framed, with a sill step (skipped windows above keep it clear)
+  s+='<rect x="'+(w/2-14)+'" y="'+(h-32)+'" width="28" height="32" rx="3" fill="rgba(0,0,0,.22)"/>';
   s+='<rect x="'+(w/2-12)+'" y="'+(h-30)+'" width="24" height="30" rx="3" fill="'+(t===0?'#3D4F4D':'#6E5436')+'"/>';
+  s+='<rect x="'+(w/2-12)+'" y="'+(h-30)+'" width="24" height="6" rx="3" fill="rgba(255,255,255,.12)"/>';
+  s+='<circle cx="'+(w/2+8)+'" cy="'+(h-15)+'" r="1.8" fill="#FFD43B"/>';
+  s+='<rect x="'+(w/2-16)+'" y="'+(h-3)+'" width="32" height="3" rx="1.5" fill="rgba(0,0,0,.2)"/>';
   if(t===1)s+='<rect x="'+(w-34)+'" y="-20" width="22" height="13" rx="2" fill="#8E9499"/><rect x="'+(w-30)+'" y="-24" width="6" height="5" fill="#7A8086"/>'; // rooftop AC (socialist ref)
   if(t===0)s+='<rect x="'+(w*0.25)+'" y="-34" width="2.5" height="27" fill="#4E6260"/><rect x="'+(w*0.25-5)+'" y="-22" width="12" height="2" fill="#4E6260"/>'; // antenna (autocratic ref)
   s+=extra||'';
@@ -3852,56 +3857,88 @@ function buildWorld(tiers){
 var EXP_HUES=['#E8956D','#9FC0E0','#E8C98A','#A8C9A0','#E2A8CC','#CDA6E0','#9CC4D8','#E8B07A','#C9B0E0','#D7A8A8','#EDB6A0','#AFD0B6'];
 var EXP_ROOFS=['#9A5A3C','#6E4E8A','#3E6E8A','#8A4E4E','#5E7F4E','#7A5A3C','#B0683C','#4E6E7A'];
 var EXP_OFFICE=['#7E96AC','#8B98A8','#9FB4C9','#6E8298','#7C8AA0'];
+var EXP_DOORS=['#6E4E2E','#7A3B2E','#3E5E7A','#5E4E8A','#3E6E4E','#8A4E3E','#5E4636','#6E5A8A'];
 var EXP_BR=[]; // building rects, for prop keep-out
 function expWin(wx,wy){ // a framed window with glass, muntins & a sill
   return '<g transform="translate('+wx+','+wy+')">'+
-    '<rect x="-1" y="-1" width="16" height="15" rx="1.5" fill="#FFFDF4"/>'+
-    '<rect x="1" y="1" width="12" height="11" rx="1" fill="#BFE3F4"/>'+
-    '<rect x="1" y="1" width="12" height="4" rx="1" fill="#D6EFFB"/>'+
-    '<rect x="6" y="1" width="1.6" height="11" fill="#FFFDF4"/><rect x="1" y="6" width="12" height="1.6" fill="#FFFDF4"/>'+
-    '<rect x="-2.5" y="12.5" width="19" height="2.6" rx="1" fill="#E2D6BE"/></g>';
+    '<rect x="-1.5" y="-1.5" width="17" height="17" rx="1.5" fill="#FFFDF4"/>'+    // outer frame
+    '<rect x="1" y="1" width="12" height="12" rx="1" fill="#BFE3F4"/>'+            // glass
+    '<rect x="1" y="1" width="12" height="4" rx="1" fill="#D6EFFB"/>'+             // sky highlight
+    '<rect x="6.2" y="1" width="1.6" height="12" fill="#FFFDF4"/>'+                // muntin V
+    '<rect x="1" y="6.2" width="12" height="1.6" fill="#FFFDF4"/>'+                // muntin H
+    '<rect x="-3" y="13.5" width="20" height="3" rx="1.2" fill="#E2D6BE"/></g>';  // sill
 }
+// HOUSE — pitched roof sits flush on the wall (eave board hides the seam); door centered low,
+// two windows flank it in the upper wall → door and windows never overlap.
 function expHouse(x,y,i){
-  var w=82,h=54,c=EXP_HUES[i%EXP_HUES.length],rf=EXP_ROOFS[(i*3+1)%EXP_ROOFS.length];
-  reg(x,y-h,w,h); EXP_BR.push({x:x,y:y-h,w:w,h:h});
-  var g='<g transform="translate('+x+','+(y-h)+')">'+sh(w/2,h+3,w*0.55,6);
-  g+='<rect x="3" y="18" width="'+(w-6)+'" height="'+(h-18)+'" rx="3" fill="'+c+'"/>';
-  g+='<rect x="'+(w-13)+'" y="18" width="10" height="'+(h-18)+'" fill="rgba(0,0,0,.13)"/>';          // wall shade
-  g+='<polygon points="-5,20 '+(w/2)+',-12 '+(w+5)+',20" fill="'+rf+'"/>';                            // roof
-  g+='<polygon points="'+(w/2)+',-12 '+(w+5)+',20 '+(w/2)+',20" fill="rgba(0,0,0,.14)"/>';            // roof shade
-  g+='<rect x="'+(w-28)+'" y="-9" width="8" height="15" rx="1" fill="'+rf+'"/>';                      // chimney
-  g+='<rect x="'+(w/2-9)+'" y="'+(h-21)+'" width="18" height="21" rx="2" fill="#6E4E2E"/>';           // door
-  g+='<rect x="'+(w/2-9)+'" y="'+(h-21)+'" width="18" height="5" rx="2" fill="rgba(255,255,255,.12)"/>';
-  g+='<circle cx="'+(w/2+5)+'" cy="'+(h-11)+'" r="1.5" fill="#FFD43B"/>';                              // knob
-  g+='<rect x="'+(w/2-13)+'" y="'+(h-3)+'" width="26" height="3" rx="1.5" fill="rgba(0,0,0,.16)"/>';  // step
-  g+=expWin(10,23)+expWin(w-26,23);
+  var w=84, wall=38, roofH=20, H=wall+roofH;                 // 58 tall total
+  var c=EXP_HUES[i%EXP_HUES.length], rf=EXP_ROOFS[(i*3+1)%EXP_ROOFS.length], dc=EXP_DOORS[i%EXP_DOORS.length];
+  reg(x,y-H,w,H); EXP_BR.push({x:x,y:y-H,w:w,h:H});
+  var wt=roofH, gnd=H;
+  var g='<g transform="translate('+x+','+(y-H)+')">'+sh(w/2,gnd+3,w*0.5,6);
+  g+='<rect x="3" y="'+wt+'" width="'+(w-6)+'" height="'+wall+'" rx="2.5" fill="'+c+'"/>';            // wall
+  g+='<rect x="'+(w-12)+'" y="'+wt+'" width="9" height="'+wall+'" fill="rgba(0,0,0,.12)"/>';          // right shade
+  g+='<rect x="3" y="'+(gnd-5)+'" width="'+(w-6)+'" height="5" fill="rgba(0,0,0,.18)"/>';             // foundation
+  g+='<polygon points="-5,'+(wt+2)+' '+(w/2)+',0 '+(w+5)+','+(wt+2)+'" fill="'+rf+'"/>';               // roof (base overlaps wall top → flush)
+  g+='<polygon points="'+(w/2)+',0 '+(w+5)+','+(wt+2)+' '+(w/2)+','+(wt+2)+'" fill="rgba(0,0,0,.13)"/>'; // shaded right slope
+  g+='<rect x="-5" y="'+(wt-1)+'" width="'+(w+10)+'" height="4" rx="2" fill="'+rf+'"/>';               // eave board over the seam
+  g+='<rect x="'+(w/2-1)+'" y="1" width="2" height="'+wt+'" fill="rgba(0,0,0,.12)"/>';                 // ridge line
+  g+='<rect x="'+(w-26)+'" y="4" width="8" height="'+(wt-2)+'" fill="'+rf+'"/><rect x="'+(w-27)+'" y="4" width="10" height="3" fill="rgba(0,0,0,.22)"/>'; // chimney on roof
+  g+=expWin(9,wt+6)+expWin(w-24,wt+6);                                                                 // flanking windows
+  var dw=18,dh=22,dx=(w-dw)/2,dt=gnd-dh;                                                               // door (centered, lower)
+  g+='<rect x="'+(dx-2)+'" y="'+(dt-2)+'" width="'+(dw+4)+'" height="'+(dh+2)+'" rx="2" fill="rgba(0,0,0,.16)"/>'+
+     '<rect x="'+dx+'" y="'+dt+'" width="'+dw+'" height="'+dh+'" rx="2" fill="'+dc+'"/>'+
+     '<rect x="'+(dx+2)+'" y="'+(dt+3)+'" width="'+(dw-4)+'" height="6" rx="1" fill="rgba(255,255,255,.10)"/>'+
+     '<circle cx="'+(dx+dw-4)+'" cy="'+(dt+dh/2)+'" r="1.4" fill="#FFD43B"/>'+
+     '<rect x="'+(dx-4)+'" y="'+(gnd-2)+'" width="'+(dw+8)+'" height="3" rx="1.5" fill="rgba(0,0,0,.2)"/>';
   return g+'</g>';
 }
+// OFFICE — flat roof with parapet + rooftop unit (no floating), framed window grid; the two
+// ground-floor center cells are omitted so the entrance door has clear space (no overlap).
 function expOffice(x,y,floors,i){
-  var w=106,h=30+floors*28,c=EXP_OFFICE[i%EXP_OFFICE.length];
-  reg(x,y-h,w,h); EXP_BR.push({x:x,y:y-h,w:w,h:h});
-  var g='<g transform="translate('+x+','+(y-h)+')">'+sh(w/2,h+3,w*0.55,6);
-  g+='<rect x="0" y="0" width="'+w+'" height="'+h+'" rx="3" fill="'+c+'"/>';
-  g+='<rect x="'+(w-12)+'" y="0" width="12" height="'+h+'" fill="rgba(0,0,0,.15)"/>';                 // side shade
-  g+='<rect x="'+(w/2-11)+'" y="-9" width="22" height="9" rx="2" fill="'+c+'"/><rect x="-2" y="0" width="'+(w+4)+'" height="9" rx="3" fill="rgba(0,0,0,.22)"/>'; // rooftop unit + parapet
-  for(var f=0;f<floors;f++)for(var cc=0;cc<4;cc++){var lit=((f*4+cc)%5===0);g+='<rect x="'+(12+cc*23)+'" y="'+(20+f*28)+'" width="15" height="18" rx="1.5" fill="'+(lit?'#F8E2A0':'#CFE0EC')+'"/><rect x="'+(12+cc*23)+'" y="'+(20+f*28)+'" width="15" height="18" rx="1.5" fill="none" stroke="rgba(0,0,0,.12)"/>';}
-  g+='<rect x="'+(w/2-15)+'" y="'+(h-24)+'" width="30" height="6" rx="2" fill="rgba(0,0,0,.28)"/>';   // entrance canopy
-  g+='<rect x="'+(w/2-12)+'" y="'+(h-20)+'" width="24" height="20" rx="2" fill="#3E4654"/>';
+  var w=108, fh=26, H=22+floors*fh, c=EXP_OFFICE[i%EXP_OFFICE.length];
+  reg(x,y-H,w,H); EXP_BR.push({x:x,y:y-H,w:w,h:H});
+  var g='<g transform="translate('+x+','+(y-H)+')">'+sh(w/2,H+3,w*0.5,6);
+  g+='<rect x="0" y="0" width="'+w+'" height="'+H+'" rx="3" fill="'+c+'"/>';
+  g+='<rect x="'+(w-12)+'" y="0" width="12" height="'+H+'" fill="rgba(0,0,0,.14)"/>';                  // side shade
+  g+='<rect x="-2" y="0" width="'+(w+4)+'" height="9" rx="3" fill="rgba(0,0,0,.2)"/>';                 // parapet
+  g+='<rect x="'+(w/2-12)+'" y="-8" width="24" height="9" rx="2" fill="'+c+'"/><rect x="'+(w/2-12)+'" y="-8" width="24" height="3" fill="rgba(0,0,0,.18)"/>'; // rooftop unit (sits on roof)
+  var cols=[12,35,58,81];
+  for(var f=0;f<floors;f++){var bottom=(f===floors-1);for(var ci=0;ci<4;ci++){if(bottom&&(ci===1||ci===2))continue;
+    var gx=cols[ci],gy=14+f*fh,lit=((f*4+ci)%5===0);
+    g+='<rect x="'+(gx-1)+'" y="'+(gy-1)+'" width="18" height="20" rx="1.5" fill="#FBF7EC"/>'+
+       '<rect x="'+gx+'" y="'+gy+'" width="16" height="18" rx="1" fill="'+(lit?'#F8E2A0':'#CFE0EC')+'"/>'+
+       '<rect x="'+gx+'" y="'+gy+'" width="16" height="6" rx="1" fill="rgba(255,255,255,.18)"/>'+
+       '<rect x="'+(gx+7)+'" y="'+gy+'" width="1.4" height="18" fill="#FBF7EC"/>';
+  }}
+  var dt=H-22;                                                                                          // entrance (centered, ground)
+  g+='<rect x="'+(w/2-16)+'" y="'+(dt-4)+'" width="32" height="5" rx="2" fill="rgba(0,0,0,.26)"/>'+     // canopy
+     '<rect x="'+(w/2-13)+'" y="'+dt+'" width="26" height="22" rx="2" fill="#3E4654"/>'+
+     '<rect x="'+(w/2-1)+'" y="'+dt+'" width="2" height="22" fill="rgba(255,255,255,.18)"/>'+           // double-door split
+     '<rect x="'+(w/2-17)+'" y="'+(H-3)+'" width="34" height="3" rx="1.5" fill="rgba(0,0,0,.2)"/>';     // step
   return g+'</g>';
 }
 var EXP_SHOPS={cafe:{n:'CAFÉ',b:'#C98A5E',a:'#7A3B2E',e:'☕'},bakery:{n:'BAKERY',b:'#E8C07A',a:'#B5651D',e:'🥐'},books:{n:'BOOKSHOP',b:'#5E7FA8',a:'#2D4E79',e:'📚'},toys:{n:'TOY SHOP',b:'#E86D9A',a:'#B83C6A',e:'🧸'},grocer:{n:'GROCER',b:'#7FB069',a:'#4E7F3E',e:'🥦'},pizza:{n:'PIZZERIA',b:'#D9534F',a:'#9A2F2C',e:'🍕'},icecream:{n:'ICE CREAM',b:'#9AD0E0',a:'#3FA7C0',e:'🍦'},florist:{n:'FLOWERS',b:'#C8A0D8',a:'#8A5EA8',e:'🌸'},barber:{n:'BARBER',b:'#AEB6BE',a:'#C0392B',e:'💈'},diner:{n:'DINER',b:'#E0A24E',a:'#3D4F4D',e:'🍔'},music:{n:'MUSIC',b:'#8E7CC3',a:'#5E4E93',e:'🎵'},hardware:{n:'HARDWARE',b:'#B58A6A',a:'#6E4E2E',e:'🔨'}};
+// SHOP — sign + awning on top; a display window on the LEFT and the door on the RIGHT, side by
+// side, so the door never overlaps the window.
 function expShop(x,y,kind){
-  var k=EXP_SHOPS[kind]||EXP_SHOPS.cafe,w=106,h=60;
-  reg(x,y-h,w,h); EXP_BR.push({x:x,y:y-h,w:w,h:h});
-  var g='<g transform="translate('+x+','+(y-h)+')">'+sh(w/2,h+3,w*0.55,6);
-  g+='<rect x="2" y="16" width="'+(w-4)+'" height="'+(h-16)+'" rx="3" fill="'+k.b+'"/>';
-  g+='<rect x="'+(w-12)+'" y="16" width="10" height="'+(h-16)+'" fill="rgba(0,0,0,.13)"/>';           // wall shade
-  g+='<rect x="-3" y="2" width="'+(w+6)+'" height="14" rx="3" fill="'+k.a+'"/><rect x="-3" y="12" width="'+(w+6)+'" height="4" fill="rgba(0,0,0,.16)"/>'; // sign board
-  g+='<text x="'+(w/2)+'" y="12" text-anchor="middle" font-size="9" font-weight="900" fill="#FFFDF4" font-family="Verdana">'+k.n+'</text>';
-  for(var i=0;i<7;i++)g+='<path d="M'+(3+i*14.5)+',16 h14.5 v6 a7,6 0 0 1 -14.5,0 Z" fill="'+((i%2)?'#FAF3E0':k.a)+'"/>'; // scalloped awning
-  g+='<rect x="9" y="30" width="'+(w-18)+'" height="16" rx="2" fill="#FFFDF4"/><rect x="11" y="32" width="'+(w-22)+'" height="12" rx="1.5" fill="#CFEAF6"/>'; // display window
-  g+='<text x="'+(w/2)+'" y="42" text-anchor="middle" font-size="13">'+k.e+'</text>';
-  g+='<rect x="'+(w/2-9)+'" y="'+(h-15)+'" width="18" height="15" rx="2" fill="#5E4636"/><circle cx="'+(w/2+5)+'" cy="'+(h-7)+'" r="1.3" fill="#FFD43B"/>'; // door
+  var k=EXP_SHOPS[kind]||EXP_SHOPS.cafe, w=108, H=60;
+  reg(x,y-H,w,H); EXP_BR.push({x:x,y:y-H,w:w,h:H});
+  var g='<g transform="translate('+x+','+(y-H)+')">'+sh(w/2,H+3,w*0.5,6);
+  g+='<rect x="2" y="15" width="'+(w-4)+'" height="45" rx="2.5" fill="'+k.b+'"/>';                     // wall
+  g+='<rect x="'+(w-12)+'" y="15" width="10" height="45" fill="rgba(0,0,0,.12)"/>';                    // right shade
+  g+='<rect x="2" y="55" width="'+(w-4)+'" height="5" fill="rgba(0,0,0,.18)"/>';                       // foundation
+  g+='<rect x="-3" y="1" width="'+(w+6)+'" height="15" rx="3" fill="'+k.a+'"/><rect x="-3" y="12" width="'+(w+6)+'" height="4" fill="rgba(0,0,0,.18)"/>'; // sign board
+  g+='<text x="'+(w/2)+'" y="12.5" text-anchor="middle" font-size="9" font-weight="900" fill="#FFFDF4" font-family="Verdana">'+k.n+'</text>';
+  for(var i=0;i<7;i++)g+='<path d="M'+(3+i*14.7)+',16 h14.7 v5 a7,5 0 0 1 -14.7,0 Z" fill="'+((i%2)?'#FAF3E0':k.a)+'"/>'; // scalloped awning
+  g+='<rect x="7" y="27" width="62" height="26" rx="2" fill="#FFFDF4"/>'+                              // display window (left)
+     '<rect x="10" y="30" width="56" height="20" rx="1.5" fill="#CFEAF6"/>'+
+     '<rect x="10" y="30" width="56" height="7" rx="1.5" fill="#E2F3FB"/>'+
+     '<text x="38" y="46" text-anchor="middle" font-size="14">'+k.e+'</text>';
+  g+='<rect x="74" y="32" width="26" height="28" rx="2" fill="rgba(0,0,0,.16)"/>'+                     // door (right)
+     '<rect x="76" y="34" width="22" height="26" rx="2" fill="#5E4636"/>'+
+     '<rect x="79" y="37" width="16" height="7" rx="1" fill="rgba(255,255,255,.10)"/>'+
+     '<circle cx="94" cy="48" r="1.4" fill="#FFD43B"/>';
   return g+'</g>';
 }
 function fflower(x,y){return '<g transform="translate('+x+','+y+')">'+sh(0,2,7,2)+'<rect x="-5" y="-3" width="10" height="6" rx="1.5" fill="#7E6A4E"/><circle cx="-3" cy="-5" r="2.4" fill="#FF8FAB"/><circle cx="2" cy="-6" r="2.4" fill="#FFC93C"/><circle cx="4" cy="-3" r="2.2" fill="#A78BFA"/></g>';}
@@ -3917,7 +3954,7 @@ function buildExpansion(tiers){
   R.push('M900,1200 L1180,1200');
   VR(240,120,2280);VR(520,120,2280);VR(2760,120,2280);VR(3080,120,2280);                  // full-height spines (2760 = east-of-river arterial; wider blocks)
   VR(1800,80,620);VR(1800,1780,2320);                                                      // top/bottom spine stubs
-  HR(220,100,3500);HR(420,100,3500);HR(2040,100,3500);HR(2240,100,3500);                  // top & bottom full-width streets
+  HR(220,100,3500);HR(420,100,3500);HR(2040,100,3500);HR(2280,100,3500);                  // top & bottom full-width streets (bottom moved to 2280 → matches spine ends, full-width block)
   var SIDE=[620,860,1100,1340,1580];                                                       // wider blocks (~240px apart)
   SIDE.forEach(function(y){HR(y,100,900);HR(y,2760,3500);});                               // side-margin streets (east starts at the river arterial)
   s+=roadsSVG(R,'butt');                                                                    // grid roads get flat ends + crisp intersections (no round blobs)
@@ -3928,18 +3965,18 @@ function buildExpansion(tiers){
   // WEST neighborhood — homes line BOTH sides of every street
   SIDE.forEach(function(y){
     s+=row(y,110,900,170,function(x,b){return expHouse(x,b,bi++);});
-    s+=row(y,110,900,170,function(x,b){return expHouse(x,b,bi++);},92);
+    s+=row(y,110,900,170,function(x,b){return expHouse(x,b,bi++);},102);
   });
   // EAST district — each shop type appears exactly ONCE on the north side; homes line the south sides
   var SHOPKINDS=['cafe','bakery','books','toys','grocer','pizza','icecream','florist','barber','diner','music','hardware'],shopN=0;
   function nextShop(){ return shopN<SHOPKINDS.length ? SHOPKINDS[shopN++] : null; }
   [620,860,1100,1340].forEach(function(y){s+=row(y,2820,3500,180,function(x,b){var k=nextShop();return k?expShop(x,b,k):expHouse(x,b,bi++);});});
   s+=row(1580,2820,3500,180,function(x,b){return expHouse(x,b,bi++);});
-  [620,860,1100,1340,1580].forEach(function(y){s+=row(y,2820,3500,180,function(x,b){return expHouse(x,b,bi++);},92);});
+  [620,860,1100,1340,1580].forEach(function(y){s+=row(y,2820,3500,180,function(x,b){return expHouse(x,b,bi++);},102);});
   // SOUTH neighborhood — homes line BOTH sides
-  [2040,2240].forEach(function(y){
+  [2040,2280].forEach(function(y){
     s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);});
-    s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);},92);
+    s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);},102);
   });
   // NORTH business district — offices (tall, so a single north-side row)
   [220,420].forEach(function(y){s+=row(y,300,3300,250,function(x,b){return expOffice(x,b,2+(bi%2),bi++);});});

@@ -82,6 +82,9 @@
       houseName: houseName,
       vanity: P && P.owned ? P.owned.length : 0,
       vanityTotal: STORE ? STORE.length : 0,
+      duelWins: (P && P.duelWins) || 0,
+      duelLosses: (P && P.duelLosses) || 0,
+      duelStarsWon: (P && P.duelStarsWon) || 0,
       started: started,
       inTown: townActive(),
       emote: (function(){ var ce = window.currentEmote; return (ce && (Date.now() - ce.at) < 4000) ? ce.id : null; })(),
@@ -194,12 +197,20 @@
     grp.innerHTML =
       '<ellipse cx="0" cy="34" rx="14" ry="4" fill="rgba(20,30,40,.22)"/>' +
       '<g class="cr-body"></g>' +
-      '<g class="cr-tag"></g>';
+      '<g class="cr-tag"></g>' +
+      '<g class="cr-hint" style="display:none;"></g>';
     layer.appendChild(grp);
     var r = remotes[id];
     r.el = grp;
     r.body = grp.querySelector('.cr-body');
     r.tag = grp.querySelector('.cr-tag');
+    r.hint = grp.querySelector('.cr-hint');
+    r.hint.innerHTML =
+      '<g transform="translate(0,-94)">' +
+      '<rect x="-54" y="-13" width="108" height="21" rx="10.5" fill="#FFD166" stroke="rgba(20,28,48,.3)"/>' +
+      '<polygon points="-5,8 5,8 0,14" fill="#FFD166"/>' +
+      '<text x="0" y="2" text-anchor="middle" font-size="10.5" font-weight="800" fill="#3a2a00" font-family="Verdana, sans-serif">⚔️ Tap to duel</text>' +
+      '</g>';
     // tappable → challenge to a 1v1 duel (must be standing next to each other)
     grp.style.cursor = 'pointer';
     grp.addEventListener('click', function () { onRemoteTap(id); });
@@ -215,7 +226,8 @@
   var EMOJI = { wave:'👋', thumb:'👍', heart:'❤️', laugh:'😂', party:'🎉', cool:'😎', think:'🤔', fire:'🔥' };
   (function(){
     var s = document.createElement('style');
-    s.textContent = '@keyframes coopEmoteFloat{0%{opacity:0;transform:translateY(6px) scale(.5);}20%{opacity:1;transform:translateY(-4px) scale(1.1);}100%{opacity:0;transform:translateY(-32px) scale(1);}} .coop-emote{animation:coopEmoteFloat 1.6s ease forwards;transform-box:fill-box;transform-origin:center;}';
+    s.textContent = '@keyframes coopEmoteFloat{0%{opacity:0;transform:translateY(6px) scale(.5);}20%{opacity:1;transform:translateY(-4px) scale(1.1);}100%{opacity:0;transform:translateY(-32px) scale(1);}} .coop-emote{animation:coopEmoteFloat 1.6s ease forwards;transform-box:fill-box;transform-origin:center;}' +
+      '@keyframes coopHintPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.07);}} .cr-hint{animation:coopHintPulse 1.1s ease-in-out infinite;transform-box:fill-box;transform-origin:center bottom;}';
     (document.head || document.documentElement).appendChild(s);
   })();
   function showRemoteEmote(r) {
@@ -246,10 +258,14 @@
     if (!townActive()) return;
     var layer = ensureLayer();
     if (!layer) return;
+    var _pl = null; try { _pl = g('player'); } catch (e) {}
+    var _busy = !!(DUEL && DUEL.status && DUEL.status !== 'done' && DUEL.status !== 'declined' && DUEL.status !== 'cancelled');
+    var _nid = null, _nd = (typeof DUEL_RANGE === 'number' ? DUEL_RANGE : 160) + 1;
     for (var id in remotes) {
       var r = remotes[id];
       if (!r.data) continue;
       if (!r.el || !r.el.parentNode) buildEl(layer, id, r.data);
+      if (_pl && r.data.pos) { var _d = Math.sqrt(Math.pow(_pl.x - r.data.pos.x, 2) + Math.pow(_pl.y - r.data.pos.y, 2)); if (_d < _nd) { _nd = _d; _nid = id; } }
       // refresh art only when it actually changed (avatar swap / health move)
       var ak = JSON.stringify(r.data.avatar);
       if (ak !== r.avKey) { r.body.innerHTML = bodySVG(r.data); r.avKey = ak; }
@@ -264,6 +280,12 @@
         r.lastEmote = r.data.emoteAt;
         if (Date.now() - r.data.emoteAt < 4000) showRemoteEmote(r);
       }
+    }
+    // show the "⚔️ Tap to duel" hint over the nearest player within range (when not busy in a duel)
+    for (var hid in remotes) {
+      var hr = remotes[hid];
+      if (!hr.hint) continue;
+      hr.hint.style.display = (!_busy && hid === _nid && _nd <= (typeof DUEL_RANGE === 'number' ? DUEL_RANGE : 160)) ? '' : 'none';
     }
   }
   requestAnimationFrame(frame);
@@ -430,7 +452,10 @@
       '.duel-ghost{background:#e7ecf5;color:#3a4a6a;}' +
       '.duel-win{color:#2EB872;}.duel-lose{color:#E03131;}.duel-tie{color:#F2762E;}' +
       '#duel-toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:10002;background:rgba(16,22,40,.93);color:#fff;font-family:Verdana,sans-serif;font-size:.84rem;font-weight:700;padding:10px 16px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.35);opacity:0;transition:opacity .2s;pointer-events:none;max-width:80vw;text-align:center;}' +
-      '#duel-toast.show{opacity:1;}';
+      '#duel-toast.show{opacity:1;}' +
+      '@keyframes duelHpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}} .duel-h-pop{animation:duelHpop .5s ease;display:inline-block;}' +
+      '@keyframes duelFlash{0%,100%{box-shadow:0 22px 60px rgba(0,0,0,.45);}35%{box-shadow:0 0 0 4px rgba(224,49,49,.65),0 22px 60px rgba(0,0,0,.45);}} .duel-card-lose{animation:duelFlash .45s ease 2;}' +
+      '@keyframes duelConf{0%{transform:translateY(-12vh) rotate(0);opacity:1;}100%{transform:translateY(86vh) rotate(540deg);opacity:.15;}} .duel-confetti{position:fixed;top:0;width:9px;height:14px;border-radius:2px;z-index:10003;pointer-events:none;}';
     (document.head || document.documentElement).appendChild(s);
   })();
   var ov, card, toastEl, toastT;
@@ -517,17 +542,32 @@
   function applyResultOnce(d) {
     if (!d.result || applied[d.id]) return;
     applied[d.id] = true;
-    var res = d.result, delta = res.tie ? 0 : (res.winnerId === ID ? res.wager : -res.wager);
-    if (delta !== 0) {
-      var P = g('P');
-      if (P) {
-        P.stars = Math.max(0, (P.stars || 0) + delta);
-        var sp = g('saveProfiles'); if (typeof sp === 'function') sp();
-        var ub = g('updateBankUI'); if (typeof ub === 'function') ub();
-        var us = g('updateScoreHUD'); if (typeof us === 'function') us();
-      }
+    var res = d.result;
+    var won = !res.tie && res.winnerId === ID;
+    var lost = !res.tie && res.winnerId !== ID;
+    var delta = res.tie ? 0 : (won ? res.wager : -res.wager);
+    var P = g('P');
+    if (P) {
+      if (delta !== 0) P.stars = Math.max(0, (P.stars || 0) + delta);
+      if (won) { P.duelWins = (P.duelWins || 0) + 1; P.duelStarsWon = (P.duelStarsWon || 0) + res.wager; }
+      else if (lost) { P.duelLosses = (P.duelLosses || 0) + 1; }
+      var sp = g('saveProfiles'); if (typeof sp === 'function') sp();
+      var ub = g('updateBankUI'); if (typeof ub === 'function') ub();
+      var us = g('updateScoreHUD'); if (typeof us === 'function') us();
     }
-    trySfx(res.tie ? 'pop' : (res.winnerId === ID ? 'win' : 'bad'));
+    trySfx(res.tie ? 'pop' : (won ? 'win' : 'bad'));
+  }
+  function confettiBurst() {
+    var colors = ['#FFD43B', '#2EB872', '#2D6FD6', '#ED8B00', '#E03131', '#9b59b6'];
+    for (var i = 0; i < 22; i++) {
+      var c = document.createElement('div');
+      c.className = 'duel-confetti';
+      c.style.left = (Math.random() * 100) + 'vw';
+      c.style.background = colors[i % colors.length];
+      c.style.animation = 'duelConf ' + (1.6 + Math.random() * 1.4) + 's ease-in ' + (Math.random() * 0.45) + 's forwards';
+      document.body.appendChild(c);
+      (function (el) { setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3400); })(c);
+    }
   }
   function renderResult(d) {
     var res = d.result; var iAmFrom = res.fromId === ID;
@@ -543,6 +583,9 @@
       '<div class="duel-sub">You: <b>' + myC + '</b> best-answers · ' + esc(opName) + ': <b>' + opC + '</b><br>' + line + '</div>' +
       '<div style="font-size:.8rem;color:#7a88a6;margin-bottom:12px;">Your balance: ' + myStars().toLocaleString() + '⭐</div>' +
       '<div class="duel-row"><button class="duel-btn duel-go" id="duel-done" style="flex:1;">Done</button></div>');
+    var h = card.querySelector('.duel-h'); if (h) h.classList.add('duel-h-pop');
+    if (!res.tie && res.winnerId === ID) confettiBurst();
+    else if (!res.tie) { card.classList.add('duel-card-lose'); setTimeout(function () { card.classList.remove('duel-card-lose'); }, 1100); }
     card.querySelector('#duel-done').onclick = function () { closeDuelOv(); };
   }
 

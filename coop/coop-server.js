@@ -109,6 +109,7 @@ function publicList(r) {
     id: p.id, name: p.name, avatar: p.avatar,
     stats: p.stats, house: p.house, houseName: p.houseName,
     vanity: p.vanity, vanityTotal: p.vanityTotal,
+    duelWins: p.duelWins, duelLosses: p.duelLosses, duelStarsWon: p.duelStarsWon,
     score: p.score, grade: p.grade, term: p.term,
     lifetimeGrade: p.lifetimeGrade, termGrades: p.termGrades,
     started: p.started, inTown: p.inTown,

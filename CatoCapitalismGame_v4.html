@@ -3420,7 +3420,7 @@ function randPart(part,base){
 // thriving = flat-vector park city · worn = muted brick streets ·
 // collapsed = gray silhouette skyline. Flat shapes, no outlines.
 // ─────────────────────────────────────────────────────────────
-const WORLD_W=1800,WORLD_H=1200,VIEW_W=900,VIEW_H=600;
+const WORLD_W=7200,WORLD_H=4800,VIEW_W=900,VIEW_H=600;
 let player={x:900,y:700,dir:1,step:0,moving:false};
 let keysDown={},townLoopOn=false,nearNPC=-1,nearShop=false,dlgOpen=false,colliders=[];
 // Mobile/touch support: detect coarse pointers and feed an on-screen joystick into movement.
@@ -3764,7 +3764,7 @@ function buildWorld(tiers){
   AP=blendAmb(tiers.avgVal!==undefined?tiers.avgVal:[35,55,85][tiers.avg]);
   let w=treeDefs();
   w+='<rect width="'+WORLD_W+'" height="'+WORLD_H+'" fill="'+AP.grass+'"/>';
-  for(let i=0;i<34;i++){const gx=(i*457)%WORLD_W,gy=(i*331)%WORLD_H;w+='<ellipse cx="'+gx+'" cy="'+gy+'" rx="'+(46+(i%4)*20)+'" ry="'+(20+(i%3)*8)+'" fill="'+AP.grass2+'"/>';}
+  for(let i=0;i<260;i++){const gx=(i*457)%WORLD_W,gy=(i*331)%WORLD_H;w+='<ellipse cx="'+gx+'" cy="'+gy+'" rx="'+(46+(i%4)*20)+'" ry="'+(20+(i%3)*8)+'" fill="'+AP.grass2+'"/>';}
   w+=roadsSVG(['M900,640 Q880,480 860,420 Q840,330 760,300',
     'M900,640 Q1080,560 1240,420 Q1300,380 1330,360',
     'M900,680 Q900,860 860,1000',
@@ -3828,14 +3828,57 @@ function buildWorld(tiers){
   if((tiers.hVal||0)>=82)w+='<g><path d="M838,330 q-3,-26 0,-34" stroke="#9AA0A6" stroke-width="1.5" fill="none"/><circle cx="838" cy="288" r="9" fill="#FF6B6B"/><path d="M962,334 q3,-28 0,-36" stroke="#9AA0A6" stroke-width="1.5" fill="none"/><circle cx="962" cy="290" r="9" fill="#4ECDC4"/></g>';
   
   if(tiers.avg===0){w+='<rect x="1000" y="744" width="28" height="18" rx="3" fill="#6E7B79" transform="rotate(14 1014 753)"/>';}
+  w+=buildExpansion(tiers);
   return w;}
+
+// ── world expansion: neighborhoods, shops & districts spread across the bigger map ──
+function buildExpansion(tiers){
+  var T=(tiers.avg!==undefined?tiers.avg:1), s='';
+  var HUES=['#E8956D','#8FB7D9','#D9C28F','#A8C3A0','#E0A8C8','#C9A876','#9FB4C9','#E8C36B','#B0C4DE','#D7A8A8','#9AC0B0','#E8B07A'];
+  function hue(i){return HUES[((i%HUES.length)+HUES.length)%HUES.length];}
+  function H(x,y,i){return urban(x,y,90,1,4,T,['#4E6260','#A8918A',hue(i)],null,'');}                 // decorative home
+  function SHOP(x,y,name){return urban(x,y,118,1,6,T,['#4E6260','#A8918A','#E8B07A'],null,signFlat(118,name,'#C9802A'));}  // decorative shop (no utility)
+  function BIZ(x,y,w,fl,cols,c){return urban(x,y,w,fl,cols,T,['#4E6260','#8B98A8',c],null,'');}        // office / tall building
+  // arterial + neighborhood roads tying the new districts to downtown
+  s+=roadsSVG([
+    'M250,1150 L250,2050','M120,1450 L780,1450',
+    'M300,2400 L7000,2400','M1800,250 L1800,4600',
+    'M1800,900 L4760,900','M1950,2150 L3560,2150',
+    'M3640,2400 L3640,3320','M4760,2600 L4760,4420',
+    'M1950,3450 L6820,3450'
+  ]);
+  // your home stays put — now wrapped in a neighborhood (houses around it, extending south)
+  s+=H(60,820,0)+H(360,800,1)+H(540,880,2)+H(60,1030,3)+H(560,1050,4);
+  for(var hx=0;hx<4;hx++){s+=H(120+hx*185,1380,hx)+H(120+hx*185,1640,hx+2)+H(120+hx*185,1900,hx+4);}
+  s+=ftree(720,1320,1)+ftree(60,1320,0.9)+fbench(250,1520)+flamp(250,1300)+fbush(700,1700,1);
+  // east residential grid
+  for(var ey=0;ey<5;ey++)for(var ex=0;ex<6;ex++){s+=H(2060+ex*175,540+ey*215,ex+ey);}
+  // shopping street (decorative storefronts only)
+  var shops=['CAFÉ','BAKERY','BOOKS','TOYS','DINER','GYM','FLORIST','BARBER','GROCER','PIZZA'];
+  for(var si=0;si<shops.length;si++)s+=SHOP(1980+si*155,2120,shops[si]);
+  s+=fbench(2300,2260)+fbench(2900,2260)+flamp(2150,2200)+flamp(3060,2200);
+  // office / business cluster
+  s+=BIZ(3660,2360,150,4,6,'#8B98A8')+BIZ(3840,2360,130,6,5,'#7E96AC')+BIZ(4000,2360,165,3,7,'#9FB4C9')+BIZ(3720,2980,185,5,7,'#8B98A8')+BIZ(3970,2980,150,4,6,'#7E96AC');
+  // far residential neighborhoods to fill the city
+  for(var ay=0;ay<5;ay++)for(var ax=0;ax<7;ax++){s+=H(4900+ax*180,580+ay*225,ax+ay);}
+  for(var by=0;by<6;by++)for(var bx=0;bx<9;bx++){s+=H(2080+bx*175,3580+by*205,bx+by);}
+  for(var cy=0;cy<5;cy++)for(var cx=0;cx<5;cx++){s+=H(4980+cx*185,2760+cy*210,cx+cy+3);}
+  // parks scattered through the city
+  var PK=[[1400,3000],[4300,1750],[5800,2650],[3100,4250],[6500,1250],[980,2250],[6300,3900]];
+  for(var pi=0;pi<PK.length;pi++){var px=PK[pi][0],py=PK[pi][1];s+=ftree(px,py,1.15)+ftree(px+70,py+30,0.95)+fbush(px+35,py+18,1)+frock(px-42,py+12,0.9)+fbench(px,py+55);}
+  // trees framing the far edges
+  for(var ti=0;ti<26;ti++){s+=ftree(((ti*557)%6700)+250,4700,0.9)+ftree(7080,((ti*431)%4300)+260,0.9);}
+  return s;
+}
 
 function npcLayer(){let s='';for(let i=0;i<Q.length&&i<NPC_POS.length;i++)s+=npcSVG(i,S.answers.some(function(a){return a.qi===i;}));return s;}
 // ── Minimap (overview of the whole town + the player's live position) ──
 const MINIMAP_W=150, MINIMAP_H=100;
 const MM_MARKERS=[
   {x:900,y:392,ic:'🏛️'},{x:1300,y:712,ic:'🏦'},{x:775,y:1000,ic:'🛒'},
-  {x:1325,y:322,ic:'🏫'},{x:240,y:900,ic:'🏠'},{x:1640,y:890,ic:'📰'},{x:900,y:600,ic:'⛲'}
+  {x:1325,y:322,ic:'🏫'},{x:240,y:900,ic:'🏠'},{x:1640,y:890,ic:'📰'},{x:900,y:600,ic:'⛲'},
+  {x:400,y:1640,ic:'🏘️'},{x:2900,y:900,ic:'🏘️'},{x:2700,y:2120,ic:'🛍️'},{x:3850,y:2650,ic:'🏢'},
+  {x:5600,y:1100,ic:'🏘️'},{x:3500,y:4000,ic:'🏘️'},{x:5500,y:3300,ic:'🏘️'}
 ];
 function buildMinimap(){
   const mm=document.getElementById('minimap'); if(!mm)return;

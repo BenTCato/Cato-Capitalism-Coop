@@ -3610,9 +3610,10 @@ function bSchool(x,y,t){return urban(x,y-96,170,2,8,t,['#4E6260','#B5836B','#F2B
   (t===2?'<rect x="-16" y="64" width="14" height="20" rx="7" fill="'+AP.tree+'"/>':''));}
 function bShops(x,y,t){
   const aw1=t===2?'#D9534F':'#7A8086',aw2=t===2?'#3FA7A0':'#6E7680';
-  function scallop(x0,col){let s='<g transform="translate('+x0+',30)">';for(let i=0;i<5;i++)s+='<path d="M'+(i*15)+',0 h15 v6 a7.5,6 0 0 1 -15,0 Z" fill="'+col+'"/>';return s+'</g>';}
+  function scallop(x0,col,n){let s='<g transform="translate('+x0+',30)">';for(let i=0;i<n;i++)s+='<path d="M'+(i*15)+',0 h15 v6 a7.5,6 0 0 1 -15,0 Z" fill="'+col+'"/>';return s+'</g>';}
   return urban(x,y-84,150,1,7,t,['#4E6260','#A8625A','#E8956D'],null,
-  scallop(0,aw1)+scallop(75,aw2)+signFlat(150,t===0?'CLOSED':'MARKET',t===0?'#4E6260':'#C9802A')+
+  // awning split into two halves over the side windows, leaving the centered door clear (no overlap)
+  scallop(6,aw1,3)+scallop(93,aw2,3)+signFlat(150,t===0?'CLOSED':'MARKET',t===0?'#4E6260':'#C9802A')+
   (t===0?'<rect x="10" y="40" width="46" height="20" fill="#3D4F4D"/><path d="M12,42 l42,16 M54,42 l-42,16" stroke="#5E7370" stroke-width="2.5"/>':''));}
 function bBank(x,y,t){return urban(x,y-88,140,2,6,t,['#4E6260','#9A8F7E','#F4EBD7'],null,
   '<rect x="10" y="10" width="6" height="'+(34+2*24-14)+'" fill="rgba(255,255,255,.35)"/><rect x="124" y="10" width="6" height="'+(34+2*24-14)+'" fill="rgba(255,255,255,.35)"/>'+
@@ -3621,12 +3622,14 @@ function bBank(x,y,t){return urban(x,y-88,140,2,6,t,['#4E6260','#9A8F7E','#F4EBD
 function bPress(x,y,t){return urban(x,y-80,130,1,6,t,['#3D4F4D','#8B98A8','#5B8FB5'],null,
   signFlat(130,t===0?'STATE NEWS':'FREE PRESS',t===0?'#3D4F4D':'#D9534F')+
   (t===2?'<rect x="-20" y="44" width="15" height="30" rx="2" fill="#ED8B00"/><rect x="-17" y="49" width="9" height="11" fill="#FFFDF4"/>':''));}
-function bHall(x,y,t){
-  const arch=(x0)=>'<path d="M'+x0+',38 a9,9 0 0 1 18,0 v14 h-18 Z" fill="'+(t===0?'#42554F':'#FFF6E0')+'"/>';
-  return urban(x,y-92,160,1,7,t,['#4E6260','#B59E7A','#E8A04C'],null,
-  arch(20)+arch(64)+arch(108)+
-  '<polygon points="50,-26 80,-46 110,-26" fill="'+(t===2?'#C9802A':'#5E6A70')+'"/>'+
-  '<rect x="78" y="-62" width="3" height="18" fill="#5E6A70"/><polygon points="81,-62 102,-56 81,-50" fill="'+(t===2?'#ED8B00':t===1?'#A8AEB8':'#8B2F2F')+'"/>'+
+function bHall(x,y,t){return urban(x,y-92,160,1,7,t,['#4E6260','#B59E7A','#E8A04C'],null,
+  // pediment whose base sits flush on the roofline (no floating gap); shaded right slope
+  '<polygon points="40,0 80,-34 120,0" fill="'+(t===2?'#E8A04C':'#7A8690')+'"/>'+
+  '<polygon points="80,-34 120,0 80,0" fill="rgba(0,0,0,.12)"/>'+
+  // flag rising from the peak
+  '<rect x="79" y="-50" width="3" height="18" fill="#5E6A70"/><polygon points="82,-50 102,-44 82,-38" fill="'+(t===2?'#ED8B00':t===1?'#A8AEB8':'#8B2F2F')+'"/>'+
+  // nameplate drawn last so it sits cleanly over the pediment base (no messy overlap); urban draws
+  // the single centered, framed door and the windows skip the doorway zone (no window/door overlap)
   signFlat(160,'TOWN HALL',t===0?'#4E6260':'#2D6FD6'));}
 function bHouse(x,y,t,hue){return urban(x,y-64,92,1,4,t,['#4E6260','#A8918A',hue],null,
   '<polygon points="-6,4 46,-24 98,4" fill="#9A5A3C"/><polygon points="46,-24 98,4 46,4" fill="rgba(0,0,0,.14)"/>'+
@@ -3643,8 +3646,7 @@ const HOUSE_TIERS=[
 function bHome(x,yBase,t,ht){
   ht=Math.min(ht||0,HOUSE_TIERS.length-1);const HT=HOUSE_TIERS[ht];
   const w=HT.w,h=34+HT.fl*24;
-  let ex=signFlat(w,'YOUR HOME',t===0?'#4E6260':'#7C3FB8');
-  ex+='<rect x="-4" y="-22" width="4" height="36" fill="#6E7680"/><polygon points="0,-22 22,-16 0,-10" fill="#FFC93C"/>';
+  let ex='<rect x="-4" y="-22" width="4" height="36" fill="#6E7680"/><polygon points="0,-22 22,-16 0,-10" fill="#FFC93C"/>';
   if(ht<=1)ex+='<rect x="'+(w-26)+'" y="-26" width="12" height="20" fill="#8E9499"/>'+(t===2?'<g class="smoke"><circle cx="'+(w-20)+'" cy="-32" r="4" fill="#EAEAE2" opacity=".7"/><circle cx="'+(w-17)+'" cy="-40" r="5" fill="#EAEAE2" opacity=".4"/></g>':'');
   if(ht===1)ex+='<rect x="'+(w-40)+'" y="'+(h-26)+'" width="30" height="26" rx="3" fill="#8A9298"/><rect x="'+(w-36)+'" y="'+(h-22)+'" width="22" height="18" rx="2" fill="#6E7680"/>';
   if(ht===2)ex+='<polygon points="'+(w/2-50)+',0 '+(w/2)+',-26 '+(w/2+50)+',0" fill="#EFE6CC"/><rect x="'+(w/2-30)+'" y="'+(h-30)+'" width="7" height="30" fill="#EFE6CC"/><rect x="'+(w/2+23)+'" y="'+(h-30)+'" width="7" height="30" fill="#EFE6CC"/>';
@@ -3654,6 +3656,7 @@ function bHome(x,yBase,t,ht){
     ex+='<rect x="'+(w-2)+'" y="-30" width="20" height="44" fill="'+HT.bodies[t]+'"/><polygon points="'+(w-2)+',-30 '+(w+8)+',-48 '+(w+18)+',-30" fill="#C9A035"/>';
     ex+='<rect x="0" y="-6" width="'+w+'" height="8" fill="#C9A035"/>';}
   if(t>=1)ex+='<rect x="6" y="'+(h-6)+'" width="20" height="8" rx="4" fill="'+AP.tree+'"/>';
+  ex+=signFlat(w,'YOUR HOME',t===0?'#4E6260':'#7C3FB8');  // nameplate drawn LAST → roof toppers never cut through it
   return urban(x,yBase-64,w,HT.fl,HT.cols,t,HT.bodies,null,ex);
 }
 function fountainB(x,y,t){reg(x-58,y-18,116,40);

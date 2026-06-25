@@ -3420,14 +3420,18 @@ function randPart(part,base){
 // thriving = flat-vector park city · worn = muted brick streets ·
 // collapsed = gray silhouette skyline. Flat shapes, no outlines.
 // ─────────────────────────────────────────────────────────────
-const WORLD_W=7200,WORLD_H=4800,VIEW_W=900,VIEW_H=600;
-let player={x:900,y:700,dir:1,step:0,moving:false};
+const WORLD_W=3600,WORLD_H=2400,VIEW_W=900,VIEW_H=600;
+// Downtown core is authored at top-left coords; CORE_DX/DY shift it to the map center.
+// reg() adds REG_DX/DY so collision boxes line up with the translated core render.
+const CORE_DX=900,CORE_DY=600;
+let REG_DX=0,REG_DY=0;
+let player={x:900+CORE_DX,y:700+CORE_DY,dir:1,step:0,moving:false};
 let keysDown={},townLoopOn=false,nearNPC=-1,nearShop=false,dlgOpen=false,colliders=[];
 // Mobile/touch support: detect coarse pointers and feed an on-screen joystick into movement.
 var IS_TOUCH=(('ontouchstart' in window)||(navigator.maxTouchPoints>0)||(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches));
 var touchVec={x:0,y:0};
 try{ if(IS_TOUCH) document.documentElement.classList.add('touch'); }catch(e){}
-const SCHOOL_SPOT=[1325,322];
+const SCHOOL_SPOT=[1325+CORE_DX,322+CORE_DY];
 let nearSchool=false;
 const LEARN_HUBS=[
  {icon:'🎓',name:'Cato Home Study Course',tag:'Course',desc:'A free start-from-zero course on the ideas of liberty',url:'https://www.cato.org/cato-home-study-resources'},
@@ -3498,15 +3502,15 @@ function renderLearn(ti){
 }
 function openLearn(){renderLearn();showScreen('learn');sfx('good');}
 function closeLearn(){renderTown();showScreen('town');sfx('click');}
-const SHOP_SPOT=[775,1050];
-const HOME_SPOT=[240,918];
-const BANK_SPOT=[1300,712];
-const HALL_SPOT=[900,400];
+const SHOP_SPOT=[775+CORE_DX,1050+CORE_DY];
+const HOME_SPOT=[240+CORE_DX,918+CORE_DY];
+const BANK_SPOT=[1300+CORE_DX,712+CORE_DY];
+const HALL_SPOT=[900+CORE_DX,400+CORE_DY];
 let nearBank=false,nearHall=false;
 let nearHome=false;
 let storeFrom='title';
 function tTier(v){return v>=65?2:v>=40?1:0;}
-function reg(x,y,w,h){colliders.push({x:x,y:y,w:w,h:h});}
+function reg(x,y,w,h){colliders.push({x:x+REG_DX,y:y+REG_DY,w:w,h:h});}
 // ambient palettes per overall tier (galtsgulch / socialist / autocratic)
 const AMB=[
  {grass:'#8A937E',grass2:'#7E8775',road:'#55606B',dash:'#7E8893',curb:'#49535D',water:'#6E8694',water2:'#7E96A4',tree:'#6E7B68',tree2:'#5E6B59',haze:true},
@@ -3650,7 +3654,7 @@ function fountainB(x,y,t){reg(x-58,y-18,116,40);
   return s+'</g>';}
 
 // ── citizens & player (flat style) ──
-const NPC_POS=[[340,250],[640,250],[1150,330],[1430,300],[668,1078],[930,1030],[505,800],[1255,650],[1690,950],[980,560]];
+const NPC_POS=[[340,250],[640,250],[1150,330],[1430,300],[668,1078],[930,1030],[505,800],[1255,650],[1690,950],[980,560]].map(function(p){return [p[0]+CORE_DX,p[1]+CORE_DY];});
 // 10 kid-friendly opener prompts per citizen (picked at random each chat)
 const NPC_LINES=[
 ["Hi neighbor! Can I ask you something?","Oh good, you're here! I need your help.","Leader! Just the person I wanted to see.","Hey! Got a minute to talk?","I've been thinking about something all day.","My family was talking about this at dinner.","You always give good advice. Ready?","Something is bugging me. Can you help?","I knew you'd walk by! Listen to this.","Quick question for you, leader!"],
@@ -3765,6 +3769,7 @@ function buildWorld(tiers){
   let w=treeDefs();
   w+='<rect width="'+WORLD_W+'" height="'+WORLD_H+'" fill="'+AP.grass+'"/>';
   for(let i=0;i<260;i++){const gx=(i*457)%WORLD_W,gy=(i*331)%WORLD_H;w+='<ellipse cx="'+gx+'" cy="'+gy+'" rx="'+(46+(i%4)*20)+'" ry="'+(20+(i%3)*8)+'" fill="'+AP.grass2+'"/>';}
+  REG_DX=CORE_DX;REG_DY=CORE_DY;w+='<g transform="translate('+CORE_DX+','+CORE_DY+')">';  // ↓ downtown core, shifted to map center
   w+=roadsSVG(['M900,640 Q880,480 860,420 Q840,330 760,300',
     'M900,640 Q1080,560 1240,420 Q1300,380 1330,360',
     'M900,680 Q900,860 860,1000',
@@ -3828,46 +3833,69 @@ function buildWorld(tiers){
   if((tiers.hVal||0)>=82)w+='<g><path d="M838,330 q-3,-26 0,-34" stroke="#9AA0A6" stroke-width="1.5" fill="none"/><circle cx="838" cy="288" r="9" fill="#FF6B6B"/><path d="M962,334 q3,-28 0,-36" stroke="#9AA0A6" stroke-width="1.5" fill="none"/><circle cx="962" cy="290" r="9" fill="#4ECDC4"/></g>';
   
   if(tiers.avg===0){w+='<rect x="1000" y="744" width="28" height="18" rx="3" fill="#6E7B79" transform="rotate(14 1014 753)"/>';}
+  w+='</g>';REG_DX=0;REG_DY=0;  // end downtown core; expansion below uses final map coords
   w+=buildExpansion(tiers);
   return w;}
 
 // ── world expansion: neighborhoods, shops & districts spread across the bigger map ──
+// a detailed, themed storefront (awning + emblem + name) — decorative only, no utility
+function detShop(x,y,kind){
+  var K={
+    cafe:{n:'CAFÉ',b:'#C98A5E',a:'#7A3B2E',e:'☕'},
+    bakery:{n:'BAKERY',b:'#E8C07A',a:'#B5651D',e:'🥐'},
+    books:{n:'BOOKSHOP',b:'#5E7FA8',a:'#2D4E79',e:'📚'},
+    toys:{n:'TOY SHOP',b:'#E86D9A',a:'#B83C6A',e:'🧸'},
+    grocer:{n:'GROCER',b:'#7FB069',a:'#4E7F3E',e:'🥦'},
+    pizza:{n:'PIZZERIA',b:'#D9534F',a:'#9A2F2C',e:'🍕'},
+    icecream:{n:'ICE CREAM',b:'#9AD0E0',a:'#3FA7C0',e:'🍦'},
+    florist:{n:'FLOWERS',b:'#C8A0D8',a:'#8A5EA8',e:'🌸'},
+    barber:{n:'BARBER',b:'#AEB6BE',a:'#C0392B',e:'💈'},
+    diner:{n:'DINER',b:'#E0A24E',a:'#3D4F4D',e:'🍔'},
+    music:{n:'MUSIC',b:'#8E7CC3',a:'#5E4E93',e:'🎵'},
+    hardware:{n:'HARDWARE',b:'#B58A6A',a:'#6E4E2E',e:'🔨'}
+  };
+  var k=K[kind]||K.cafe, w=120;
+  var awn='<g>'; for(var i=0;i<6;i++)awn+='<path d="M'+(i*20)+',2 h20 v8 a10,7 0 0 1 -20,0 Z" fill="'+((i%2)?k.a:'#FAF3E0')+'"/>'; awn+='</g>';
+  var emblem='<text x="'+(w/2)+'" y="44" text-anchor="middle" font-size="22">'+k.e+'</text>';
+  return urban(x,y,w,1,5,2,['#6E6258','#9A8F7E',k.b],null, awn+emblem+signFlat(w,k.n,k.a));
+}
 function buildExpansion(tiers){
   var T=(tiers.avg!==undefined?tiers.avg:1), s='';
   var HUES=['#E8956D','#8FB7D9','#D9C28F','#A8C3A0','#E0A8C8','#C9A876','#9FB4C9','#E8C36B','#B0C4DE','#D7A8A8','#9AC0B0','#E8B07A'];
   function hue(i){return HUES[((i%HUES.length)+HUES.length)%HUES.length];}
-  function H(x,y,i){return urban(x,y,90,1,4,T,['#4E6260','#A8918A',hue(i)],null,'');}                 // decorative home
-  function SHOP(x,y,name){return urban(x,y,118,1,6,T,['#4E6260','#A8918A','#E8B07A'],null,signFlat(118,name,'#C9802A'));}  // decorative shop (no utility)
-  function BIZ(x,y,w,fl,cols,c){return urban(x,y,w,fl,cols,T,['#4E6260','#8B98A8',c],null,'');}        // office / tall building
-  // arterial + neighborhood roads tying the new districts to downtown
+  function H(x,y,i){return urban(x,y,86,1,4,T,['#4E6260','#A8918A',hue(i)],null,'');}            // decorative home
+  function BIZ(x,y,w,fl,cols,c){return urban(x,y,w,fl,cols,T,['#4E6260','#8B98A8',c],null,'');}  // office / tall building
+  // ── road network: a ring around centered downtown + radial avenues + neighborhood streets ──
   s+=roadsSVG([
-    'M250,1150 L250,2050','M120,1450 L780,1450',
-    'M300,2400 L7000,2400','M1800,250 L1800,4600',
-    'M1800,900 L4760,900','M1950,2150 L3560,2150',
-    'M3640,2400 L3640,3320','M4760,2600 L4760,4420',
-    'M1950,3450 L6820,3450'
+    'M620,1215 Q620,400 1800,400 Q2980,400 2980,1215 Q2980,2030 1800,2030 Q620,2030 620,1215 Z', // ring road
+    'M1800,400 L1800,90','M1800,2030 L1800,2360',           // north / south radials
+    'M620,1215 L80,1215','M2980,1215 L3540,1215',           // west / east radials
+    'M840,560 L460,250','M2760,560 L3160,250',              // NW / NE diagonals
+    'M2760,1870 L3160,2150','M840,1870 L460,2150',          // SE / SW diagonals
+    'M760,200 L2880,200','M720,2260 L2880,2260',            // north / south cross streets
+    'M430,740 L430,1620'                                    // west neighborhood street
   ]);
-  // your home stays put — now wrapped in a neighborhood (houses around it, extending south)
-  s+=H(60,820,0)+H(360,800,1)+H(540,880,2)+H(60,1030,3)+H(560,1050,4);
-  for(var hx=0;hx<4;hx++){s+=H(120+hx*185,1380,hx)+H(120+hx*185,1640,hx+2)+H(120+hx*185,1900,hx+4);}
-  s+=ftree(720,1320,1)+ftree(60,1320,0.9)+fbench(250,1520)+flamp(250,1300)+fbush(700,1700,1);
-  // east residential grid
-  for(var ey=0;ey<5;ey++)for(var ex=0;ex<6;ex++){s+=H(2060+ex*175,540+ey*215,ex+ey);}
-  // shopping street (decorative storefronts only)
-  var shops=['CAFÉ','BAKERY','BOOKS','TOYS','DINER','GYM','FLORIST','BARBER','GROCER','PIZZA'];
-  for(var si=0;si<shops.length;si++)s+=SHOP(1980+si*155,2120,shops[si]);
-  s+=fbench(2300,2260)+fbench(2900,2260)+flamp(2150,2200)+flamp(3060,2200);
-  // office / business cluster
-  s+=BIZ(3660,2360,150,4,6,'#8B98A8')+BIZ(3840,2360,130,6,5,'#7E96AC')+BIZ(4000,2360,165,3,7,'#9FB4C9')+BIZ(3720,2980,185,5,7,'#8B98A8')+BIZ(3970,2980,150,4,6,'#7E96AC');
-  // far residential neighborhoods to fill the city
-  for(var ay=0;ay<5;ay++)for(var ax=0;ax<7;ax++){s+=H(4900+ax*180,580+ay*225,ax+ay);}
-  for(var by=0;by<6;by++)for(var bx=0;bx<9;bx++){s+=H(2080+bx*175,3580+by*205,bx+by);}
-  for(var cy=0;cy<5;cy++)for(var cx=0;cx<5;cx++){s+=H(4980+cx*185,2760+cy*210,cx+cy+3);}
-  // parks scattered through the city
-  var PK=[[1400,3000],[4300,1750],[5800,2650],[3100,4250],[6500,1250],[980,2250],[6300,3900]];
-  for(var pi=0;pi<PK.length;pi++){var px=PK[pi][0],py=PK[pi][1];s+=ftree(px,py,1.15)+ftree(px+70,py+30,0.95)+fbush(px+35,py+18,1)+frock(px-42,py+12,0.9)+fbench(px,py+55);}
-  // trees framing the far edges
-  for(var ti=0;ti<26;ti++){s+=ftree(((ti*557)%6700)+250,4700,0.9)+ftree(7080,((ti*431)%4300)+260,0.9);}
+  // WEST residential (with the core's own houses, this is your home's neighborhood)
+  for(var wy=0;wy<4;wy++)for(var wx=0;wx<3;wx++){s+=H(130+wx*190,740+wy*230,wx+wy);}
+  s+=ftree(360,700,1)+fbench(430,1000)+flamp(430,1180)+fbush(250,1500,1)+frock(560,1560,0.9);
+  // EAST shopping district — detailed, distinct storefronts
+  var EShops=['cafe','bakery','grocer','toys','pizza','icecream','florist','barber','hardware','books'];
+  for(var i=0;i<EShops.length;i++){var col=i%2,row=Math.floor(i/2);s+=detShop(3050+col*200,740+row*210,EShops[i]);}
+  s+=flamp(3170,820)+fbench(3160,1700)+ftree(3380,1000,1);
+  // NORTH district — offices + a few shops
+  s+=BIZ(900,340,150,4,6,'#8B98A8')+BIZ(1080,340,130,5,5,'#7E96AC')+BIZ(2360,340,160,3,7,'#9FB4C9')+BIZ(2540,340,140,5,6,'#8B98A8');
+  s+=detShop(1320,330,'books')+detShop(1470,330,'music')+detShop(2000,330,'diner')+detShop(2150,330,'icecream');
+  s+=flamp(1700,300)+ftree(700,300,1)+ftree(2900,300,1);
+  // SOUTH residential
+  for(var sy=0;sy<2;sy++)for(var sx=0;sx<9;sx++){s+=H(720+sx*210,2150+sy*180,sx+sy+2);}
+  s+=fbench(1500,2120)+flamp(1100,2120)+flamp(2100,2120);
+  // corner neighborhoods
+  for(var ny=0;ny<2;ny++)for(var nx=0;nx<2;nx++){s+=H(140+nx*190,150+ny*210,nx+ny+4);}     // NW
+  s+=H(150,1800,1)+H(340,1800,3)+H(150,2010,5)+H(340,2010,7);                              // SW
+  s+=H(3080,1810,2)+H(3270,1810,4)+H(3080,2010,6)+H(3270,2010,8);                          // SE
+  // parks
+  var PK=[[470,1980],[3260,560],[1800,150],[300,1420],[3300,2200]];
+  for(var pi=0;pi<PK.length;pi++){var px=PK[pi][0],py=PK[pi][1];s+=ftree(px,py,1.15)+ftree(px+60,py+25,0.95)+fbush(px+30,py+15,1)+frock(px-36,py+10,0.9)+fbench(px,py+48);}
   return s;
 }
 
@@ -3875,10 +3903,12 @@ function npcLayer(){let s='';for(let i=0;i<Q.length&&i<NPC_POS.length;i++)s+=npc
 // ── Minimap (overview of the whole town + the player's live position) ──
 const MINIMAP_W=150, MINIMAP_H=100;
 const MM_MARKERS=[
-  {x:900,y:392,ic:'🏛️'},{x:1300,y:712,ic:'🏦'},{x:775,y:1000,ic:'🛒'},
-  {x:1325,y:322,ic:'🏫'},{x:240,y:900,ic:'🏠'},{x:1640,y:890,ic:'📰'},{x:900,y:600,ic:'⛲'},
-  {x:400,y:1640,ic:'🏘️'},{x:2900,y:900,ic:'🏘️'},{x:2700,y:2120,ic:'🛍️'},{x:3850,y:2650,ic:'🏢'},
-  {x:5600,y:1100,ic:'🏘️'},{x:3500,y:4000,ic:'🏘️'},{x:5500,y:3300,ic:'🏘️'}
+  // downtown core (shifted to map center)
+  {x:900+CORE_DX,y:392+CORE_DY,ic:'🏛️'},{x:1300+CORE_DX,y:712+CORE_DY,ic:'🏦'},{x:775+CORE_DX,y:1000+CORE_DY,ic:'🛒'},
+  {x:1325+CORE_DX,y:322+CORE_DY,ic:'🏫'},{x:240+CORE_DX,y:918+CORE_DY,ic:'🏠'},{x:1640+CORE_DX,y:890+CORE_DY,ic:'📰'},{x:900+CORE_DX,y:600+CORE_DY,ic:'⛲'},
+  // outer districts (final map coords)
+  {x:430,y:1230,ic:'🏘️'},{x:1500,y:2120,ic:'🏘️'},{x:3160,y:1120,ic:'🛍️'},{x:1800,y:250,ic:'🏢'},
+  {x:3180,y:1950,ic:'🏘️'},{x:560,y:560,ic:'🌳'},{x:3120,y:430,ic:'🌳'}
 ];
 function buildMinimap(){
   const mm=document.getElementById('minimap'); if(!mm)return;
@@ -3902,9 +3932,9 @@ function renderTown(){
     '<g id="npc-layer">'+npcLayer()+'</g>'+
     '<g id="fx-layer"></g>'+
     playerSVG()+
-    '<g id="fg-layer">'+fgStr+'</g>'+
+    '<g id="fg-layer" transform="translate('+CORE_DX+','+CORE_DY+')">'+fgStr+'</g>'+
     '<rect id="night-rect" width="'+WORLD_W+'" height="'+WORLD_H+'" fill="#16214E" opacity="0" style="pointer-events:none;"/>'+
-    '<g id="glow-g" opacity="0" style="pointer-events:none;">'+glowStr+'</g>'+
+    '<g id="glow-g" opacity="0" style="pointer-events:none;" transform="translate('+CORE_DX+','+CORE_DY+')">'+glowStr+'</g>'+
     '<g id="prompt-g" style="display:none;"><circle id="prompt-ring" r="34" fill="none" stroke="#FFE9A8" stroke-width="3" stroke-dasharray="8 7"/><g id="prompt-tag"><rect x="-58" y="-86" width="116" height="24" rx="12" fill="rgba(20,28,20,.85)"/><text id="prompt-txt" y="-69" text-anchor="middle" font-size="12.5" font-weight="800" fill="#FFE9A8" font-family="Verdana">SPACE · Talk</text></g></g>'+
     '</svg>';
   const tn=document.getElementById('town-name');if(tn)tn.textContent=nationName;
@@ -4013,8 +4043,8 @@ function townTick(){
   // particles (pooled; stepped at half rate; camera-culled)
   if(tickFrame%GFX.fxEvery===0){
     if(tickFrame%26===0)fxSpawn(FX.leaf,camX()+Math.random()*VIEW_W,camY()-20,0.4+Math.random()*0.5,0.7+Math.random()*0.5,1.6);
-    if(TC.fountainTier===2&&tickFrame%8===0&&Math.abs(900-player.x)<VIEW_W&&Math.abs(600-player.y)<VIEW_H)
-      fxSpawn(FX.drop,895+Math.random()*10,576,(Math.random()-0.5)*1.6,-1.4-Math.random(),0.9);
+    if(TC.fountainTier===2&&tickFrame%8===0&&Math.abs((900+CORE_DX)-player.x)<VIEW_W&&Math.abs((600+CORE_DY)-player.y)<VIEW_H)
+      fxSpawn(FX.drop,(895+CORE_DX)+Math.random()*10,(576+CORE_DY),(Math.random()-0.5)*1.6,-1.4-Math.random(),0.9);
     const na=nightAmount();
     if(na>0.45&&tickFrame%14===0)fxSpawn(FX.fly,camX()+Math.random()*VIEW_W,camY()+120+Math.random()*(VIEW_H-200),(Math.random()-0.5)*0.6,(Math.random()-0.5)*0.4,1.4);
     fxStep(FX.dust,0.05,0);fxStep(FX.leaf,0.01,0.012);fxStep(FX.drop,0.05,0.12);fxStep(FX.fly,0.012,0);
@@ -6691,7 +6721,7 @@ function continueTerm(){
   buildDots();updateScoreHUD();updateBackBtn();
   renderTown();showScreen('town');sfx('good');
 }
-function startGame(){Q=dealTerm(null);S=freshState();shuffleMap=[];pendingNext=false;stateHistory=[];eventQueue=[];player.x=900;player.y=700;player.step=0;keysDown={};dlgOpen=false;GFX.day0=Date.now();buildDots();updateHUD(false);renderAvatar();updateScoreHUD();renderTown();showScreen('town');updateBackBtn();}
+function startGame(){Q=dealTerm(null);S=freshState();shuffleMap=[];pendingNext=false;stateHistory=[];eventQueue=[];player.x=900+CORE_DX;player.y=700+CORE_DY;player.step=0;keysDown={};dlgOpen=false;GFX.day0=Date.now();buildDots();updateHUD(false);renderAvatar();updateScoreHUD();renderTown();showScreen('town');updateBackBtn();}
 function restartGame(){const wrap=document.getElementById('creator-wrap'),slot=document.getElementById('creator-slot-title');if(wrap&&slot&&wrap.parentElement!==slot)slot.appendChild(wrap);showScreen('title');setTimeout(function(){renderAvatarPreview();renderAvCreator();},50);}
 
 // Init on page load

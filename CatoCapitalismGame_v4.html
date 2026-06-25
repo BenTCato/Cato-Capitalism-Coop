@@ -3992,7 +3992,7 @@ function renderTown(){
   ensureTownLoop();
 }
 // GFX engine config (skill: never hardcode values)
-const GFX={daySeconds:140,speed:8.5,dtMin:1,dtMax:3,lightEvery:24,fxEvery:2,wander:true,wanderSpeed:0.55,wanderRange:44,
+const GFX={daySeconds:140,speed:7.2,dtMin:1,dtMax:3,lightEvery:24,fxEvery:2,wander:true,wanderSpeed:0.55,wanderRange:44,
   grade:['saturate(.55) contrast(.96) brightness(.95)','saturate(.92)','saturate(1.07) brightness(1.02)'],
   lampSpots:[[832,508],[985,500],[1192,660],[684,824]],fgTrees:[[560,640,1.15],[1140,920,1.35],[640,140,1.2]]};
 let TC={}; // cached node refs (skill: cache, never query in the update loop)

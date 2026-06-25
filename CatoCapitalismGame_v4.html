@@ -3884,17 +3884,18 @@ function fflower(x,y){return '<g transform="translate('+x+','+y+')">'+sh(0,2,7,2
 function buildExpansion(tiers){
   var s=''; EXP_BR=[];
   // ── street grid: straight segments that all intersect → one connected network ──
-  var R=[],SEG=[],VL=[240,520,900,1800,2700,3080,3360];
+  var R=[],SEG=[],VL=[240,520,900,1800,2400,2760,3080,3360];
   function HR(y,x0,x1){R.push('M'+x0+','+y+' L'+x1+','+y);SEG.push({h:1,y:y,a:x0,b:x1});}
   function VR(x,y0,y1){R.push('M'+x+','+y0+' L'+x+','+y1);SEG.push({h:0,x:x,a:y0,b:y1});}
-  HR(620,900,2700);HR(1780,900,2700);VR(900,620,1780);VR(2700,620,1780);                  // downtown loop (hugs the core)
-  // links joining the loop to downtown's existing road ends (routed through the gaps between core buildings)
-  R.push('M1320,620 L1320,930','M1660,620 L1660,900','M1250,1780 L1250,1560','M1760,1780 L1760,1600','M900,1200 L1180,1200','M2700,1200 L2420,1200');
-  VR(240,120,2280);VR(520,120,2280);VR(3080,120,2280);VR(3360,120,2280);                  // full-height side spines
+  HR(620,900,2400);HR(1780,900,2400);VR(900,620,1780);VR(2400,620,1780);                  // downtown loop (kept WEST of the river)
+  HR(1337,2400,2760);                                                                      // the bridge road — the only crossing over the river
+  // avenues from the loop into downtown, routed through OPEN gaps (no roads over the pond, houses, or buildings)
+  R.push('M2000,620 L2000,1180','M2000,1780 L2000,1300','M900,1200 L1180,1200');
+  VR(240,120,2280);VR(520,120,2280);VR(2760,120,2280);VR(3080,120,2280);VR(3360,120,2280); // full-height spines (2760 = east-of-river arterial)
   VR(1800,80,620);VR(1800,1780,2320);                                                      // top/bottom spine stubs
   HR(220,100,3500);HR(420,100,3500);HR(2040,100,3500);HR(2240,100,3500);                  // top & bottom full-width streets
   var SIDE=[620,780,940,1100,1260,1420,1580];
-  SIDE.forEach(function(y){HR(y,100,900);HR(y,2700,3500);});                               // denser side-margin streets
+  SIDE.forEach(function(y){HR(y,100,900);HR(y,2760,3500);});                               // side-margin streets (east starts at the river arterial)
   s+=roadsSVG(R);
   // ── buildings set just above each street, facing it (road in front of every building) ──
   function row(streetY,x0,x1,step,fn){var o='';for(var x=x0;x+104<=x1;x+=step){var cx=x+52,sk=false;for(var j=0;j<VL.length;j++){if(Math.abs(cx-VL[j])<92){sk=true;break;}}if(sk)continue;o+=fn(x,streetY-44);}return o;}
@@ -3904,10 +3905,10 @@ function buildExpansion(tiers){
   // EAST shopping district — each shop type appears exactly ONCE (no repeats); leftover slots become homes
   var SHOPKINDS=['cafe','bakery','books','toys','grocer','pizza','icecream','florist','barber','diner','music','hardware'],shopN=0;
   function nextShop(){ return shopN<SHOPKINDS.length ? SHOPKINDS[shopN++] : null; }
-  [620,780,940,1100,1260,1420].forEach(function(y){s+=row(y,2740,3500,160,function(x,b){var k=nextShop();return k?expShop(x,b,k):expHouse(x,b,bi++);});});
-  s+=row(1580,2740,3500,168,function(x,b){return expHouse(x,b,bi++);});
+  [620,780,940,1100,1260,1420].forEach(function(y){s+=row(y,2820,3500,160,function(x,b){var k=nextShop();return k?expShop(x,b,k):expHouse(x,b,bi++);});});
+  s+=row(1580,2820,3500,168,function(x,b){return expHouse(x,b,bi++);});
   // shopping-street polish: benches, flowers & lamps along the storefronts
-  [620,780,940,1100,1260,1420].forEach(function(y){s+=fbench(2780,y+34)+fflower(2980,y+34)+flamp(3250,y+34);});
+  [620,780,940,1100,1260,1420].forEach(function(y){s+=fbench(2840,y+34)+fflower(3000,y+34)+flamp(3260,y+34);});
   // SOUTH homes (full width below downtown)
   [2040,2240].forEach(function(y){s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);});});
   // NORTH business district — offices only (keeps every shop type unique to the east)

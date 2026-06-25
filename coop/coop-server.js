@@ -100,6 +100,7 @@ function pruneAll() {
     // forget empty, idle, non-default rooms so memory never grows unbounded
     if (code !== DEFAULT_ROOM && r.players.size === 0 && (now - (r.touched || 0) > 60000)) rooms.delete(code);
   }
+  pruneDuels();
 }
 function publicList(r) {
   pruneRoom(r);
@@ -113,6 +114,66 @@ function publicList(r) {
     started: p.started, inTown: p.inTown,
     pos: p.pos, idleMs: now - p.lastSeen
   }));
+}
+
+// ── 1v1 DUELS: wager stars, answer the same questions, most-correct wins ──
+// duels: duelId -> { id, room, from, to, wager, n, questions[], status,
+//                    answers{id:{letters,done}}, result, created, touched }
+const duels = new Map();
+const DUEL_PENDING_MS = 35000;   // a challenge expires if not answered in time
+const DUEL_DONE_MS    = 20000;   // a finished duel lingers this long so both clients see the result
+
+function newDuelId() {
+  let id;
+  do { id = 'd_' + Math.random().toString(36).slice(2, 9); } while (duels.has(id));
+  return id;
+}
+// the duel (if any) this player is currently involved in, within their room
+function duelForPlayer(room, id) {
+  room = normCode(room);
+  for (const d of duels.values()) {
+    if (d.room !== room) continue;
+    if (d.from.id === id || d.to.id === id) return d;
+  }
+  return null;
+}
+function scoreDuel(d) {
+  function count(id) {
+    const a = d.answers[id]; if (!a || !a.letters) return 0;
+    let c = 0;
+    for (let i = 0; i < d.questions.length; i++) {
+      if (a.letters[i] && a.letters[i] === d.questions[i].best) c++;
+    }
+    return c;
+  }
+  const fc = count(d.from.id), tc = count(d.to.id);
+  let winnerId = null, tie = false;
+  if (fc > tc) winnerId = d.from.id;
+  else if (tc > fc) winnerId = d.to.id;
+  else tie = true;
+  d.result = { fromId: d.from.id, toId: d.to.id, fromCorrect: fc, toCorrect: tc, winnerId, tie, wager: d.wager };
+  d.status = 'done';
+  d.touched = Date.now();
+}
+// client-facing view (strips the `best` answer so it can't be read off the wire)
+function duelView(d, viewerId) {
+  return {
+    id: d.id, status: d.status, wager: d.wager, n: d.n,
+    from: d.from, to: d.to,
+    youAre: d.from.id === viewerId ? 'from' : (d.to.id === viewerId ? 'to' : null),
+    questions: (d.status === 'active') ? d.questions.map(q => ({ title: q.title, body: q.body, choices: q.choices })) : null,
+    youDone: !!(d.answers[viewerId] && d.answers[viewerId].done),
+    oppDone: (function () { const o = d.from.id === viewerId ? d.to.id : d.from.id; return !!(d.answers[o] && d.answers[o].done); })(),
+    result: d.result || null
+  };
+}
+function pruneDuels() {
+  const now = Date.now();
+  for (const [id, d] of duels) {
+    if (d.status === 'pending' && now - d.created > DUEL_PENDING_MS) duels.delete(id);
+    else if (d.status === 'done' && now - d.touched > DUEL_DONE_MS) duels.delete(id);
+    else if ((d.status === 'declined' || d.status === 'cancelled') && now - d.touched > 8000) duels.delete(id);
+  }
 }
 
 // ── tiny helpers ──────────────────────────────────────────────────
@@ -205,7 +266,73 @@ const server = http.createServer(async (req, res) => {
       .filter(o => o.id !== d.id && o.inTown)
       .map(o => ({ id: o.id, name: o.name, avatar: o.avatar, pos: o.pos,
                    stats: o.stats, house: o.house, emote: o.emote, emoteAt: o.emoteAt }));
-    return send(res, 200, 'application/json', JSON.stringify({ now: Date.now(), world: r.name, room: normCode(d.room), players: others }));
+    pruneDuels();
+    const myDuel = duelForPlayer(d.room, d.id);
+    return send(res, 200, 'application/json', JSON.stringify({ now: Date.now(), world: r.name, room: normCode(d.room),
+      players: others, duel: myDuel ? duelView(myDuel, d.id) : null }));
+  }
+
+  // ── duel: a player challenges another (challenger supplies the questions, with answers) ──
+  if (p === '/__coop/duel/challenge' && req.method === 'POST') {
+    const raw = await readBody(req);
+    let d; try { d = JSON.parse(raw); } catch (e) { return send(res, 400, 'application/json', '{"error":"bad json"}'); }
+    if (!d || !d.from || !d.to || !d.from.id || !d.to.id) return send(res, 400, 'application/json', '{"ok":false,"error":"missing players"}');
+    const room = normCode(d.room);
+    if (duelForPlayer(room, d.from.id)) return send(res, 200, 'application/json', '{"ok":false,"error":"You are already in a duel."}');
+    if (duelForPlayer(room, d.to.id))   return send(res, 200, 'application/json', '{"ok":false,"error":"That player is already in a duel."}');
+    const qs = Array.isArray(d.questions) ? d.questions.filter(q => q && q.body && Array.isArray(q.choices) && q.best).slice(0, 5) : [];
+    if (qs.length < 1) return send(res, 200, 'application/json', '{"ok":false,"error":"no questions"}');
+    const wager = Math.max(0, Math.min(100000, Number(d.wager) || 0));
+    const duel = {
+      id: newDuelId(), room,
+      from: { id: String(d.from.id), name: String(d.from.name || 'Challenger').slice(0, 24) },
+      to:   { id: String(d.to.id),   name: String(d.to.name   || 'Opponent').slice(0, 24) },
+      wager, n: qs.length, questions: qs,
+      status: 'pending', answers: {}, result: null,
+      created: Date.now(), touched: Date.now()
+    };
+    duels.set(duel.id, duel);
+    return send(res, 200, 'application/json', JSON.stringify({ ok: true, duel: duelView(duel, duel.from.id) }));
+  }
+
+  // ── duel: the challenged player accepts or declines ──
+  if (p === '/__coop/duel/respond' && req.method === 'POST') {
+    const raw = await readBody(req);
+    let d; try { d = JSON.parse(raw); } catch (e) { return send(res, 400, 'application/json', '{"error":"bad json"}'); }
+    const duel = duels.get(d && d.duelId);
+    if (!duel) return send(res, 200, 'application/json', '{"ok":false,"error":"Duel not found."}');
+    if (duel.to.id !== d.id) return send(res, 200, 'application/json', '{"ok":false,"error":"not your invite"}');
+    if (duel.status !== 'pending') return send(res, 200, 'application/json', JSON.stringify({ ok: true, duel: duelView(duel, d.id) }));
+    if (d.accept) { duel.status = 'active'; duel.startedAt = Date.now(); }
+    else { duel.status = 'declined'; }
+    duel.touched = Date.now();
+    return send(res, 200, 'application/json', JSON.stringify({ ok: true, duel: duelView(duel, d.id) }));
+  }
+
+  // ── duel: a player submits all their answers; when both are in, it settles ──
+  if (p === '/__coop/duel/answer' && req.method === 'POST') {
+    const raw = await readBody(req);
+    let d; try { d = JSON.parse(raw); } catch (e) { return send(res, 400, 'application/json', '{"error":"bad json"}'); }
+    const duel = duels.get(d && d.duelId);
+    if (!duel) return send(res, 200, 'application/json', '{"ok":false,"error":"Duel not found."}');
+    if (duel.from.id !== d.id && duel.to.id !== d.id) return send(res, 200, 'application/json', '{"ok":false,"error":"not in this duel"}');
+    if (duel.status === 'active') {
+      duel.answers[d.id] = { letters: Array.isArray(d.letters) ? d.letters.slice(0, duel.n) : [], done: true };
+      duel.touched = Date.now();
+      const bothDone = duel.answers[duel.from.id] && duel.answers[duel.from.id].done &&
+                       duel.answers[duel.to.id] && duel.answers[duel.to.id].done;
+      if (bothDone) scoreDuel(duel);
+    }
+    return send(res, 200, 'application/json', JSON.stringify({ ok: true, duel: duelView(duel, d.id) }));
+  }
+
+  // ── duel: cancel a pending challenge you sent (or leave) ──
+  if (p === '/__coop/duel/cancel' && req.method === 'POST') {
+    const raw = await readBody(req);
+    try { const d = JSON.parse(raw); const duel = duels.get(d && d.duelId);
+      if (duel && (duel.from.id === d.id || duel.to.id === d.id) && duel.status === 'pending') { duel.status = 'cancelled'; duel.touched = Date.now(); }
+    } catch (e) {}
+    return send(res, 200, 'application/json', '{"ok":true}');
   }
 
   // dashboard polls full state for one room (?room=CODE; defaults to MAIN)

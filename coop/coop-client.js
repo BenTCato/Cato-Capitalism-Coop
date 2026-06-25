@@ -103,6 +103,7 @@
         if (d && d.world) setBadge(d.world, (d.players ? d.players.length : 0) + 1);
         ingest(d && d.players ? d.players : []);
         handleDuelState(d && d.duel ? d.duel : null);
+        handleTQ(d && d.tq ? d.tq : null);
       })
       .catch(function () { setBadge(null, 0); });
   }
@@ -614,6 +615,76 @@
     else if (target === 'answering') startAnswering(duel);
     else if (target === 'waitingOpp') renderWaitingOpp(duel);
     else if (target === 'result') { applyResultOnce(duel); renderResult(duel); }
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  TEACHER CLASS QUESTIONS — answer the teacher's posted question for stars
+  // ══════════════════════════════════════════════════════════════
+  var TQNOW = null, appliedTQ = {}, tqBanner = null;
+  function applyTQStars(reward) {
+    var P = g('P'); if (!P) return;
+    P.stars = (P.stars || 0) + reward;
+    var sp = g('saveProfiles'); if (typeof sp === 'function') sp();
+    var ub = g('updateBankUI'); if (typeof ub === 'function') ub();
+    var us = g('updateScoreHUD'); if (typeof us === 'function') us();
+  }
+  function ensureTqBanner() {
+    if (tqBanner || !document.body) return;
+    var st = document.createElement('style');
+    st.textContent = '@keyframes tqPulse{0%,100%{transform:translateX(-50%) scale(1);}50%{transform:translateX(-50%) scale(1.05);}}';
+    document.head.appendChild(st);
+    tqBanner = document.createElement('button');
+    tqBanner.id = 'tq-banner';
+    tqBanner.style.cssText = 'position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:9998;display:none;background:linear-gradient(180deg,#FFD43B,#ED8B00);color:#3a2a00;border:none;border-radius:999px;padding:10px 18px;font-family:Verdana,sans-serif;font-weight:900;font-size:.9rem;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer;animation:tqPulse 1.4s ease-in-out infinite;';
+    tqBanner.textContent = '📣 Class Question — tap to answer for ⭐';
+    tqBanner.onclick = function () { if (TQNOW) openTQAnswer(TQNOW); };
+    document.body.appendChild(tqBanner);
+  }
+  function openTQAnswer(tq) {
+    ensureOv();
+    if (tq.style === 'mc') {
+      var opts = tq.choices.map(function (c, i) { return '<button class="duel-opt" data-i="' + i + '"><b>' + String.fromCharCode(65 + i) + '</b>' + esc(c) + '</button>'; }).join('');
+      openOv('<div class="duel-sub" style="margin-bottom:6px;">📣 Class Question · ⭐' + tq.reward + '</div><div class="duel-q">' + esc(tq.text) + '</div>' + opts);
+      card.querySelectorAll('.duel-opt').forEach(function (b) { b.onclick = function () { submitTQ(tq, +b.getAttribute('data-i')); }; });
+    } else {
+      openOv('<div class="duel-sub" style="margin-bottom:6px;">📣 Class Question · ⭐' + tq.reward + '</div><div class="duel-q">' + esc(tq.text) + '</div>' +
+        '<textarea id="tq-ans" style="width:100%;box-sizing:border-box;min-height:72px;border:2px solid #d7deec;border-radius:12px;padding:10px;font-family:inherit;font-size:.95rem;" placeholder="Type your answer…"></textarea>' +
+        '<div class="duel-row" style="margin-top:12px;"><button class="duel-btn duel-ghost" id="tq-cancel" style="flex:1;">Cancel</button><button class="duel-btn duel-go" id="tq-send" style="flex:2;">Submit →</button></div>');
+      card.querySelector('#tq-cancel').onclick = function () { closeDuelOv(); };
+      card.querySelector('#tq-send').onclick = function () { var t = (document.getElementById('tq-ans') || {}).value || ''; if (!t.trim()) return; submitTQ(tq, t); };
+    }
+  }
+  function submitTQ(tq, answer) {
+    postJSON('/__coop/tq/answer', { room: ROOM, id: ID, name: myName(), answer: answer }, function (d) {
+      if (!d || !d.ok) { toast((d && d.error) || 'Could not submit.'); return; }
+      if (tqBanner) tqBanner.style.display = 'none';
+      if (tq.style === 'mc') {
+        var correct = d.mine && d.mine.correct;
+        if (correct && !appliedTQ[tq.id]) { appliedTQ[tq.id] = true; applyTQStars(d.reward || tq.reward); }
+        openOv('<div class="duel-h ' + (correct ? 'duel-win' : 'duel-lose') + '">' + (correct ? '✓ Correct!' : '✗ Not quite') + '</div>' +
+          '<div class="duel-sub">' + (correct ? 'You earned ⭐' + (d.reward || tq.reward) + '!' : 'No stars this time — but keep going!') + '</div>' +
+          '<div class="duel-row"><button class="duel-btn duel-go" id="tq-done" style="flex:1;">Done</button></div>');
+        card.querySelector('#tq-done').onclick = function () { closeDuelOv(); };
+        trySfx(correct ? 'win' : 'bad');
+      } else {
+        openOv('<div class="duel-h">✅ Submitted!</div><div class="duel-sub">Your teacher will review your answer and award ⭐ if it\'s good.</div>' +
+          '<div class="duel-row"><button class="duel-btn duel-go" id="tq-done" style="flex:1;">Done</button></div>');
+        card.querySelector('#tq-done').onclick = function () { closeDuelOv(); };
+        trySfx('pop');
+      }
+      sync();
+    });
+  }
+  function handleTQ(tq) {
+    TQNOW = tq; ensureTqBanner();
+    if (!tq) { if (tqBanner) tqBanner.style.display = 'none'; return; }
+    if (tq.answered) {
+      if (tqBanner) tqBanner.style.display = 'none';
+      if (tq.mine && tq.mine.awarded && !appliedTQ[tq.id]) { appliedTQ[tq.id] = true; applyTQStars(tq.reward); toast('📣 Your teacher awarded you ⭐' + tq.reward + '!'); trySfx('win'); }
+    } else {
+      var show = townActive() && (!ov || ov.style.display === 'none');
+      if (tqBanner) tqBanner.style.display = show ? '' : 'none';
+    }
   }
 
   // graceful "leave" so others see you drop fast

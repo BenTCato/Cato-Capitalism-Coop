@@ -117,6 +117,24 @@ function publicList(r) {
   }));
 }
 
+// ── TEACHER QUESTIONS: a teacher posts a question to a room; students answer for stars ──
+// room.tq = { id, style:'mc'|'short', text, choices[], correct, reward, responses{id:{name,answer,correct,decided,awarded}} }
+const TQ_REWARD = 250;
+function newTqId(){ return 't_' + Math.random().toString(36).slice(2, 9); }
+function tqStudentView(tq, sid){
+  if (!tq) return null;
+  const mine = tq.responses[sid] || null;
+  return { id: tq.id, style: tq.style, text: tq.text, choices: tq.choices, reward: tq.reward, // note: `correct` is NOT sent to students
+    answered: !!mine,
+    mine: mine ? { answer: mine.answer, decided: mine.decided, awarded: mine.awarded, correct: mine.correct } : null };
+}
+function tqDashView(tq){
+  if (!tq) return null;
+  const resp = Object.keys(tq.responses).map(function(k){ const x = tq.responses[k];
+    return { id: k, name: x.name, answer: x.answer, correct: x.correct, decided: x.decided, awarded: x.awarded }; });
+  return { id: tq.id, style: tq.style, text: tq.text, choices: tq.choices, correct: tq.correct, reward: tq.reward, responses: resp };
+}
+
 // ── 1v1 DUELS: wager stars, answer the same questions, most-correct wins ──
 // duels: duelId -> { id, room, from, to, wager, n, questions[], status,
 //                    answers{id:{letters,done}}, result, created, touched }
@@ -270,7 +288,7 @@ const server = http.createServer(async (req, res) => {
     pruneDuels();
     const myDuel = duelForPlayer(d.room, d.id);
     return send(res, 200, 'application/json', JSON.stringify({ now: Date.now(), world: r.name, room: normCode(d.room),
-      players: others, duel: myDuel ? duelView(myDuel, d.id) : null }));
+      players: others, duel: myDuel ? duelView(myDuel, d.id) : null, tq: tqStudentView(r.tq, d.id) }));
   }
 
   // ── duel: a player challenges another (challenger supplies the questions, with answers) ──
@@ -342,7 +360,7 @@ const server = http.createServer(async (req, res) => {
     const r = getRoom(u.searchParams.get('room'), true);
     r.touched = Date.now();
     return send(res, 200, 'application/json',
-      JSON.stringify({ now: Date.now(), world: r.name, room: normCode(u.searchParams.get('room')), count: r.players.size, players: publicList(r) }));
+      JSON.stringify({ now: Date.now(), world: r.name, room: normCode(u.searchParams.get('room')), count: r.players.size, players: publicList(r), tq: tqDashView(r.tq) }));
   }
 
   // rename a room's world from the dashboard
@@ -358,6 +376,60 @@ const server = http.createServer(async (req, res) => {
   if (p === '/__coop/kick' && req.method === 'POST') {
     const raw = await readBody(req);
     try { const d = JSON.parse(raw); if (d && d.id) { const r = getRoom(d.room, false); if (r) r.players.delete(d.id); } } catch (e) {}
+    return send(res, 200, 'application/json', '{"ok":true}');
+  }
+
+  // ── teacher posts a class question (replaces any current one) ──
+  if (p === '/__coop/tq/create' && req.method === 'POST') {
+    const raw = await readBody(req);
+    let d; try { d = JSON.parse(raw); } catch (e) { return send(res, 400, 'application/json', '{"error":"bad json"}'); }
+    const r = getRoom(d && d.room, true);
+    const style = (d && d.style === 'short') ? 'short' : 'mc';
+    const text = String((d && d.text) || '').slice(0, 300);
+    if (!text) return send(res, 200, 'application/json', '{"ok":false,"error":"Question text is required."}');
+    let choices = [], correct = 0;
+    if (style === 'mc') {
+      choices = (Array.isArray(d.choices) ? d.choices : []).map(function (c) { return String(c == null ? '' : c).slice(0, 120); }).filter(function (c) { return c.length; }).slice(0, 4);
+      if (choices.length < 2) return send(res, 200, 'application/json', '{"ok":false,"error":"Add at least 2 answer choices."}');
+      correct = Math.max(0, Math.min(choices.length - 1, Number(d.correct) || 0));
+    }
+    r.tq = { id: newTqId(), style: style, text: text, choices: choices, correct: correct, reward: TQ_REWARD, responses: {}, created: Date.now() };
+    return send(res, 200, 'application/json', JSON.stringify({ ok: true, tq: tqDashView(r.tq) }));
+  }
+
+  // ── student answers the class question (once) ──
+  if (p === '/__coop/tq/answer' && req.method === 'POST') {
+    const raw = await readBody(req);
+    let d; try { d = JSON.parse(raw); } catch (e) { return send(res, 400, 'application/json', '{"error":"bad json"}'); }
+    const r = getRoom(d && d.room, false);
+    if (!r || !r.tq || !d || !d.id) return send(res, 200, 'application/json', '{"ok":false,"error":"No active question."}');
+    const tq = r.tq;
+    if (tq.responses[d.id]) return send(res, 200, 'application/json', JSON.stringify({ ok: true, already: true, mine: tqStudentView(tq, d.id).mine, reward: tq.reward }));
+    let resp;
+    if (tq.style === 'mc') {
+      const ai = Number(d.answer);
+      const correct = (ai === tq.correct);
+      resp = { name: String(d.name || '').slice(0, 24), answer: ai, correct: correct, decided: true, awarded: correct, at: Date.now() };
+    } else {
+      resp = { name: String(d.name || '').slice(0, 24), answer: String(d.answer || '').slice(0, 300), correct: null, decided: false, awarded: false, at: Date.now() };
+    }
+    tq.responses[d.id] = resp;
+    return send(res, 200, 'application/json', JSON.stringify({ ok: true, mine: { answer: resp.answer, decided: resp.decided, awarded: resp.awarded, correct: resp.correct }, reward: tq.reward }));
+  }
+
+  // ── teacher awards / denies a (short-answer) response ──
+  if (p === '/__coop/tq/decide' && req.method === 'POST') {
+    const raw = await readBody(req);
+    try { const d = JSON.parse(raw); const r = getRoom(d && d.room, false);
+      if (r && r.tq && r.tq.responses[d.id]) { r.tq.responses[d.id].awarded = !!d.award; r.tq.responses[d.id].decided = true; }
+    } catch (e) {}
+    return send(res, 200, 'application/json', '{"ok":true}');
+  }
+
+  // ── teacher ends the class question ──
+  if (p === '/__coop/tq/end' && req.method === 'POST') {
+    const raw = await readBody(req);
+    try { const d = JSON.parse(raw); const r = getRoom(d && d.room, false); if (r) r.tq = null; } catch (e) {}
     return send(res, 200, 'application/json', '{"ok":true}');
   }
 

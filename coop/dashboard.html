@@ -82,6 +82,18 @@
   .empty .big{font-size:2.4rem;margin-bottom:10px;}
   .updated{font-size:.72rem;color:#9890c0;margin-left:6px;}
   @media(max-width:640px){ .bars{display:none;} }
+  /* class question panel */
+  .tq-styles{display:flex;gap:8px;margin-bottom:10px;}
+  .tq-style{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#D8D0F0;border-radius:10px;padding:9px 14px;font-family:inherit;font-weight:800;cursor:pointer;font-size:.9rem;}
+  .tq-style.on{background:var(--gold);color:#3a2a00;border-color:var(--gold);}
+  .tq-text{width:100%;box-sizing:border-box;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.2);border-radius:10px;color:#fff;font-family:inherit;font-size:.95rem;padding:10px;min-height:54px;resize:vertical;}
+  .tq-choicerow{display:flex;align-items:center;gap:8px;margin:6px 0;}
+  .tq-choicerow input[type=radio]{width:16px;height:16px;accent-color:var(--good);cursor:pointer;flex-shrink:0;}
+  .tq-choice{flex:1;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-family:inherit;padding:8px 10px;font-size:.9rem;}
+  .tq-post{background:linear-gradient(180deg,#FFD43B,#ED8B00);color:#3a2a00;border:none;border-radius:10px;padding:11px 18px;font-family:inherit;font-weight:900;cursor:pointer;font-size:.95rem;}
+  .tq-end{background:rgba(224,49,49,.85);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-family:inherit;font-weight:800;cursor:pointer;}
+  .tq-yes{background:var(--good);color:#063;border:none;border-radius:8px;padding:6px 11px;font-family:inherit;font-weight:800;cursor:pointer;font-size:.82rem;}
+  .tq-no{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:8px;padding:6px 11px;font-family:inherit;font-weight:800;cursor:pointer;font-size:.82rem;}
 </style>
 </head>
 <body>
@@ -146,6 +158,12 @@
       <div id="goal-marker" style="position:absolute;top:-3px;bottom:-3px;width:3px;background:#fff;opacity:.85;left:75%;"></div>
     </div>
     <div id="goal-detail" style="margin-top:8px;font-size:.82rem;color:#B7AEDB;font-weight:600;"></div>
+  </div>
+
+  <div id="tq-card" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:16px 18px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:800;margin-bottom:12px;">📣 Class Question
+      <span class="chip">students answer in-game for ⭐250</span></div>
+    <div id="tq-body"></div>
   </div>
 
   <div class="section-title">🏆 Leaderboard <span class="chip">click a column to sort</span><span id="champion" style="font-weight:800;color:#FFD43B;font-size:.92rem;"></span><span class="updated" id="updated"></span></div>
@@ -348,11 +366,69 @@ function startClass(){
     }).catch(function(){});
 }
 
+// ── Class Question panel ─────────────────────────────────────────
+var tqView='', tqStyle='mc', tqCorrect=0;
+function tqEsc(t){return String(t==null?'':t).replace(/[<>&"]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];});}
+function tqFormHTML(){
+  var rows='';
+  for(var i=0;i<4;i++){ rows+='<div class="tq-choicerow"><input type="radio" name="tq-correct" value="'+i+'"'+(i===tqCorrect?' checked':'')+'><input class="tq-choice" data-i="'+i+'" placeholder="Answer choice '+(i+1)+(i<2?' (required)':' (optional)')+'"></div>'; }
+  return '<div class="tq-styles"><button type="button" class="tq-style'+(tqStyle==="mc"?" on":"")+'" data-s="mc">📋 Multiple choice</button>'+
+    '<button type="button" class="tq-style'+(tqStyle==="short"?" on":"")+'" data-s="short">✏️ Short answer</button></div>'+
+    '<textarea id="tq-text" class="tq-text" placeholder="Type your question (e.g. tie it to today\'s lesson)…"></textarea>'+
+    '<div id="tq-choices" style="display:'+(tqStyle==="mc"?"block":"none")+';"><div style="font-size:.74rem;color:#B7AEDB;font-weight:700;margin:4px 0;">Choices — pick the radio next to the correct one:</div>'+rows+'</div>'+
+    '<div style="font-size:.74rem;color:#B7AEDB;margin:4px 0 10px;">'+(tqStyle==="short"?"Students type an answer; you approve who earns ⭐250.":"Students who pick the correct answer auto-earn ⭐250.")+'</div>'+
+    '<button id="tq-post" class="tq-post">📣 Post to the class →</button><span id="tq-msg" style="margin-left:10px;color:#FFD43B;"></span>';
+}
+function wireForm(){
+  document.querySelectorAll('#tq-body .tq-style').forEach(function(b){ b.onclick=function(){ tqStyle=b.getAttribute('data-s'); tqView=''; renderTQ(LASTTQ); }; });
+  var post=document.getElementById('tq-post'); if(post) post.onclick=function(){
+    var text=(document.getElementById('tq-text')||{}).value||'';
+    var body={room:ROOM,style:tqStyle,text:text};
+    if(tqStyle==='mc'){
+      var ch=[]; document.querySelectorAll('#tq-body .tq-choice').forEach(function(inp){ ch.push(inp.value||''); });
+      var sel=document.querySelector('#tq-body input[name="tq-correct"]:checked');
+      body.choices=ch; body.correct=sel?+sel.value:0;
+    }
+    fetch('/__coop/tq/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){return r.json();}).then(function(d){ if(d&&d.ok){ tqView=''; poll(); } else { var m=document.getElementById('tq-msg'); if(m)m.textContent=(d&&d.error)||'Could not post.'; } }).catch(function(){});
+  };
+}
+function tqActiveHTML(tq){
+  var h='<div style="font-weight:800;font-size:1.05rem;color:#fff;margin-bottom:4px;">'+tqEsc(tq.text)+'</div>'+
+    '<div style="font-size:.78rem;color:#B7AEDB;margin-bottom:10px;">'+(tq.style==='mc'?'Multiple choice · auto-graded':'Short answer · you approve')+' · reward ⭐'+tq.reward+'</div>';
+  if(tq.style==='mc'){
+    h+='<div style="margin-bottom:10px;">'+tq.choices.map(function(c,i){return '<div style="padding:3px 0;'+(i===tq.correct?'color:#2EE6A8;font-weight:800;':'color:#D8D0F0;')+'">'+(i===tq.correct?'✓ ':'• ')+tqEsc(c)+'</div>';}).join('')+'</div>';
+    var ans=tq.responses.length, cor=tq.responses.filter(function(r){return r.correct;}).length;
+    h+='<div style="font-size:.9rem;color:#fff;font-weight:700;">'+ans+' answered · '+cor+' correct (⭐ awarded)</div>';
+  } else {
+    if(!tq.responses.length){ h+='<div style="font-size:.86rem;color:#B7AEDB;">No answers yet…</div>'; }
+    else { h+='<div style="display:flex;flex-direction:column;gap:7px;">'+tq.responses.map(function(r){
+      var status=r.decided?(r.awarded?'<span style="color:#2EE6A8;font-weight:800;">✓ ⭐ awarded</span>':'<span style="color:#E88;">✗ no stars</span>')
+        :'<span style="display:inline-flex;gap:6px;"><button class="tq-yes" data-id="'+r.id+'">✓ Award ⭐250</button><button class="tq-no" data-id="'+r.id+'">✗ No</button></span>';
+      return '<div style="background:rgba(255,255,255,.06);border-radius:10px;padding:8px 11px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;"><span><b style="color:#FFD43B;">'+tqEsc(r.name||'Student')+':</b> <span style="color:#fff;">'+tqEsc(r.answer)+'</span></span>'+status+'</div>';
+    }).join('')+'</div>'; }
+  }
+  h+='<div style="margin-top:14px;"><button id="tq-end" class="tq-end">End question</button></div>';
+  return h;
+}
+function wireActive(tq){
+  var end=document.getElementById('tq-end'); if(end)end.onclick=function(){ fetch('/__coop/tq/end',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:ROOM})}).then(function(){tqView='';poll();}); };
+  document.querySelectorAll('#tq-body .tq-yes,#tq-body .tq-no').forEach(function(b){ b.onclick=function(){
+    fetch('/__coop/tq/decide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:ROOM,id:b.getAttribute('data-id'),award:b.classList.contains('tq-yes')})}).then(function(){poll();}); }; });
+}
+var LASTTQ=null;
+function renderTQ(tq){
+  LASTTQ=tq; var body=document.getElementById('tq-body'); if(!body)return;
+  if(tq){ tqView=tq.id; body.innerHTML=tqActiveHTML(tq); wireActive(tq); }
+  else if(tqView!=='form'){ tqView='form'; body.innerHTML=tqFormHTML(); wireForm(); }
+}
+
 // ── polling ──────────────────────────────────────────────────────
 function poll(){
   fetch('/__coop/state?room='+encodeURIComponent(ROOM||'MAIN')).then(function(r){return r.json();}).then(function(d){
     if(d.world && document.activeElement!==wn){ wn.value=d.world; }
     render(d.players||[]);
+    renderTQ(d.tq||null);
     document.getElementById('updated').textContent='updated '+new Date(d.now).toLocaleTimeString();
   }).catch(function(){});
 }

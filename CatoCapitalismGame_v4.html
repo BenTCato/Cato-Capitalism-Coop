@@ -483,6 +483,7 @@
     #minimap{position:absolute;top:12px;right:12px;width:150px;height:100px;background:rgba(16,22,40,.62);border:2px solid rgba(255,255,255,.28);border-radius:8px;z-index:25;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,.35);}
     #minimap .mm-label{position:absolute;top:2px;left:6px;font-size:8px;font-weight:800;letter-spacing:1px;color:rgba(255,255,255,.55);z-index:3;}
     #minimap .mm-dot{position:absolute;transform:translate(-50%,-50%);font-size:11px;line-height:1;}
+    #minimap .mm-npc{position:absolute;transform:translate(-50%,-50%);font-size:10px;line-height:1;z-index:2;filter:drop-shadow(0 0 2px rgba(0,0,0,.6));}
     #minimap-player{position:absolute;width:9px;height:9px;background:#FFD43B;border:1.5px solid #1a1456;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 5px #FFD43B;z-index:2;}
     #emote-tray{position:absolute;right:14px;bottom:74px;z-index:30;display:none;flex-direction:column;gap:6px;background:rgba(16,22,40,.94);padding:10px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.45);}
     #emote-tray.open{display:flex;}
@@ -3946,6 +3947,8 @@ function buildMinimap(){
   const sx=100/WORLD_W, sy=100/WORLD_H;
   let s='<div class="mm-label">MAP</div>';
   MM_MARKERS.forEach(function(m){ s+='<span class="mm-dot" style="left:'+(m.x*sx).toFixed(2)+'%;top:'+(m.y*sy).toFixed(2)+'%;">'+m.ic+'</span>'; });
+  // citizen markers — show where the unanswered citizens are so players can find them
+  for(var ni=0;ni<NPC_POS.length;ni++){ s+='<span class="mm-npc" id="mm-npc-'+ni+'" style="left:'+(NPC_POS[ni][0]*sx).toFixed(2)+'%;top:'+(NPC_POS[ni][1]*sy).toFixed(2)+'%;">💬</span>'; }
   s+='<div id="minimap-player"></div>';
   mm.innerHTML=s;
 }
@@ -3985,10 +3988,11 @@ function renderTown(){
   fxInit();
   TC.fountainTier=tiers.h;
   buildMinimap(); TC.mmp=document.getElementById('minimap-player');
+  TC.npcMarks=NPC_POS.map(function(p,i){return document.getElementById('mm-npc-'+i);});
   ensureTownLoop();
 }
 // GFX engine config (skill: never hardcode values)
-const GFX={daySeconds:140,speed:5,dtMin:1,dtMax:3,lightEvery:24,fxEvery:2,wander:true,wanderSpeed:0.55,wanderRange:44,
+const GFX={daySeconds:140,speed:8.5,dtMin:1,dtMax:3,lightEvery:24,fxEvery:2,wander:true,wanderSpeed:0.55,wanderRange:44,
   grade:['saturate(.55) contrast(.96) brightness(.95)','saturate(.92)','saturate(1.07) brightness(1.02)'],
   lampSpots:[[832,508],[985,500],[1192,660],[684,824]],fgTrees:[[560,640,1.15],[1140,920,1.35],[640,140,1.2]]};
 let TC={}; // cached node refs (skill: cache, never query in the update loop)
@@ -4070,6 +4074,7 @@ function townTick(){
     if(TC.l1&&TC.l2){TC.l1.setAttribute('y',18+(player.moving?ph:0));TC.l2.setAttribute('y',18-(player.moving?ph:0));}
     if(TC.bob)TC.bob.setAttribute('transform','translate(0,'+(player.moving?(Math.sin(player.step/12)*1.4).toFixed(2):'0')+')');}
   if(TC.mmp){TC.mmp.style.left=(player.x*100/WORLD_W).toFixed(2)+'%';TC.mmp.style.top=(player.y*100/WORLD_H).toFixed(2)+'%';}
+  if(TC.npcMarks&&tickFrame%15===0){for(let mi=0;mi<TC.npcMarks.length;mi++){const mk=TC.npcMarks[mi];if(!mk)continue;const done=S.answers.some(function(a){return a.qi===mi;});mk.style.display=done?'none':'';const np=npcState[mi];if(np&&!done){mk.style.left=(np.x*100/WORLD_W).toFixed(2)+'%';mk.style.top=(np.y*100/WORLD_H).toFixed(2)+'%';}}}
   TC.svg.setAttribute('viewBox',camX()+' '+camY()+' '+VIEW_W+' '+VIEW_H);
   // particles (pooled; stepped at half rate; camera-culled)
   if(tickFrame%GFX.fxEvery===0){

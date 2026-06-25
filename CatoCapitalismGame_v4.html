@@ -3838,64 +3838,90 @@ function buildWorld(tiers){
   return w;}
 
 // ── world expansion: neighborhoods, shops & districts spread across the bigger map ──
-// a detailed, themed storefront (awning + emblem + name) — decorative only, no utility
-function detShop(x,y,kind){
-  var K={
-    cafe:{n:'CAFÉ',b:'#C98A5E',a:'#7A3B2E',e:'☕'},
-    bakery:{n:'BAKERY',b:'#E8C07A',a:'#B5651D',e:'🥐'},
-    books:{n:'BOOKSHOP',b:'#5E7FA8',a:'#2D4E79',e:'📚'},
-    toys:{n:'TOY SHOP',b:'#E86D9A',a:'#B83C6A',e:'🧸'},
-    grocer:{n:'GROCER',b:'#7FB069',a:'#4E7F3E',e:'🥦'},
-    pizza:{n:'PIZZERIA',b:'#D9534F',a:'#9A2F2C',e:'🍕'},
-    icecream:{n:'ICE CREAM',b:'#9AD0E0',a:'#3FA7C0',e:'🍦'},
-    florist:{n:'FLOWERS',b:'#C8A0D8',a:'#8A5EA8',e:'🌸'},
-    barber:{n:'BARBER',b:'#AEB6BE',a:'#C0392B',e:'💈'},
-    diner:{n:'DINER',b:'#E0A24E',a:'#3D4F4D',e:'🍔'},
-    music:{n:'MUSIC',b:'#8E7CC3',a:'#5E4E93',e:'🎵'},
-    hardware:{n:'HARDWARE',b:'#B58A6A',a:'#6E4E2E',e:'🔨'}
-  };
-  var k=K[kind]||K.cafe, w=120;
-  var awn='<g>'; for(var i=0;i<6;i++)awn+='<path d="M'+(i*20)+',2 h20 v8 a10,7 0 0 1 -20,0 Z" fill="'+((i%2)?k.a:'#FAF3E0')+'"/>'; awn+='</g>';
-  var emblem='<text x="'+(w/2)+'" y="44" text-anchor="middle" font-size="22">'+k.e+'</text>';
-  return urban(x,y,w,1,5,2,['#6E6258','#9A8F7E',k.b],null, awn+emblem+signFlat(w,k.n,k.a));
+// ── improved building art (self-contained; each registers its own collision) ──
+var EXP_HUES=['#E8956D','#9FC0E0','#E8C98A','#A8C9A0','#E2A8CC','#CDA6E0','#9CC4D8','#E8B07A','#C9B0E0','#D7A8A8'];
+var EXP_ROOFS=['#9A5A3C','#6E4E8A','#3E6E8A','#8A4E4E','#5E7F4E','#7A5A3C'];
+var EXP_BR=[]; // building rects, for prop keep-out
+function expHouse(x,y,i){
+  var w=78,h=48,c=EXP_HUES[i%EXP_HUES.length],rf=EXP_ROOFS[(i*3+1)%EXP_ROOFS.length];
+  reg(x,y-h,w,h); EXP_BR.push({x:x,y:y-h,w:w,h:h});
+  var g='<g transform="translate('+x+','+(y-h)+')">'+sh(w/2,h+3,w*0.5,6);
+  g+='<rect x="2" y="15" width="'+(w-4)+'" height="'+(h-15)+'" rx="3" fill="'+c+'"/>';
+  g+='<polygon points="-4,17 '+(w/2)+',-11 '+(w+4)+',17" fill="'+rf+'"/>';
+  g+='<rect x="'+(w/2-9)+'" y="'+(h-19)+'" width="18" height="19" rx="2" fill="#6E4E2E"/>';
+  g+='<circle cx="'+(w/2+5)+'" cy="'+(h-9)+'" r="1.4" fill="#FFD43B"/>';
+  g+='<rect x="9" y="21" width="13" height="12" rx="2" fill="#CFE8F4" stroke="#FFFDF4" stroke-width="1.4"/>';
+  g+='<rect x="'+(w-22)+'" y="21" width="13" height="12" rx="2" fill="#CFE8F4" stroke="#FFFDF4" stroke-width="1.4"/>';
+  return g+'</g>';
+}
+function expOffice(x,y,floors,i){
+  var w=104,h=28+floors*26,c=['#7E96AC','#8B98A8','#9FB4C9','#6E8298'][i%4];
+  reg(x,y-h,w,h); EXP_BR.push({x:x,y:y-h,w:w,h:h});
+  var g='<g transform="translate('+x+','+(y-h)+')">'+sh(w/2,h+3,w*0.5,6);
+  g+='<rect x="0" y="0" width="'+w+'" height="'+h+'" rx="3" fill="'+c+'"/>';
+  g+='<rect x="0" y="0" width="'+w+'" height="9" rx="3" fill="rgba(0,0,0,.18)"/>';
+  for(var f=0;f<floors;f++)for(var cc=0;cc<4;cc++)g+='<rect x="'+(12+cc*22)+'" y="'+(18+f*26)+'" width="14" height="15" rx="1.5" fill="'+(((f*4+cc)%5===0)?'#F8E2A0':'#C8DCE8')+'"/>';
+  g+='<rect x="'+(w/2-11)+'" y="'+(h-20)+'" width="22" height="20" rx="2" fill="#4E5660"/>';
+  return g+'</g>';
+}
+var EXP_SHOPS={cafe:{n:'CAFÉ',b:'#C98A5E',a:'#7A3B2E',e:'☕'},bakery:{n:'BAKERY',b:'#E8C07A',a:'#B5651D',e:'🥐'},books:{n:'BOOKSHOP',b:'#5E7FA8',a:'#2D4E79',e:'📚'},toys:{n:'TOY SHOP',b:'#E86D9A',a:'#B83C6A',e:'🧸'},grocer:{n:'GROCER',b:'#7FB069',a:'#4E7F3E',e:'🥦'},pizza:{n:'PIZZERIA',b:'#D9534F',a:'#9A2F2C',e:'🍕'},icecream:{n:'ICE CREAM',b:'#9AD0E0',a:'#3FA7C0',e:'🍦'},florist:{n:'FLOWERS',b:'#C8A0D8',a:'#8A5EA8',e:'🌸'},barber:{n:'BARBER',b:'#AEB6BE',a:'#C0392B',e:'💈'},diner:{n:'DINER',b:'#E0A24E',a:'#3D4F4D',e:'🍔'},music:{n:'MUSIC',b:'#8E7CC3',a:'#5E4E93',e:'🎵'},hardware:{n:'HARDWARE',b:'#B58A6A',a:'#6E4E2E',e:'🔨'}};
+function expShop(x,y,kind){
+  var k=EXP_SHOPS[kind]||EXP_SHOPS.cafe,w=104,h=58;
+  reg(x,y-h,w,h); EXP_BR.push({x:x,y:y-h,w:w,h:h});
+  var g='<g transform="translate('+x+','+(y-h)+')">'+sh(w/2,h+3,w*0.5,6);
+  g+='<rect x="2" y="15" width="'+(w-4)+'" height="'+(h-15)+'" rx="3" fill="'+k.b+'"/>';
+  g+='<rect x="-3" y="2" width="'+(w+6)+'" height="13" rx="3" fill="'+k.a+'"/>';
+  g+='<text x="'+(w/2)+'" y="12" text-anchor="middle" font-size="9" font-weight="900" fill="#FFFDF4" font-family="Verdana">'+k.n+'</text>';
+  for(var i=0;i<7;i++)g+='<path d="M'+(3+i*14.2)+',15 h14.2 v6 a7,6 0 0 1 -14.2,0 Z" fill="'+((i%2)?'#FAF3E0':k.a)+'"/>';
+  g+='<rect x="11" y="29" width="'+(w-22)+'" height="16" rx="2" fill="#D6ECF5"/>';
+  g+='<text x="'+(w/2)+'" y="42" text-anchor="middle" font-size="15">'+k.e+'</text>';
+  g+='<rect x="'+(w/2-9)+'" y="'+(h-15)+'" width="18" height="15" rx="2" fill="#5E4636"/>';
+  return g+'</g>';
 }
 function buildExpansion(tiers){
-  var T=(tiers.avg!==undefined?tiers.avg:1), s='';
-  var HUES=['#E8956D','#8FB7D9','#D9C28F','#A8C3A0','#E0A8C8','#C9A876','#9FB4C9','#E8C36B','#B0C4DE','#D7A8A8','#9AC0B0','#E8B07A'];
-  function hue(i){return HUES[((i%HUES.length)+HUES.length)%HUES.length];}
-  function H(x,y,i){return urban(x,y,86,1,4,T,['#4E6260','#A8918A',hue(i)],null,'');}            // decorative home
-  function BIZ(x,y,w,fl,cols,c){return urban(x,y,w,fl,cols,T,['#4E6260','#8B98A8',c],null,'');}  // office / tall building
-  // ── road network: a ring around centered downtown + radial avenues + neighborhood streets ──
-  s+=roadsSVG([
-    'M620,1215 Q620,400 1800,400 Q2980,400 2980,1215 Q2980,2030 1800,2030 Q620,2030 620,1215 Z', // ring road
-    'M1800,400 L1800,90','M1800,2030 L1800,2360',           // north / south radials
-    'M620,1215 L80,1215','M2980,1215 L3540,1215',           // west / east radials
-    'M840,560 L460,250','M2760,560 L3160,250',              // NW / NE diagonals
-    'M2760,1870 L3160,2150','M840,1870 L460,2150',          // SE / SW diagonals
-    'M760,200 L2880,200','M720,2260 L2880,2260',            // north / south cross streets
-    'M430,740 L430,1620'                                    // west neighborhood street
-  ]);
-  // WEST residential (with the core's own houses, this is your home's neighborhood)
-  for(var wy=0;wy<4;wy++)for(var wx=0;wx<3;wx++){s+=H(130+wx*190,740+wy*230,wx+wy);}
-  s+=ftree(360,700,1)+fbench(430,1000)+flamp(430,1180)+fbush(250,1500,1)+frock(560,1560,0.9);
-  // EAST shopping district — detailed, distinct storefronts
-  var EShops=['cafe','bakery','grocer','toys','pizza','icecream','florist','barber','hardware','books'];
-  for(var i=0;i<EShops.length;i++){var col=i%2,row=Math.floor(i/2);s+=detShop(3050+col*200,740+row*210,EShops[i]);}
-  s+=flamp(3170,820)+fbench(3160,1700)+ftree(3380,1000,1);
-  // NORTH district — offices + a few shops
-  s+=BIZ(900,340,150,4,6,'#8B98A8')+BIZ(1080,340,130,5,5,'#7E96AC')+BIZ(2360,340,160,3,7,'#9FB4C9')+BIZ(2540,340,140,5,6,'#8B98A8');
-  s+=detShop(1320,330,'books')+detShop(1470,330,'music')+detShop(2000,330,'diner')+detShop(2150,330,'icecream');
-  s+=flamp(1700,300)+ftree(700,300,1)+ftree(2900,300,1);
-  // SOUTH residential
-  for(var sy=0;sy<2;sy++)for(var sx=0;sx<9;sx++){s+=H(720+sx*210,2150+sy*180,sx+sy+2);}
-  s+=fbench(1500,2120)+flamp(1100,2120)+flamp(2100,2120);
-  // corner neighborhoods
-  for(var ny=0;ny<2;ny++)for(var nx=0;nx<2;nx++){s+=H(140+nx*190,150+ny*210,nx+ny+4);}     // NW
-  s+=H(150,1800,1)+H(340,1800,3)+H(150,2010,5)+H(340,2010,7);                              // SW
-  s+=H(3080,1810,2)+H(3270,1810,4)+H(3080,2010,6)+H(3270,2010,8);                          // SE
-  // parks
-  var PK=[[470,1980],[3260,560],[1800,150],[300,1420],[3300,2200]];
-  for(var pi=0;pi<PK.length;pi++){var px=PK[pi][0],py=PK[pi][1];s+=ftree(px,py,1.15)+ftree(px+60,py+25,0.95)+fbush(px+30,py+15,1)+frock(px-36,py+10,0.9)+fbench(px,py+48);}
+  var s=''; EXP_BR=[];
+  // ── street grid: straight segments that all intersect → one connected network ──
+  var R=[],SEG=[],VL=[240,520,1800,3080,3360];
+  function HR(y,x0,x1){R.push('M'+x0+','+y+' L'+x1+','+y);SEG.push({h:1,y:y,a:x0,b:x1});}
+  function VR(x,y0,y1){R.push('M'+x+','+y0+' L'+x+','+y1);SEG.push({h:0,x:x,a:y0,b:y1});}
+  HR(560,760,2840);HR(1840,760,2840);VR(760,560,1840);VR(2840,560,1840);                 // downtown loop
+  R.push('M1800,560 L1800,980','M1800,1840 L1800,1520','M760,1200 L1120,1200','M2840,1200 L2420,1200'); // loop→core links
+  VR(240,120,2280);VR(520,120,2280);VR(3080,120,2280);VR(3360,120,2280);                  // full-height side spines
+  VR(1800,80,560);VR(1800,1840,2320);                                                      // top/bottom spine stubs
+  HR(220,100,3500);HR(420,100,3500);HR(2040,100,3500);HR(2240,100,3500);                  // top & bottom full-width streets
+  [620,940,1260,1580].forEach(function(y){HR(y,100,760);HR(y,2840,3500);});               // side-margin streets (beside core)
+  s+=roadsSVG(R);
+  // ── buildings set just above each street, facing it (road in front of every building) ──
+  function row(streetY,x0,x1,step,fn){var o='';for(var x=x0;x+96<=x1;x+=step){var cx=x+48,sk=false;for(var j=0;j<VL.length;j++){if(Math.abs(cx-VL[j])<60){sk=true;break;}}if(sk)continue;o+=fn(x,streetY-44);}return o;}
+  var bi=0;
+  // WEST homes — your neighborhood
+  [620,940,1260,1580].forEach(function(y){s+=row(y,110,760,170,function(x,b){return expHouse(x,b,bi++);});});
+  // EAST shopping district (storefronts fronting the street)
+  var ES=['cafe','bakery','grocer','toys','pizza','icecream','florist','barber','music','books'],ei=0;
+  [620,940,1260].forEach(function(y){s+=row(y,2860,3500,150,function(x,b){return expShop(x,b,ES[ei++%ES.length]);});});
+  s+=row(1580,2860,3500,170,function(x,b){return expHouse(x,b,bi++);});
+  // SOUTH homes (full width below downtown)
+  [2040,2240].forEach(function(y){s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);});});
+  // NORTH offices + a shop strip (above downtown)
+  s+=row(420,300,3300,250,function(x,b){return expOffice(x,b,3+(bi%3),bi++);});
+  var NS=['books','music','diner','toys','bakery','florist'],ni=0;
+  s+=row(220,300,3300,175,function(x,b){return expShop(x,b,NS[ni++%NS.length]);});
+  // ── props: trees / lamps / benches scattered on GRASS only (keep-out from roads, buildings, core) ──
+  function nearRoad(px,py,m){for(var i=0;i<SEG.length;i++){var g=SEG[i];if(g.h){if(px>=g.a-m&&px<=g.b+m&&Math.abs(py-g.y)<m)return true;}else{if(py>=g.a-m&&py<=g.b+m&&Math.abs(px-g.x)<m)return true;}}return false;}
+  function onBldg(px,py,m){for(var i=0;i<EXP_BR.length;i++){var b=EXP_BR[i];if(px>b.x-m&&px<b.x+b.w+m&&py>b.y-m&&py<b.y+b.h+m)return true;}return false;}
+  var props=[];
+  for(var py=170;py<2300;py+=110){for(var px=150;px<3520;px+=130){
+    if(px>820&&px<2780&&py>600&&py<1800)continue;                  // leave the downtown core alone
+    if(nearRoad(px,py,38)||onBldg(px,py,24))continue;             // never on a road or a building
+    var clash=false;for(var q=0;q<props.length;q++){if(Math.abs(props[q][0]-px)<135&&Math.abs(props[q][1]-py)<135){clash=true;break;}}
+    if(clash)continue;
+    props.push([px,py]);
+  }}
+  for(var pi=0;pi<props.length;pi++){var P=props[pi],t=(P[0]*7+P[1])%6;
+    s+= t<3?ftree(P[0],P[1],0.85+(t%2)*0.2) : (t<5?flamp(P[0],P[1]) : fbench(P[0],P[1]));
+  }
+  // a couple of green parks (clusters of trees in the open blocks south of downtown)
+  s+=fbush(420,1730,1.2)+fbush(470,1760,1)+fbush(3180,1730,1.1)+fbush(3230,1760,1);
   return s;
 }
 

@@ -552,9 +552,7 @@
       if (delta !== 0) P.stars = Math.max(0, (P.stars || 0) + delta);
       if (won) { P.duelWins = (P.duelWins || 0) + 1; P.duelStarsWon = (P.duelStarsWon || 0) + res.wager; }
       else if (lost) { P.duelLosses = (P.duelLosses || 0) + 1; }
-      var sp = g('saveProfiles'); if (typeof sp === 'function') sp();
-      var ub = g('updateBankUI'); if (typeof ub === 'function') ub();
-      var us = g('updateScoreHUD'); if (typeof us === 'function') us();
+      refreshStarBadges();
     }
     trySfx(res.tie ? 'pop' : (won ? 'win' : 'bad'));
   }
@@ -621,12 +619,18 @@
   //  TEACHER CLASS QUESTIONS — answer the teacher's posted question for stars
   // ══════════════════════════════════════════════════════════════
   var TQNOW = null, appliedTQ = {}, tqBanner = null;
-  function applyTQStars(reward) {
-    var P = g('P'); if (!P) return;
-    P.stars = (P.stars || 0) + reward;
+  function refreshStarBadges() {
+    var P = g('P');
     var sp = g('saveProfiles'); if (typeof sp === 'function') sp();
     var ub = g('updateBankUI'); if (typeof ub === 'function') ub();
     var us = g('updateScoreHUD'); if (typeof us === 'function') us();
+    var ts = document.getElementById('town-score'); if (ts && P) ts.textContent = '⭐ ' + ((P.stars || 0)).toLocaleString();
+    var sc = document.getElementById('score-val'); if (sc && P) sc.textContent = '⭐ ' + ((P.stars || 0)).toLocaleString();
+  }
+  function applyTQStars(reward) {
+    var P = g('P'); if (!P) return;
+    P.stars = (P.stars || 0) + reward;
+    refreshStarBadges();
   }
   function ensureTqBanner() {
     if (tqBanner || !document.body) return;

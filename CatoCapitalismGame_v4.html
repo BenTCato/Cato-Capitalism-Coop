@@ -3574,7 +3574,12 @@ function winGrid(x0,y0,floors,cols,winCol,tier){
   for(let f=0;f<floors;f++)for(let c=0;c<cols;c++){
     if(tier===0&&((f*cols+c)%3!==0))continue; // silhouette: sparse dark windows
     const lit=tier===2&&((f*cols+c)%4===0);
-    s+='<rect x="'+(x0+c*19)+'" y="'+(y0+f*24)+'" width="12" height="15" rx="1.5" fill="'+(tier===0?'#42554F':(lit?'#F8E2A0':winCol))+'"/>';}
+    const gx=x0+c*19, gy=y0+f*24, fill=(tier===0?'#42554F':(lit?'#F8E2A0':winCol)), fo=(tier===0?.45:.92);
+    s+='<rect x="'+(gx-1.5)+'" y="'+(gy-1.5)+'" width="15" height="18" rx="1.5" fill="#FBF7EC" opacity="'+fo+'"/>'+   // frame
+       '<rect x="'+gx+'" y="'+gy+'" width="12" height="15" rx="1" fill="'+fill+'"/>'+                                   // glass
+       '<rect x="'+gx+'" y="'+gy+'" width="12" height="5" rx="1" fill="rgba(255,255,255,.16)"/>'+                       // top highlight
+       '<rect x="'+(gx+5)+'" y="'+gy+'" width="1.4" height="15" fill="#FBF7EC" opacity="'+fo+'"/>'+                     // muntin V
+       '<rect x="'+gx+'" y="'+(gy+6.8)+'" width="12" height="1.4" fill="#FBF7EC" opacity="'+fo+'"/>';}                  // muntin H
   return s;}
 function signFlat(w,txt,bg){return '<rect x="'+(w/2-46)+'" y="-10" width="92" height="19" rx="4" fill="'+bg+'"/><text x="'+(w/2)+'" y="4" text-anchor="middle" font-size="11.5" font-weight="900" fill="#FFFDF4" font-family="Verdana">'+txt+'</text>';}
 function urban(x,y,w,floors,cols,t,bodies,winCol,extra){
@@ -3584,7 +3589,8 @@ function urban(x,y,w,floors,cols,t,bodies,winCol,extra){
   let s='<g transform="translate('+x+','+(y-h)+')">';
   s+=sh(w/2,h+5,w*0.55,8).replace('translate','');
   s+='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="'+body+'"/>';
-  s+='<rect x="'+(w-10)+'" y="0" width="10" height="'+h+'" fill="rgba(0,0,0,.12)"/>';
+  s+='<rect x="0" y="0" width="'+w+'" height="8" fill="rgba(255,255,255,.10)"/>';
+  s+='<rect x="'+(w-10)+'" y="0" width="10" height="'+h+'" fill="rgba(0,0,0,.13)"/>';
   s+='<rect x="-4" y="-8" width="'+(w+8)+'" height="12" rx="3" fill="'+(t===0?'#4E6260':'rgba(0,0,0,.18)')+'"/>';
   s+=winGrid(12,14,floors,cols,t===2?'#F4F0E4':'#C9C2B2',t);
   // ground floor door
@@ -3618,7 +3624,8 @@ function bHall(x,y,t){
   '<rect x="78" y="-62" width="3" height="18" fill="#5E6A70"/><polygon points="81,-62 102,-56 81,-50" fill="'+(t===2?'#ED8B00':t===1?'#A8AEB8':'#8B2F2F')+'"/>'+
   signFlat(160,'TOWN HALL',t===0?'#4E6260':'#2D6FD6'));}
 function bHouse(x,y,t,hue){return urban(x,y-64,92,1,4,t,['#4E6260','#A8918A',hue],null,
-  (t===2?'<rect x="64" y="-26" width="12" height="20" fill="#8E9499"/>'+ '<g class="smoke"><circle cx="70" cy="-32" r="4" fill="#EAEAE2" opacity=".7"/><circle cx="73" cy="-40" r="5" fill="#EAEAE2" opacity=".4"/></g>':'')+
+  '<polygon points="-6,4 46,-24 98,4" fill="#9A5A3C"/><polygon points="46,-24 98,4 46,4" fill="rgba(0,0,0,.14)"/>'+
+  (t===2?'<rect x="64" y="-22" width="11" height="18" fill="#8E9499"/>'+ '<g class="smoke"><circle cx="70" cy="-30" r="4" fill="#EAEAE2" opacity=".7"/><circle cx="73" cy="-38" r="5" fill="#EAEAE2" opacity=".4"/></g>':'')+
   (t===2?'<rect x="6" y="58" width="22" height="9" rx="4.5" fill="'+AP.tree+'"/>':''));}
 const HOUSE_TIERS=[
  {name:'Cozy Cottage',icon:'🏠',cost:0,w:100,fl:1,cols:4,bodies:['#5E7370','#C9A876','#F4D06F']},

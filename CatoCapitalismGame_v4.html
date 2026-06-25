@@ -3842,43 +3842,59 @@ function buildWorld(tiers){
 
 // ── world expansion: neighborhoods, shops & districts spread across the bigger map ──
 // ── improved building art (self-contained; each registers its own collision) ──
-var EXP_HUES=['#E8956D','#9FC0E0','#E8C98A','#A8C9A0','#E2A8CC','#CDA6E0','#9CC4D8','#E8B07A','#C9B0E0','#D7A8A8'];
-var EXP_ROOFS=['#9A5A3C','#6E4E8A','#3E6E8A','#8A4E4E','#5E7F4E','#7A5A3C'];
+var EXP_HUES=['#E8956D','#9FC0E0','#E8C98A','#A8C9A0','#E2A8CC','#CDA6E0','#9CC4D8','#E8B07A','#C9B0E0','#D7A8A8','#EDB6A0','#AFD0B6'];
+var EXP_ROOFS=['#9A5A3C','#6E4E8A','#3E6E8A','#8A4E4E','#5E7F4E','#7A5A3C','#B0683C','#4E6E7A'];
+var EXP_OFFICE=['#7E96AC','#8B98A8','#9FB4C9','#6E8298','#7C8AA0'];
 var EXP_BR=[]; // building rects, for prop keep-out
+function expWin(wx,wy){ // a framed window with glass, muntins & a sill
+  return '<g transform="translate('+wx+','+wy+')">'+
+    '<rect x="-1" y="-1" width="16" height="15" rx="1.5" fill="#FFFDF4"/>'+
+    '<rect x="1" y="1" width="12" height="11" rx="1" fill="#BFE3F4"/>'+
+    '<rect x="1" y="1" width="12" height="4" rx="1" fill="#D6EFFB"/>'+
+    '<rect x="6" y="1" width="1.6" height="11" fill="#FFFDF4"/><rect x="1" y="6" width="12" height="1.6" fill="#FFFDF4"/>'+
+    '<rect x="-2.5" y="12.5" width="19" height="2.6" rx="1" fill="#E2D6BE"/></g>';
+}
 function expHouse(x,y,i){
-  var w=78,h=48,c=EXP_HUES[i%EXP_HUES.length],rf=EXP_ROOFS[(i*3+1)%EXP_ROOFS.length];
+  var w=82,h=54,c=EXP_HUES[i%EXP_HUES.length],rf=EXP_ROOFS[(i*3+1)%EXP_ROOFS.length];
   reg(x,y-h,w,h); EXP_BR.push({x:x,y:y-h,w:w,h:h});
-  var g='<g transform="translate('+x+','+(y-h)+')">'+sh(w/2,h+3,w*0.5,6);
-  g+='<rect x="2" y="15" width="'+(w-4)+'" height="'+(h-15)+'" rx="3" fill="'+c+'"/>';
-  g+='<polygon points="-4,17 '+(w/2)+',-11 '+(w+4)+',17" fill="'+rf+'"/>';
-  g+='<rect x="'+(w/2-9)+'" y="'+(h-19)+'" width="18" height="19" rx="2" fill="#6E4E2E"/>';
-  g+='<circle cx="'+(w/2+5)+'" cy="'+(h-9)+'" r="1.4" fill="#FFD43B"/>';
-  g+='<rect x="9" y="21" width="13" height="12" rx="2" fill="#CFE8F4" stroke="#FFFDF4" stroke-width="1.4"/>';
-  g+='<rect x="'+(w-22)+'" y="21" width="13" height="12" rx="2" fill="#CFE8F4" stroke="#FFFDF4" stroke-width="1.4"/>';
+  var g='<g transform="translate('+x+','+(y-h)+')">'+sh(w/2,h+3,w*0.55,6);
+  g+='<rect x="3" y="18" width="'+(w-6)+'" height="'+(h-18)+'" rx="3" fill="'+c+'"/>';
+  g+='<rect x="'+(w-13)+'" y="18" width="10" height="'+(h-18)+'" fill="rgba(0,0,0,.13)"/>';          // wall shade
+  g+='<polygon points="-5,20 '+(w/2)+',-12 '+(w+5)+',20" fill="'+rf+'"/>';                            // roof
+  g+='<polygon points="'+(w/2)+',-12 '+(w+5)+',20 '+(w/2)+',20" fill="rgba(0,0,0,.14)"/>';            // roof shade
+  g+='<rect x="'+(w-28)+'" y="-9" width="8" height="15" rx="1" fill="'+rf+'"/>';                      // chimney
+  g+='<rect x="'+(w/2-9)+'" y="'+(h-21)+'" width="18" height="21" rx="2" fill="#6E4E2E"/>';           // door
+  g+='<rect x="'+(w/2-9)+'" y="'+(h-21)+'" width="18" height="5" rx="2" fill="rgba(255,255,255,.12)"/>';
+  g+='<circle cx="'+(w/2+5)+'" cy="'+(h-11)+'" r="1.5" fill="#FFD43B"/>';                              // knob
+  g+='<rect x="'+(w/2-13)+'" y="'+(h-3)+'" width="26" height="3" rx="1.5" fill="rgba(0,0,0,.16)"/>';  // step
+  g+=expWin(10,23)+expWin(w-26,23);
   return g+'</g>';
 }
 function expOffice(x,y,floors,i){
-  var w=104,h=28+floors*26,c=['#7E96AC','#8B98A8','#9FB4C9','#6E8298'][i%4];
+  var w=106,h=30+floors*28,c=EXP_OFFICE[i%EXP_OFFICE.length];
   reg(x,y-h,w,h); EXP_BR.push({x:x,y:y-h,w:w,h:h});
-  var g='<g transform="translate('+x+','+(y-h)+')">'+sh(w/2,h+3,w*0.5,6);
+  var g='<g transform="translate('+x+','+(y-h)+')">'+sh(w/2,h+3,w*0.55,6);
   g+='<rect x="0" y="0" width="'+w+'" height="'+h+'" rx="3" fill="'+c+'"/>';
-  g+='<rect x="0" y="0" width="'+w+'" height="9" rx="3" fill="rgba(0,0,0,.18)"/>';
-  for(var f=0;f<floors;f++)for(var cc=0;cc<4;cc++)g+='<rect x="'+(12+cc*22)+'" y="'+(18+f*26)+'" width="14" height="15" rx="1.5" fill="'+(((f*4+cc)%5===0)?'#F8E2A0':'#C8DCE8')+'"/>';
-  g+='<rect x="'+(w/2-11)+'" y="'+(h-20)+'" width="22" height="20" rx="2" fill="#4E5660"/>';
+  g+='<rect x="'+(w-12)+'" y="0" width="12" height="'+h+'" fill="rgba(0,0,0,.15)"/>';                 // side shade
+  g+='<rect x="'+(w/2-11)+'" y="-9" width="22" height="9" rx="2" fill="'+c+'"/><rect x="-2" y="0" width="'+(w+4)+'" height="9" rx="3" fill="rgba(0,0,0,.22)"/>'; // rooftop unit + parapet
+  for(var f=0;f<floors;f++)for(var cc=0;cc<4;cc++){var lit=((f*4+cc)%5===0);g+='<rect x="'+(12+cc*23)+'" y="'+(20+f*28)+'" width="15" height="18" rx="1.5" fill="'+(lit?'#F8E2A0':'#CFE0EC')+'"/><rect x="'+(12+cc*23)+'" y="'+(20+f*28)+'" width="15" height="18" rx="1.5" fill="none" stroke="rgba(0,0,0,.12)"/>';}
+  g+='<rect x="'+(w/2-15)+'" y="'+(h-24)+'" width="30" height="6" rx="2" fill="rgba(0,0,0,.28)"/>';   // entrance canopy
+  g+='<rect x="'+(w/2-12)+'" y="'+(h-20)+'" width="24" height="20" rx="2" fill="#3E4654"/>';
   return g+'</g>';
 }
 var EXP_SHOPS={cafe:{n:'CAFÉ',b:'#C98A5E',a:'#7A3B2E',e:'☕'},bakery:{n:'BAKERY',b:'#E8C07A',a:'#B5651D',e:'🥐'},books:{n:'BOOKSHOP',b:'#5E7FA8',a:'#2D4E79',e:'📚'},toys:{n:'TOY SHOP',b:'#E86D9A',a:'#B83C6A',e:'🧸'},grocer:{n:'GROCER',b:'#7FB069',a:'#4E7F3E',e:'🥦'},pizza:{n:'PIZZERIA',b:'#D9534F',a:'#9A2F2C',e:'🍕'},icecream:{n:'ICE CREAM',b:'#9AD0E0',a:'#3FA7C0',e:'🍦'},florist:{n:'FLOWERS',b:'#C8A0D8',a:'#8A5EA8',e:'🌸'},barber:{n:'BARBER',b:'#AEB6BE',a:'#C0392B',e:'💈'},diner:{n:'DINER',b:'#E0A24E',a:'#3D4F4D',e:'🍔'},music:{n:'MUSIC',b:'#8E7CC3',a:'#5E4E93',e:'🎵'},hardware:{n:'HARDWARE',b:'#B58A6A',a:'#6E4E2E',e:'🔨'}};
 function expShop(x,y,kind){
-  var k=EXP_SHOPS[kind]||EXP_SHOPS.cafe,w=104,h=58;
+  var k=EXP_SHOPS[kind]||EXP_SHOPS.cafe,w=106,h=60;
   reg(x,y-h,w,h); EXP_BR.push({x:x,y:y-h,w:w,h:h});
-  var g='<g transform="translate('+x+','+(y-h)+')">'+sh(w/2,h+3,w*0.5,6);
-  g+='<rect x="2" y="15" width="'+(w-4)+'" height="'+(h-15)+'" rx="3" fill="'+k.b+'"/>';
-  g+='<rect x="-3" y="2" width="'+(w+6)+'" height="13" rx="3" fill="'+k.a+'"/>';
+  var g='<g transform="translate('+x+','+(y-h)+')">'+sh(w/2,h+3,w*0.55,6);
+  g+='<rect x="2" y="16" width="'+(w-4)+'" height="'+(h-16)+'" rx="3" fill="'+k.b+'"/>';
+  g+='<rect x="'+(w-12)+'" y="16" width="10" height="'+(h-16)+'" fill="rgba(0,0,0,.13)"/>';           // wall shade
+  g+='<rect x="-3" y="2" width="'+(w+6)+'" height="14" rx="3" fill="'+k.a+'"/><rect x="-3" y="12" width="'+(w+6)+'" height="4" fill="rgba(0,0,0,.16)"/>'; // sign board
   g+='<text x="'+(w/2)+'" y="12" text-anchor="middle" font-size="9" font-weight="900" fill="#FFFDF4" font-family="Verdana">'+k.n+'</text>';
-  for(var i=0;i<7;i++)g+='<path d="M'+(3+i*14.2)+',15 h14.2 v6 a7,6 0 0 1 -14.2,0 Z" fill="'+((i%2)?'#FAF3E0':k.a)+'"/>';
-  g+='<rect x="11" y="29" width="'+(w-22)+'" height="16" rx="2" fill="#D6ECF5"/>';
-  g+='<text x="'+(w/2)+'" y="42" text-anchor="middle" font-size="15">'+k.e+'</text>';
-  g+='<rect x="'+(w/2-9)+'" y="'+(h-15)+'" width="18" height="15" rx="2" fill="#5E4636"/>';
+  for(var i=0;i<7;i++)g+='<path d="M'+(3+i*14.5)+',16 h14.5 v6 a7,6 0 0 1 -14.5,0 Z" fill="'+((i%2)?'#FAF3E0':k.a)+'"/>'; // scalloped awning
+  g+='<rect x="9" y="30" width="'+(w-18)+'" height="16" rx="2" fill="#FFFDF4"/><rect x="11" y="32" width="'+(w-22)+'" height="12" rx="1.5" fill="#CFEAF6"/>'; // display window
+  g+='<text x="'+(w/2)+'" y="42" text-anchor="middle" font-size="13">'+k.e+'</text>';
+  g+='<rect x="'+(w/2-9)+'" y="'+(h-15)+'" width="18" height="15" rx="2" fill="#5E4636"/><circle cx="'+(w/2+5)+'" cy="'+(h-7)+'" r="1.3" fill="#FFD43B"/>'; // door
   return g+'</g>';
 }
 function fflower(x,y){return '<g transform="translate('+x+','+y+')">'+sh(0,2,7,2)+'<rect x="-5" y="-3" width="10" height="6" rx="1.5" fill="#7E6A4E"/><circle cx="-3" cy="-5" r="2.4" fill="#FF8FAB"/><circle cx="2" cy="-6" r="2.4" fill="#FFC93C"/><circle cx="4" cy="-3" r="2.2" fill="#A78BFA"/></g>';}
@@ -3899,20 +3915,26 @@ function buildExpansion(tiers){
   SIDE.forEach(function(y){HR(y,100,900);HR(y,2760,3500);});                               // side-margin streets (east starts at the river arterial)
   s+=roadsSVG(R,'butt');                                                                    // grid roads get flat ends + crisp intersections (no round blobs)
   // ── buildings set just above each street, facing it (road in front of every building) ──
-  function row(streetY,x0,x1,step,fn){var o='';for(var x=x0;x+104<=x1;x+=step){var cx=x+52,sk=false;for(var j=0;j<VL.length;j++){if(Math.abs(cx-VL[j])<92){sk=true;break;}}if(sk)continue;o+=fn(x,streetY-44);}return o;}
+  // place a row of buildings along a street; off=-44 lines the NORTH side, off=+92 the SOUTH side (both sides → a full street)
+  function row(streetY,x0,x1,step,fn,off){off=(off===undefined?-44:off);var o='';for(var x=x0;x+104<=x1;x+=step){var cx=x+52,sk=false;for(var j=0;j<VL.length;j++){if(Math.abs(cx-VL[j])<92){sk=true;break;}}if(sk)continue;o+=fn(x,streetY+off);}return o;}
   var bi=0;
-  // WEST homes — your neighborhood (denser, every side street)
-  SIDE.forEach(function(y){s+=row(y,110,900,168,function(x,b){return expHouse(x,b,bi++);});});
-  // EAST shopping district — each shop type appears exactly ONCE (no repeats); leftover slots become homes
+  // WEST neighborhood — homes line BOTH sides of every street
+  SIDE.forEach(function(y){
+    s+=row(y,110,900,170,function(x,b){return expHouse(x,b,bi++);});
+    s+=row(y,110,900,170,function(x,b){return expHouse(x,b,bi++);},92);
+  });
+  // EAST district — each shop type appears exactly ONCE on the north side; homes line the south sides
   var SHOPKINDS=['cafe','bakery','books','toys','grocer','pizza','icecream','florist','barber','diner','music','hardware'],shopN=0;
   function nextShop(){ return shopN<SHOPKINDS.length ? SHOPKINDS[shopN++] : null; }
   [620,860,1100,1340].forEach(function(y){s+=row(y,2820,3500,180,function(x,b){var k=nextShop();return k?expShop(x,b,k):expHouse(x,b,bi++);});});
   s+=row(1580,2820,3500,180,function(x,b){return expHouse(x,b,bi++);});
-  // shopping-street polish: benches, flowers & lamps along the storefronts
-  [620,860,1100,1340].forEach(function(y){s+=fbench(2840,y+34)+fflower(3220,y+34)+flamp(3420,y+34);});
-  // SOUTH homes (full width below downtown)
-  [2040,2240].forEach(function(y){s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);});});
-  // NORTH business district — offices only (keeps every shop type unique to the east)
+  [620,860,1100,1340,1580].forEach(function(y){s+=row(y,2820,3500,180,function(x,b){return expHouse(x,b,bi++);},92);});
+  // SOUTH neighborhood — homes line BOTH sides
+  [2040,2240].forEach(function(y){
+    s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);});
+    s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);},92);
+  });
+  // NORTH business district — offices (tall, so a single north-side row)
   [220,420].forEach(function(y){s+=row(y,300,3300,250,function(x,b){return expOffice(x,b,2+(bi%2),bi++);});});
   // ── props: trees / lamps / benches scattered on GRASS only (keep-out from roads, buildings, core) ──
   function nearRoad(px,py,m){for(var i=0;i<SEG.length;i++){var g=SEG[i];if(g.h){if(px>=g.a-m&&px<=g.b+m&&Math.abs(py-g.y)<m)return true;}else{if(py>=g.a-m&&py<=g.b+m&&Math.abs(px-g.x)<m)return true;}}return false;}

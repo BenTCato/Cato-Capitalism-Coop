@@ -99,6 +99,7 @@
       .then(function (d) {
         if (d && d.world) setBadge(d.world, (d.players ? d.players.length : 0) + 1);
         ingest(d && d.players ? d.players : []);
+        handleDuelState(d && d.duel ? d.duel : null);
       })
       .catch(function () { setBadge(null, 0); });
   }
@@ -199,6 +200,10 @@
     r.el = grp;
     r.body = grp.querySelector('.cr-body');
     r.tag = grp.querySelector('.cr-tag');
+    // tappable → challenge to a 1v1 duel (must be standing next to each other)
+    grp.style.cursor = 'pointer';
+    grp.addEventListener('click', function () { onRemoteTap(id); });
+    grp.addEventListener('touchend', function (e) { e.preventDefault(); onRemoteTap(id); }, { passive: false });
     r.body.innerHTML = bodySVG(p);
     r.tag.innerHTML = nameplate(p);
     r.avKey = JSON.stringify(p.avatar);
@@ -332,8 +337,245 @@
   if (document.body) buildJoinUI();
   window.addEventListener('DOMContentLoaded', buildJoinUI);
 
+  // ══════════════════════════════════════════════════════════════
+  //  1v1 STAR DUELS — tap a nearby player, wager stars, race on the
+  //  same policy questions; most "best/most-libertarian" answers wins.
+  // ══════════════════════════════════════════════════════════════
+  var DUEL_RANGE = 160;                 // how close (world px) two avatars must be
+  var WAGER_OPTIONS = [250, 500, 1000];
+  var DUEL = null;                      // latest duel view from the server
+  var phase = 'none', phaseDuelId = ''; // UI state machine
+  var myAnswers = [], qIdx = 0, mySubmitted = false, applied = {};
+
+  function myStars() { var P = g('P'); return (P && P.stars) || 0; }
+  function myName() { return g('nationName', 'You') || 'You'; }
+  function localPos() { var pl = g('player'); return pl ? { x: pl.x, y: pl.y } : null; }
+  function dist(a, b) { return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2)); }
+  function trySfx(n) { try { var f = g('sfx'); if (typeof f === 'function') f(n); } catch (e) {} }
+
+  // gather real policy questions from the game's banks → pick N, keep the answer key
+  function buildDuelPool() {
+    var names = ['Q', 'QBANK', 'NEWQ1', 'NEWQ2', 'NEWQ3', 'NEWQ4', 'NEWQ5', 'NEWQ6'], out = [], seen = {};
+    names.forEach(function (nm) {
+      var arr = g(nm, null);
+      if (!Array.isArray(arr)) return;
+      arr.forEach(function (q) {
+        if (!q || !q.body || !Array.isArray(q.choices) || !q.best) return;
+        var key = (q.title || '') + '|' + q.body.slice(0, 40);
+        if (seen[key]) return; seen[key] = 1;
+        out.push(q);
+      });
+    });
+    return out;
+  }
+  function pickQuestions(n) {
+    var pool = buildDuelPool().slice();
+    for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+    return pool.slice(0, n).map(function (q) {
+      return { title: q.title || q.tag || 'Policy Question', body: q.body,
+               choices: q.choices.map(function (c) { return { letter: c.letter, label: c.label }; }),
+               best: q.best };
+    });
+  }
+
+  // ── network actions ───────────────────────────────────────────
+  function postJSON(url, body, cb) {
+    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); }).then(function (d) { if (cb) cb(d); }).catch(function () { if (cb) cb(null); });
+  }
+  function sendChallenge(toId, toName, wager, n) {
+    var qs = pickQuestions(n);
+    if (!qs.length) { toast('No questions available right now.'); return; }
+    postJSON('/__coop/duel/challenge', { room: ROOM, from: { id: ID, name: myName() }, to: { id: toId, name: toName }, wager: wager, n: n, questions: qs },
+      function (d) { if (d && d.ok) { sync(); } else { toast((d && d.error) || 'Could not start the duel.'); } });
+  }
+  function respondDuel(accept) {
+    if (!DUEL) return;
+    if (accept && myStars() < DUEL.wager) { toast('You need ' + DUEL.wager.toLocaleString() + '⭐ to accept (you have ' + myStars().toLocaleString() + ').'); return; }
+    postJSON('/__coop/duel/respond', { duelId: DUEL.id, id: ID, accept: !!accept }, function () { sync(); });
+  }
+  function submitAnswers() { if (!DUEL) return; postJSON('/__coop/duel/answer', { duelId: DUEL.id, id: ID, letters: myAnswers }, function () { sync(); }); }
+  function cancelChallenge() { if (!DUEL) return; postJSON('/__coop/duel/cancel', { duelId: DUEL.id, id: ID }, function () { sync(); }); closeDuelOv(); phase = 'none'; phaseDuelId = ''; }
+
+  // ── tap a remote avatar → challenge (or accept their challenge) ─
+  function onRemoteTap(id) {
+    var r = remotes[id]; if (!r || !r.data || !r.data.pos) return;
+    // if they already challenged me, tapping them back = accept (mutual tap)
+    if (DUEL && DUEL.status === 'pending' && DUEL.youAre === 'to' && DUEL.from && DUEL.from.id === id) { respondDuel(true); return; }
+    if (DUEL && DUEL.status !== 'done' && DUEL.status !== 'declined' && DUEL.status !== 'cancelled') return; // busy in a duel
+    var pl = localPos(); if (!pl) return;
+    if (dist(pl, r.data.pos) > DUEL_RANGE) { toast('Walk up next to ' + (r.data.name || 'them') + ' to challenge.'); return; }
+    if (myStars() < WAGER_OPTIONS[0]) { toast('You need at least ' + WAGER_OPTIONS[0] + '⭐ to start a duel.'); return; }
+    openChallengeDialog(id, r.data.name || 'Player');
+  }
+
+  // ── UI: overlay + toast ────────────────────────────────────────
+  (function () {
+    var s = document.createElement('style');
+    s.textContent =
+      '#duel-ov{position:fixed;inset:0;z-index:10001;display:none;align-items:center;justify-content:center;background:rgba(8,12,26,.72);font-family:Verdana,sans-serif;padding:16px;}' +
+      '#duel-card{background:#fff;border-radius:20px;padding:22px 20px;width:min(440px,94vw);max-height:92vh;overflow:auto;box-shadow:0 22px 60px rgba(0,0,0,.45);text-align:center;}' +
+      '.duel-h{font-size:1.3rem;font-weight:900;color:#13234a;margin:0 0 4px;}' +
+      '.duel-sub{font-size:.86rem;color:#5a6b8c;margin-bottom:14px;line-height:1.4;}' +
+      '.duel-q{font-size:1.02rem;font-weight:800;color:#13234a;text-align:left;margin:6px 0 14px;line-height:1.4;}' +
+      '.duel-opt{display:block;width:100%;box-sizing:border-box;text-align:left;margin:8px 0;padding:13px 15px;border:2px solid #d7deec;border-radius:13px;background:#f7f9fd;color:#1b2b4d;font-weight:700;font-size:.95rem;font-family:inherit;cursor:pointer;line-height:1.35;}' +
+      '.duel-opt:hover{border-color:#2d6fd6;background:#eef4ff;}' +
+      '.duel-opt b{color:#2d6fd6;margin-right:7px;}' +
+      '.duel-row{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin:10px 0;}' +
+      '.duel-pick{flex:1;min-width:90px;padding:12px;border:2px solid #d7deec;border-radius:12px;background:#f7f9fd;color:#13234a;font-weight:800;font-family:inherit;cursor:pointer;font-size:.95rem;}' +
+      '.duel-pick.on{border-color:#2d6fd6;background:#2d6fd6;color:#fff;}' +
+      '.duel-pick:disabled{opacity:.4;cursor:not-allowed;}' +
+      '.duel-btn{padding:12px 18px;border:none;border-radius:12px;font-weight:800;font-family:inherit;cursor:pointer;font-size:.98rem;}' +
+      '.duel-go{background:linear-gradient(180deg,#FFD43B,#ED8B00);color:#3a2a00;}' +
+      '.duel-ghost{background:#e7ecf5;color:#3a4a6a;}' +
+      '.duel-win{color:#2EB872;}.duel-lose{color:#E03131;}.duel-tie{color:#F2762E;}' +
+      '#duel-toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:10002;background:rgba(16,22,40,.93);color:#fff;font-family:Verdana,sans-serif;font-size:.84rem;font-weight:700;padding:10px 16px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.35);opacity:0;transition:opacity .2s;pointer-events:none;max-width:80vw;text-align:center;}' +
+      '#duel-toast.show{opacity:1;}';
+    (document.head || document.documentElement).appendChild(s);
+  })();
+  var ov, card, toastEl, toastT;
+  function ensureOv() {
+    if (ov) return;
+    ov = document.createElement('div'); ov.id = 'duel-ov';
+    card = document.createElement('div'); card.id = 'duel-card';
+    ov.appendChild(card); document.body.appendChild(ov);
+    toastEl = document.createElement('div'); toastEl.id = 'duel-toast'; document.body.appendChild(toastEl);
+  }
+  function openOv(html) { ensureOv(); card.innerHTML = html; ov.style.display = 'flex'; }
+  function closeDuelOv() { if (ov) ov.style.display = 'none'; }
+  function toast(msg) { ensureOv(); toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove('show'); }, 2600); }
+
+  function openChallengeDialog(toId, toName) {
+    ensureOv();
+    var stars = myStars(), wager = WAGER_OPTIONS.filter(function (w) { return w <= stars; }).slice(-1)[0] || WAGER_OPTIONS[0], len = 5;
+    function render() {
+      var wagerBtns = WAGER_OPTIONS.map(function (w) {
+        return '<button class="duel-pick ' + (w === wager ? 'on' : '') + '" data-w="' + w + '"' + (w > stars ? ' disabled' : '') + '>' + w.toLocaleString() + '⭐</button>';
+      }).join('');
+      var lenBtns = [3, 5].map(function (k) { return '<button class="duel-pick ' + (k === len ? 'on' : '') + '" data-n="' + k + '">' + k + ' questions</button>'; }).join('');
+      openOv(
+        '<div class="duel-h">⚔️ Challenge ' + esc(toName) + '</div>' +
+        '<div class="duel-sub">You both answer the same questions at once. Most best-answers wins the pot. A tie refunds both.</div>' +
+        '<div style="font-weight:800;color:#13234a;font-size:.8rem;text-align:left;margin-bottom:5px;">WAGER (you have ' + stars.toLocaleString() + '⭐)</div>' +
+        '<div class="duel-row" id="duel-wager">' + wagerBtns + '</div>' +
+        '<div style="font-weight:800;color:#13234a;font-size:.8rem;text-align:left;margin:8px 0 5px;">LENGTH</div>' +
+        '<div class="duel-row" id="duel-len">' + lenBtns + '</div>' +
+        '<div class="duel-row" style="margin-top:16px;">' +
+          '<button class="duel-btn duel-ghost" id="duel-cancel" style="flex:1;">Cancel</button>' +
+          '<button class="duel-btn duel-go" id="duel-send" style="flex:2;">Send Challenge →</button>' +
+        '</div>');
+      card.querySelectorAll('#duel-wager .duel-pick').forEach(function (b) { b.onclick = function () { if (b.disabled) return; wager = +b.getAttribute('data-w'); render(); }; });
+      card.querySelectorAll('#duel-len .duel-pick').forEach(function (b) { b.onclick = function () { len = +b.getAttribute('data-n'); render(); }; });
+      card.querySelector('#duel-cancel').onclick = function () { closeDuelOv(); };
+      card.querySelector('#duel-send').onclick = function () { closeDuelOv(); sendChallenge(toId, toName, wager, len); };
+    }
+    render();
+  }
+
+  function esc(t) { return escapeXml(t); }
+
+  function renderIncoming(d) {
+    openOv(
+      '<div class="duel-h">⚔️ Duel Challenge!</div>' +
+      '<div class="duel-sub"><b>' + esc(d.from.name) + '</b> challenges you to a policy duel.<br>Wager <b>' + d.wager.toLocaleString() + '⭐</b> · <b>' + d.n + '</b> questions · winner takes the pot.</div>' +
+      '<div class="duel-row">' +
+        '<button class="duel-btn duel-ghost" id="duel-decline" style="flex:1;">Decline</button>' +
+        '<button class="duel-btn duel-go" id="duel-accept" style="flex:1;">Accept ⚔️</button>' +
+      '</div>');
+    card.querySelector('#duel-decline').onclick = function () { respondDuel(false); };
+    card.querySelector('#duel-accept').onclick = function () { respondDuel(true); };
+  }
+  function renderWaitingAccept(d) {
+    openOv(
+      '<div class="duel-h">Waiting…</div>' +
+      '<div class="duel-sub">Challenge sent to <b>' + esc(d.to.name) + '</b><br>Wager ' + d.wager.toLocaleString() + '⭐ · ' + d.n + ' questions.<br>Waiting for them to accept.</div>' +
+      '<div class="duel-row"><button class="duel-btn duel-ghost" id="duel-cancel2">Cancel challenge</button></div>');
+    card.querySelector('#duel-cancel2').onclick = function () { cancelChallenge(); };
+  }
+  function startAnswering(d) { mySubmitted = false; qIdx = 0; myAnswers = []; renderQuestion(d); }
+  function renderQuestion(d) {
+    if (!d.questions || !d.questions[qIdx]) { return; }
+    var q = d.questions[qIdx];
+    var opts = q.choices.map(function (c) { return '<button class="duel-opt" data-l="' + c.letter + '"><b>' + c.letter + '</b>' + esc(c.label) + '</button>'; }).join('');
+    openOv(
+      '<div class="duel-sub" style="margin-bottom:6px;">⚔️ Duel · question ' + (qIdx + 1) + ' of ' + d.n + ' · ' + d.wager.toLocaleString() + '⭐</div>' +
+      '<div class="duel-q">' + esc(q.body) + '</div>' + opts);
+    card.querySelectorAll('.duel-opt').forEach(function (b) {
+      b.onclick = function () {
+        myAnswers[qIdx] = b.getAttribute('data-l');
+        qIdx++;
+        if (qIdx < d.n) renderQuestion(d);
+        else { mySubmitted = true; phase = 'waitingOpp'; submitAnswers(); renderWaitingOpp(d); }
+        trySfx('click');
+      };
+    });
+  }
+  function renderWaitingOpp(d) {
+    openOv('<div class="duel-h">✅ Answers in!</div><div class="duel-sub">Waiting for your opponent to finish…</div>' +
+      '<div style="font-size:2rem;">⏳</div>');
+  }
+  function applyResultOnce(d) {
+    if (!d.result || applied[d.id]) return;
+    applied[d.id] = true;
+    var res = d.result, delta = res.tie ? 0 : (res.winnerId === ID ? res.wager : -res.wager);
+    if (delta !== 0) {
+      var P = g('P');
+      if (P) {
+        P.stars = Math.max(0, (P.stars || 0) + delta);
+        var sp = g('saveProfiles'); if (typeof sp === 'function') sp();
+        var ub = g('updateBankUI'); if (typeof ub === 'function') ub();
+        var us = g('updateScoreHUD'); if (typeof us === 'function') us();
+      }
+    }
+    trySfx(res.tie ? 'pop' : (res.winnerId === ID ? 'win' : 'bad'));
+  }
+  function renderResult(d) {
+    var res = d.result; var iAmFrom = res.fromId === ID;
+    var myC = iAmFrom ? res.fromCorrect : res.toCorrect;
+    var opC = iAmFrom ? res.toCorrect : res.fromCorrect;
+    var opName = iAmFrom ? d.to.name : d.from.name;
+    var title, cls, line;
+    if (res.tie) { title = '🤝 Draw'; cls = 'duel-tie'; line = 'Both wagers refunded — no stars change hands.'; }
+    else if (res.winnerId === ID) { title = '🏆 You win!'; cls = 'duel-win'; line = 'You take <b>' + res.wager.toLocaleString() + '⭐</b> from ' + esc(opName) + '.'; }
+    else { title = '💔 You lose'; cls = 'duel-lose'; line = esc(opName) + ' takes your <b>' + res.wager.toLocaleString() + '⭐</b>.'; }
+    openOv(
+      '<div class="duel-h ' + cls + '">' + title + '</div>' +
+      '<div class="duel-sub">You: <b>' + myC + '</b> best-answers · ' + esc(opName) + ': <b>' + opC + '</b><br>' + line + '</div>' +
+      '<div style="font-size:.8rem;color:#7a88a6;margin-bottom:12px;">Your balance: ' + myStars().toLocaleString() + '⭐</div>' +
+      '<div class="duel-row"><button class="duel-btn duel-go" id="duel-done" style="flex:1;">Done</button></div>');
+    card.querySelector('#duel-done').onclick = function () { closeDuelOv(); };
+  }
+
+  // ── duel state machine, driven by each sync response ───────────
+  function handleDuelState(duel) {
+    DUEL = duel;
+    var did = duel ? duel.id : '';
+    var target;
+    if (!duel) target = 'none';
+    else if (duel.status === 'pending') target = (duel.youAre === 'to') ? 'incoming' : 'waitingAccept';
+    else if (duel.status === 'active') target = (duel.youDone || mySubmitted) ? 'waitingOpp' : 'answering';
+    else if (duel.status === 'done') target = 'result';
+    else if (duel.status === 'declined' || duel.status === 'cancelled') target = 'ended';
+    else target = 'none';
+
+    if (target === phase && did === phaseDuelId) return; // no change → don't disturb the UI
+    phase = target; phaseDuelId = did;
+
+    if (target === 'none') { closeDuelOv(); }
+    else if (target === 'ended') {
+      toast(duel.status === 'declined' ? (duel.youAre === 'from' ? esc(duel.to.name) + ' declined.' : 'Challenge declined.') : 'Challenge cancelled.');
+      closeDuelOv();
+    }
+    else if (target === 'incoming') renderIncoming(duel);
+    else if (target === 'waitingAccept') renderWaitingAccept(duel);
+    else if (target === 'answering') startAnswering(duel);
+    else if (target === 'waitingOpp') renderWaitingOpp(duel);
+    else if (target === 'result') { applyResultOnce(duel); renderResult(duel); }
+  }
+
   // graceful "leave" so others see you drop fast
   window.addEventListener('beforeunload', function () {
     try { navigator.sendBeacon('/__coop/kick', JSON.stringify({ id: ID })); } catch (e) {}
+    try { if (DUEL && DUEL.status === 'pending' && DUEL.youAre === 'from') navigator.sendBeacon('/__coop/duel/cancel', JSON.stringify({ duelId: DUEL.id, id: ID })); } catch (e) {}
   });
 })();

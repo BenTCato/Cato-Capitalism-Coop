@@ -3829,7 +3829,7 @@ function buildWorld(tiers){
     w+='<g transform="translate(900,990)"><g class="stroller" style="animation-delay:1.6s;animation-direction:alternate-reverse;"><rect x="-5" y="-14" width="10" height="11" rx="4" fill="#3FA7A0"/><circle cx="0" cy="-18" r="5" fill="#F2CFA6"/><rect x="-12" y="-10" width="8" height="7" rx="2" fill="#7FB069"/></g></g>';
   }
   // flora
-  w+=ftree(150,180,1.1)+ftree(640,140,0.9)+ftree(1060,180,1.2)+ftree(1660,160,1)+ftree(120,760,1)+ftree(560,640,0.85)+ftree(1140,920,1.1)+ftree(240,700,0.95)+ftree(1700,1100,0.9)+ftree(1240,1060,1)+ftree(80,440,0.85)+ftree(980,120,1)+ftree(1420,120,1.05)+ftree(40,950,0.9)+ftree(1760,420,1)+ftree(520,1120,1)+ftree(60,90,0.8);
+  w+=ftree(150,180,1.1)+ftree(640,140,0.9)+ftree(1060,180,1.2)+ftree(120,760,1)+ftree(560,640,0.85)+ftree(1140,920,1.1)+ftree(240,700,0.95)+ftree(1240,1060,1)+ftree(80,440,0.85)+ftree(980,120,1)+ftree(1420,120,1.05)+ftree(40,950,0.9)+ftree(520,1120,1)+ftree(60,90,0.8);  // (removed 3 trees that sat in the river corridor: core x1660/1700/1760)
   w+=fbush(700,420,1)+fbush(1170,648,0.9)+fbush(480,760,1.1)+fbush(1480,560,0.9)+fbush(220,840,1);
   w+=frock(1080,820,1)+frock(1500,980,0.9)+frock(640,920,0.8)+frock(1380,180,1.1);
   if(tiers.avg===2){const fcl=function(x,y,sc){return '<g transform="translate('+x+','+y+') scale('+sc+')" fill="rgba(255,255,255,.95)"><ellipse cx="0" cy="0" rx="32" ry="12"/><ellipse cx="-20" cy="-7" rx="19" ry="9"/><ellipse cx="15" cy="-8" rx="21" ry="10"/><ellipse cx="-2" cy="-12" rx="14" ry="8"/></g>';};w+=fcl(300,72,1)+fcl(1200,100,1.15)+fcl(800,52,0.85);}
@@ -3848,14 +3848,13 @@ function buildWorld(tiers){
   //    in the open corridor east of downtown; every road that meets it crosses on a bridge, and
   //    buildings are kept out of its corridor (see the river keep-clear in buildExpansion's row()). ──
   (function(){
-    var RX=2560;                                                          // channel center: clear of the loop road (west) and the arterial (east)
-    var RP='M2560,-40 Q2524,360 2560,760 Q2596,1160 2560,1560 Q2524,1960 2560,2440';
-    w+='<path d="'+RP+'" fill="none" stroke="'+AP.water2+'" stroke-width="100"/>';   // shore/bank edge
-    w+='<path d="'+RP+'" fill="none" stroke="'+AP.water+'" stroke-width="80"/>';     // water
-    w+='<path class="shimmer" d="M2552,140 q-6,70 0,140 M2566,640 q6,70 0,140 M2548,1180 q-6,70 0,140 M2566,1760 q6,70 0,140 M2552,2180 q-6,60 0,120" stroke="rgba(255,255,255,.4)" stroke-width="4" fill="none" stroke-linecap="round"/>';
-    var XR=[220,420,1337,2040,2280], GH=34;                               // road crossings; leave a walkable gap at each
+    var RX=2560;                                                          // straight channel center: clear of the loop road (west) and the arterial (east)
+    w+='<rect x="'+(RX-50)+'" y="-40" width="100" height="2480" fill="'+AP.water2+'"/>';   // shore/bank
+    w+='<rect x="'+(RX-40)+'" y="-40" width="80" height="2480" fill="'+AP.water+'"/>';      // water
+    w+='<path class="shimmer" d="M'+(RX-9)+',140 q-6,70 0,140 M'+(RX+9)+',640 q6,70 0,140 M'+(RX-9)+',1180 q-6,70 0,140 M'+(RX+9)+',1760 q6,70 0,140 M'+(RX-9)+',2180 q-6,60 0,120" stroke="rgba(255,255,255,.4)" stroke-width="4" fill="none" stroke-linecap="round"/>';
+    var XR=[220,420,1337,2040,2280], GH=40;                               // road crossings; leave a walkable gap (matches the road) at each
     var edges=[-40]; XR.forEach(function(y){edges.push(y-GH,y+GH);}); edges.push(2440);
-    for(var i=0;i<edges.length;i+=2){ if(edges[i+1]>edges[i]) reg(RX-56,edges[i],112,edges[i+1]-edges[i]); }
+    for(var i=0;i<edges.length;i+=2){ if(edges[i+1]>edges[i]) reg(RX-50,edges[i],100,edges[i+1]-edges[i]); }  // collision blocks the water exactly, gaps at the bridges
     XR.forEach(function(y){                                               // a bridge at each crossing (road lays the deck; these are the railings + posts)
       w+='<path d="M'+(RX-96)+','+(y-30)+' L'+(RX+96)+','+(y-30)+'" stroke="#8A6038" stroke-width="7" stroke-linecap="round"/>';
       w+='<path d="M'+(RX-96)+','+(y+30)+' L'+(RX+96)+','+(y+30)+'" stroke="#8A6038" stroke-width="7" stroke-linecap="round"/>';
@@ -3961,7 +3960,7 @@ function buildExpansion(tiers){
   var R=[],SEG=[],VL=[240,520,900,1800,2400,2760,3080];
   function HR(y,x0,x1){R.push('M'+x0+','+y+' L'+x1+','+y);SEG.push({h:1,y:y,a:x0,b:x1});}
   function VR(x,y0,y1){R.push('M'+x+','+y0+' L'+x+','+y1);SEG.push({h:0,x:x,a:y0,b:y1});}
-  HR(620,900,2400);HR(1780,900,2400);VR(900,620,1780);VR(2400,620,1780);                  // downtown loop (kept WEST of the river)
+  HR(620,871,2429);HR(1780,871,2429);VR(900,620,1780);VR(2400,620,1780);                  // downtown loop (H segments extended ±29 past the corners so the butt caps fill the corner squares — no notches)
   HR(1337,2400,2760);                                                                      // the bridge road — the only crossing over the river
   // one short link from the loop toward downtown; the core's own curvy roads handle downtown (no clashing straight avenues)
   R.push('M900,1200 L1180,1200');

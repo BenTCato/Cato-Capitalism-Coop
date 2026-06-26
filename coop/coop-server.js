@@ -108,7 +108,7 @@ function publicList(r) {
   return [...r.players.values()].map(p => ({
     id: p.id, name: p.name, avatar: p.avatar,
     stats: p.stats, house: p.house, houseName: p.houseName,
-    vanity: p.vanity, vanityTotal: p.vanityTotal,
+    vanity: p.vanity, vanityTotal: p.vanityTotal, stars: p.stars,
     duelWins: p.duelWins, duelLosses: p.duelLosses, duelStarsWon: p.duelStarsWon,
     score: p.score, grade: p.grade, term: p.term,
     lifetimeGrade: p.lifetimeGrade, termGrades: p.termGrades,

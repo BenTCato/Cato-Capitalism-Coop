@@ -3585,7 +3585,7 @@ function winGrid(x0,y0,floors,cols,winCol,tier,dz){
 function signFlat(w,txt,bg){return '<rect x="'+(w/2-46)+'" y="-10" width="92" height="19" rx="4" fill="'+bg+'"/><text x="'+(w/2)+'" y="4" text-anchor="middle" font-size="11.5" font-weight="900" fill="#FFFDF4" font-family="Verdana">'+txt+'</text>';}
 function urban(x,y,w,floors,cols,t,bodies,winCol,extra){
   const h=34+floors*24;
-  reg(x-4,y-h*0.25,w+8,h*0.9);
+  reg(x,y-h,w,h);   // full building footprint → solid on ALL sides (was only the lower strip, which left the north/sides walk-through)
   const body=bodies[t];
   let s='<g transform="translate('+x+','+(y-h)+')">';
   s+=sh(w/2,h+5,w*0.55,8).replace('translate','');

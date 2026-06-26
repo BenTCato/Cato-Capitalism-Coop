@@ -82,6 +82,7 @@
       houseName: houseName,
       vanity: P && P.owned ? P.owned.length : 0,
       vanityTotal: STORE ? STORE.length : 0,
+      stars: (P && P.stars) || 0,          // the actual spendable ⭐ balance shown in-game (so the leaderboard matches)
       duelWins: (P && P.duelWins) || 0,
       duelLosses: (P && P.duelLosses) || 0,
       duelStarsWon: (P && P.duelStarsWon) || 0,

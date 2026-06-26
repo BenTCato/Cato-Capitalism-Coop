@@ -177,6 +177,7 @@
           <th class="sortable" data-k="house">House</th>
           <th class="sortable" data-k="vanity">Vanity</th>
           <th class="sortable" data-k="duels">⚔️ Duels</th>
+          <th class="sortable" data-k="stars">⭐ Stars</th>
           <th class="sortable" data-k="score">Score <span id="score-scope" style="font-size:.7rem;color:#B7AEDB;font-weight:600;"></span> <span class="arrow">▾</span></th>
           <th class="sortable" data-k="grade">Grade <span id="grade-scope" style="font-size:.7rem;color:#B7AEDB;font-weight:600;"></span></th>
         </tr>
@@ -229,6 +230,7 @@ function sortVal(p,k){
   if(k==='health') return avg(p.stats);
   if(k==='house') return p.house||0;
   if(k==='vanity') return p.vanity||0;
+  if(k==='stars') return p.stars||0;
   if(k==='duels') return (p.duelWins||0)*1000 - (p.duelLosses||0);
   if(k==='grade'){return gradeRank(resolve(p).grade);}
   var rs=resolve(p).score; return (rs==null?-1:rs);
@@ -318,7 +320,8 @@ function render(list){
       '<td class="house"><span class="ico">'+houseIcon(p.houseName)+'</span>'+esc(p.houseName||'—')+'</td>'+
       '<td class="vanity">'+(p.vanity||0)+'<span class="vt">/'+(p.vanityTotal||0)+'</span></td>'+
       '<td title="Stars won in duels: '+((p.duelStarsWon||0).toLocaleString())+'">'+((p.duelWins||p.duelLosses)?('<b style="color:#2EB872">'+(p.duelWins||0)+'W</b> <span style="color:#B7AEDB">/ '+(p.duelLosses||0)+'L</span>'):'<span style="color:#B7AEDB;">—</span>')+'</td>'+
-      '<td class="score">'+(r.score==null?'<span style="color:#B7AEDB;">—</span>':'⭐ '+r.score.toLocaleString())+'</td>'+
+      '<td class="score">⭐ '+((p.stars||0).toLocaleString())+'</td>'+
+      '<td>'+(r.score==null?'<span style="color:#B7AEDB;">—</span>':'<span style="color:#B7AEDB;">'+r.score.toLocaleString()+' pts</span>')+'</td>'+
       '<td>'+(r.grade&&r.grade!=='—'?'<span class="grade '+r.grade+'">'+r.grade+'</span>':'<span style="color:#B7AEDB;">—</span>')+'</td>'+
     '</tr>';
   }).join('');
@@ -337,7 +340,7 @@ function render(list){
         '<div class="meta">'+houseIcon(p.houseName)+' '+esc(p.houseName||'New')+' · Term '+(p.term||1)+'</div></div></div>'+
       '<div class="cbars">'+cb+'</div>'+
       '<div class="foot"><span class="badge-mini">🎩 '+(p.vanity||0)+'/'+(p.vanityTotal||0)+'</span>'+
-        '<span class="score" style="color:'+(p.started?'#ED8B00':'#bbb')+'">'+(r.score==null?'—':'⭐ '+r.score.toLocaleString())+'</span>'+
+        '<span class="score" style="color:'+(p.started?'#ED8B00':'#bbb')+'">⭐ '+((p.stars||0).toLocaleString())+'</span>'+
         (r.grade&&r.grade!=='—'?'<span class="grade '+r.grade+'">'+r.grade+'</span>':'')+'</div>'+
     '</div>';
   }).join('');

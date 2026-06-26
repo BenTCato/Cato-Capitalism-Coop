@@ -3822,7 +3822,7 @@ function buildWorld(tiers){
   w+=bSchool(1240,250+96,tiers.ed);
   w+=bShops(700,1000+84,tiers.e)+fcart(880,1050)+fbarrel(660,1056)+fcrate(700,1062);
   w+=bBank(1300,620+88,tiers.e);
-  w+=bPress(1620,820+80,tiers.f);
+  w+=bPress(1310,820+80,tiers.f);   // moved west into downtown (inside the loop, below the Bank), clear of the river (now at core x≈1660)
   w+=bHall(820,300+92,tiers.avg);
   w+=bHome(190,904,tiers.avg,(P&&P.house)||0);
   w+=fountainB(900,600,tiers.h);
@@ -4016,7 +4016,7 @@ const MINIMAP_W=150, MINIMAP_H=100;
 const MM_MARKERS=[
   // downtown core (shifted to map center)
   {x:900+CORE_DX,y:392+CORE_DY,ic:'🏛️'},{x:1300+CORE_DX,y:712+CORE_DY,ic:'🏦'},{x:775+CORE_DX,y:1000+CORE_DY,ic:'🛒'},
-  {x:1325+CORE_DX,y:322+CORE_DY,ic:'🏫'},{x:240+CORE_DX,y:918+CORE_DY,ic:'🏠'},{x:1640+CORE_DX,y:890+CORE_DY,ic:'📰'},{x:900+CORE_DX,y:600+CORE_DY,ic:'⛲'},
+  {x:1325+CORE_DX,y:322+CORE_DY,ic:'🏫'},{x:240+CORE_DX,y:918+CORE_DY,ic:'🏠'},{x:1370+CORE_DX,y:880+CORE_DY,ic:'📰'},{x:900+CORE_DX,y:600+CORE_DY,ic:'⛲'},
   // outer districts (final map coords)
   {x:430,y:1230,ic:'🏘️'},{x:1500,y:2120,ic:'🏘️'},{x:3160,y:1120,ic:'🛍️'},{x:1800,y:250,ic:'🏢'},
   {x:3180,y:1950,ic:'🏘️'},{x:560,y:560,ic:'🌳'},{x:3120,y:430,ic:'🌳'}

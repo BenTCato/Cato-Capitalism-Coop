@@ -3796,22 +3796,7 @@ function buildWorld(tiers){
     'M350,960 Q290,930 245,902',
     'M860,620 Q640,520 480,380 Q440,340 420,330']);
   w+='<ellipse cx="900" cy="630" rx="150" ry="86" fill="'+AP.road+'"/><ellipse cx="900" cy="630" rx="150" ry="86" fill="none" stroke="'+AP.dash+'" stroke-width="2.5" stroke-dasharray="10 10" opacity=".6"/>';
-  // ── river: a real waterway that flows between a headwater pool and a lower basin, with clear
-  //    grass banks on BOTH sides (the downtown loop runs alongside the west bank, not into the
-  //    water). The bridge is the ONLY road that crosses it. ──
-  var RX=1660;                                                   // core x → final 2560: sits in the open corridor east of the loop road, with a wide bank
-  var RP='M'+RX+',-40 Q'+(RX-44)+',360 '+RX+',740 Q'+(RX+44)+',1080 '+RX+',1240';
-  w+='<ellipse cx="'+RX+'" cy="-46" rx="116" ry="66" fill="'+AP.water2+'"/><ellipse cx="'+RX+'" cy="-50" rx="100" ry="54" fill="'+AP.water+'"/>';   // headwater pool (river origin)
-  w+='<ellipse cx="'+RX+'" cy="1246" rx="124" ry="74" fill="'+AP.water2+'"/><ellipse cx="'+RX+'" cy="1242" rx="108" ry="62" fill="'+AP.water+'"/>'; // lower basin (river mouth)
-  w+='<path d="'+RP+'" fill="none" stroke="'+AP.water2+'" stroke-width="100" stroke-linecap="round"/>';   // shore/bank edge
-  w+='<path d="'+RP+'" fill="none" stroke="'+AP.water+'" stroke-width="80" stroke-linecap="round"/>';     // water channel
-  w+='<path class="shimmer" d="M'+(RX-8)+',60 q-6,60 0,120 M'+(RX-12)+',420 q-4,60 2,120 M'+(RX+8)+',820 q-6,60 0,120" stroke="rgba(255,255,255,.4)" stroke-width="4" fill="none" stroke-linecap="round"/>';
-  // walk-collision: block the whole channel + both pools, leaving one gap at the bridge (final y1312–1368)
-  reg(RX-58,-118,116,830);reg(RX-58,768,116,560);
-  // the bridge — railings + posts flank the road deck (the expansion road HR(1337) lays the deck surface across the water)
-  reg(RX-104,702,208,9);reg(RX-104,763,208,9);
-  w+='<path d="M'+(RX-104)+',708 L'+(RX+104)+',714" stroke="#8A6038" stroke-width="7" stroke-linecap="round"/><path d="M'+(RX-104)+',766 L'+(RX+104)+',772" stroke="#8A6038" stroke-width="7" stroke-linecap="round"/>';
-  for(let bp=0;bp<6;bp++){const bx=(RX-100)+bp*40;w+='<rect x="'+bx+'" y="701" width="6" height="13" rx="2" fill="#6E4E2E"/><rect x="'+bx+'" y="759" width="6" height="13" rx="2" fill="#6E4E2E"/>';}
+  // (the river is now a full top-to-bottom waterway drawn in FINAL coords just before the expansion — see riverSVG below)
   // pond + dock
   w+='<ellipse cx="350" cy="1010" rx="120" ry="64" fill="'+AP.water2+'"/><ellipse cx="350" cy="1006" rx="104" ry="52" fill="'+AP.water+'"/><ellipse cx="320" cy="990" rx="24" ry="8" fill="rgba(255,255,255,.4)"/>';
   reg(232,942,238,132);
@@ -3859,6 +3844,24 @@ function buildWorld(tiers){
   
   if(tiers.avg===0){w+='<rect x="1000" y="744" width="28" height="18" rx="3" fill="#6E7B79" transform="rotate(14 1014 753)"/>';}
   w+='</g>';REG_DX=0;REG_DY=0;  // end downtown core; expansion below uses final map coords
+  // ── RIVER: one continuous waterway from the TOP map edge to the BOTTOM (final coords). It runs
+  //    in the open corridor east of downtown; every road that meets it crosses on a bridge, and
+  //    buildings are kept out of its corridor (see the river keep-clear in buildExpansion's row()). ──
+  (function(){
+    var RX=2560;                                                          // channel center: clear of the loop road (west) and the arterial (east)
+    var RP='M2560,-40 Q2524,360 2560,760 Q2596,1160 2560,1560 Q2524,1960 2560,2440';
+    w+='<path d="'+RP+'" fill="none" stroke="'+AP.water2+'" stroke-width="100"/>';   // shore/bank edge
+    w+='<path d="'+RP+'" fill="none" stroke="'+AP.water+'" stroke-width="80"/>';     // water
+    w+='<path class="shimmer" d="M2552,140 q-6,70 0,140 M2566,640 q6,70 0,140 M2548,1180 q-6,70 0,140 M2566,1760 q6,70 0,140 M2552,2180 q-6,60 0,120" stroke="rgba(255,255,255,.4)" stroke-width="4" fill="none" stroke-linecap="round"/>';
+    var XR=[220,420,1337,2040,2280], GH=34;                               // road crossings; leave a walkable gap at each
+    var edges=[-40]; XR.forEach(function(y){edges.push(y-GH,y+GH);}); edges.push(2440);
+    for(var i=0;i<edges.length;i+=2){ if(edges[i+1]>edges[i]) reg(RX-56,edges[i],112,edges[i+1]-edges[i]); }
+    XR.forEach(function(y){                                               // a bridge at each crossing (road lays the deck; these are the railings + posts)
+      w+='<path d="M'+(RX-96)+','+(y-30)+' L'+(RX+96)+','+(y-30)+'" stroke="#8A6038" stroke-width="7" stroke-linecap="round"/>';
+      w+='<path d="M'+(RX-96)+','+(y+30)+' L'+(RX+96)+','+(y+30)+'" stroke="#8A6038" stroke-width="7" stroke-linecap="round"/>';
+      for(var p=0;p<6;p++){var px=(RX-92)+p*37;w+='<rect x="'+px+'" y="'+(y-37)+'" width="6" height="13" rx="2" fill="#6E4E2E"/><rect x="'+px+'" y="'+(y+24)+'" width="6" height="13" rx="2" fill="#6E4E2E"/>';}
+    });
+  })();
   w+=buildExpansion(tiers);
   return w;}
 
@@ -3970,7 +3973,7 @@ function buildExpansion(tiers){
   s+=roadsSVG(R,'butt');                                                                    // grid roads get flat ends + crisp intersections (no round blobs)
   // ── buildings set just above each street, facing it (road in front of every building) ──
   // place a row of buildings along a street; off=-44 lines the NORTH side, off=+92 the SOUTH side (both sides → a full street)
-  function row(streetY,x0,x1,step,fn,off){off=(off===undefined?-44:off);var o='';for(var x=x0;x+104<=x1;x+=step){var cx=x+52,sk=false;for(var j=0;j<VL.length;j++){if(Math.abs(cx-VL[j])<92){sk=true;break;}}if(sk)continue;o+=fn(x,streetY+off);}return o;}
+  function row(streetY,x0,x1,step,fn,off){off=(off===undefined?-44:off);var o='';for(var x=x0;x+104<=x1;x+=step){var cx=x+52,sk=false;for(var j=0;j<VL.length;j++){if(Math.abs(cx-VL[j])<92){sk=true;break;}}if(sk)continue;if(x+108>2440&&x<2680)continue;/* keep the river corridor (final x2440–2680) clear */o+=fn(x,streetY+off);}return o;}
   var bi=0;
   // WEST neighborhood — homes line BOTH sides of every street
   SIDE.forEach(function(y){
@@ -3996,7 +3999,7 @@ function buildExpansion(tiers){
   var props=[];
   for(var py=160;py<2320;py+=96){for(var px=140;px<3540;px+=108){
     if(px>900&&px<2700&&py>620&&py<1780)continue;                  // leave the downtown core alone
-    if(px>2470&&px<2650&&py>470&&py<1930)continue;                 // keep props out of the river + its pools
+    if(px>2450&&px<2670)continue;                                  // keep props out of the full-height river corridor
     if(nearRoad(px,py,32)||onBldg(px,py,20))continue;             // never on a road or a building
     var clash=false;for(var q=0;q<props.length;q++){if(Math.abs(props[q][0]-px)<102&&Math.abs(props[q][1]-py)<102){clash=true;break;}}
     if(clash)continue;

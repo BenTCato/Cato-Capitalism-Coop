@@ -3852,9 +3852,11 @@ function buildWorld(tiers){
     w+='<rect x="'+(RX-50)+'" y="-40" width="100" height="2480" fill="'+AP.water2+'"/>';   // shore/bank
     w+='<rect x="'+(RX-40)+'" y="-40" width="80" height="2480" fill="'+AP.water+'"/>';      // water
     w+='<path class="shimmer" d="M'+(RX-9)+',140 q-6,70 0,140 M'+(RX+9)+',640 q6,70 0,140 M'+(RX-9)+',1180 q-6,70 0,140 M'+(RX+9)+',1760 q6,70 0,140 M'+(RX-9)+',2180 q-6,60 0,120" stroke="rgba(255,255,255,.4)" stroke-width="4" fill="none" stroke-linecap="round"/>';
-    var XR=[220,420,1337,2040,2280], GH=40;                               // road crossings; leave a walkable gap (matches the road) at each
+    var XR=[220,420,1337,2040,2280], GH=36, FOOT=36;                      // road crossings; FOOT = player origin→feet offset
     var edges=[-40]; XR.forEach(function(y){edges.push(y-GH,y+GH);}); edges.push(2440);
-    for(var i=0;i<edges.length;i+=2){ if(edges[i+1]>edges[i]) reg(RX-50,edges[i],100,edges[i+1]-edges[i]); }  // collision blocks the water exactly, gaps at the bridges
+    // collision is shifted UP by FOOT so the walkable band lines up with the player's FEET (which render +34 below player.y):
+    // the player crosses each bridge with feet on the road, and is blocked on the water on both banks
+    for(var i=0;i<edges.length;i+=2){ if(edges[i+1]>edges[i]) reg(RX-50,edges[i]-FOOT,100,edges[i+1]-edges[i]); }
     XR.forEach(function(y){                                               // a bridge at each crossing (road lays the deck; these are the railings + posts)
       w+='<path d="M'+(RX-96)+','+(y-30)+' L'+(RX+96)+','+(y-30)+'" stroke="#8A6038" stroke-width="7" stroke-linecap="round"/>';
       w+='<path d="M'+(RX-96)+','+(y+30)+' L'+(RX+96)+','+(y+30)+'" stroke="#8A6038" stroke-width="7" stroke-linecap="round"/>';

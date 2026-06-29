@@ -115,6 +115,7 @@
       <select id="rankmode" class="worldname" style="font-size:1rem;max-width:170px;cursor:pointer;"><option value="lifetime">🏆 Lifetime</option></select>
     </div>
     <div class="stat-pill"><span class="dot-live"></span> <span id="online">0</span> online</div>
+    <button id="tq-open" title="Create or review a class question — hidden from the projected leaderboard" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:9px 16px;font-family:inherit;font-weight:800;cursor:pointer;font-size:.9rem;">✏️ Class Question</button>
     <a class="join-pill" href="/join" target="_blank">📺 Join screen</a>
   </div>
 </header>
@@ -160,10 +161,15 @@
     <div id="goal-detail" style="margin-top:8px;font-size:.82rem;color:#B7AEDB;font-weight:600;"></div>
   </div>
 
-  <div id="tq-card" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:16px 18px;margin-bottom:18px;">
-    <div style="display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:800;margin-bottom:12px;">📣 Class Question
-      <span class="chip">students answer in-game for ⭐250</span></div>
-    <div id="tq-body"></div>
+  <!-- Class Question is now a teacher-only popup (hidden by default) so projecting the leaderboard never reveals the question or answers. Opened via the ✏️ Class Question button. -->
+  <div id="tq-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(8,10,24,.82);overflow:auto;padding:36px 14px;">
+    <div id="tq-card" style="background:#181b38;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:18px 20px;max-width:680px;margin:0 auto;box-shadow:0 24px 70px rgba(0,0,0,.55);">
+      <div style="display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:800;margin-bottom:4px;">📣 Class Question
+        <span class="chip">students answer in-game for ⭐250</span>
+        <button id="tq-close" style="margin-left:auto;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:7px 14px;font-family:inherit;font-weight:800;cursor:pointer;">✕ Close</button></div>
+      <div style="font-size:.76rem;color:#FF9B9B;font-weight:700;margin-bottom:12px;">🔒 Teacher only — hidden from the projected leaderboard. Close this before you project.</div>
+      <div id="tq-body"></div>
+    </div>
   </div>
 
   <div class="section-title">🏆 Leaderboard <span class="chip">click a column to sort</span><span id="champion" style="font-weight:800;color:#FFD43B;font-size:.92rem;"></span><span class="updated" id="updated"></span></div>
@@ -421,10 +427,25 @@ function wireActive(tq){
 }
 var LASTTQ=null;
 function renderTQ(tq){
-  LASTTQ=tq; var body=document.getElementById('tq-body'); if(!body)return;
+  LASTTQ=tq; var body=document.getElementById('tq-body');
+  // light up the toolbar button when a question is live (so the teacher knows to open the popup), without revealing content
+  var ob=document.getElementById('tq-open');
+  if(ob){ if(tq){ ob.textContent='📣 Question LIVE'; ob.style.background='var(--gold)'; ob.style.color='#3a2a00'; ob.style.borderColor='var(--gold)'; }
+          else { ob.textContent='✏️ Class Question'; ob.style.background='rgba(255,255,255,.12)'; ob.style.color='#fff'; ob.style.borderColor='rgba(255,255,255,.28)'; } }
+  if(!body)return;
   if(tq){ tqView=tq.id; body.innerHTML=tqActiveHTML(tq); wireActive(tq); }
   else if(tqView!=='form'){ tqView='form'; body.innerHTML=tqFormHTML(); wireForm(); }
 }
+// ── teacher-question popup toggle (kept off the projected leaderboard) ──
+(function(){
+  var modal=document.getElementById('tq-modal'), openB=document.getElementById('tq-open'), closeB=document.getElementById('tq-close');
+  function openTQ(){ if(modal)modal.style.display='block'; }
+  function closeTQ(){ if(modal)modal.style.display='none'; }
+  if(openB)openB.addEventListener('click',openTQ);
+  if(closeB)closeB.addEventListener('click',closeTQ);
+  if(modal)modal.addEventListener('click',function(e){ if(e.target===modal)closeTQ(); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeTQ(); });
+})();
 
 // ── polling ──────────────────────────────────────────────────────
 function poll(){

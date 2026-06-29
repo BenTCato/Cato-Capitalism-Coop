@@ -395,10 +395,14 @@
   function pickQuestions(n) {
     var pool = buildDuelPool().slice();
     for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+    var LET = ['A', 'B', 'C', 'D', 'E', 'F'];
     return pool.slice(0, n).map(function (q) {
-      return { title: q.title || q.tag || 'Policy Question', body: q.body,
-               choices: q.choices.map(function (c) { return { letter: c.letter, label: c.label }; }),
-               best: q.best };
+      // copy choices, flag the correct one, then SHUFFLE so the best answer isn't always "A"
+      var ch = q.choices.map(function (c) { return { label: c.label, _best: (c.letter === q.best) }; });
+      for (var i = ch.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = ch[i]; ch[i] = ch[j]; ch[j] = t; }
+      var best = q.best;
+      var choices = ch.map(function (c, idx) { if (c._best) best = LET[idx]; return { letter: LET[idx], label: c.label }; });
+      return { title: q.title || q.tag || 'Policy Question', body: q.body, choices: choices, best: best };
     });
   }
 

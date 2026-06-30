@@ -115,7 +115,7 @@
       <select id="rankmode" class="worldname" style="font-size:1rem;max-width:170px;cursor:pointer;"><option value="lifetime">🏆 Lifetime</option></select>
     </div>
     <div class="stat-pill"><span class="dot-live"></span> <span id="online">0</span> online</div>
-    <button id="tq-open" title="Create or review a class question — hidden from the projected leaderboard" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:9px 16px;font-family:inherit;font-weight:800;cursor:pointer;font-size:.9rem;">✏️ Class Question</button>
+    <button id="tq-open" title="Create or review a class question, hidden from the projected leaderboard" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:9px 16px;font-family:inherit;font-weight:800;cursor:pointer;font-size:.9rem;">✏️ Class Question</button>
     <a class="join-pill" href="/join" target="_blank">📺 Join screen</a>
   </div>
 </header>
@@ -167,7 +167,7 @@
       <div style="display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:800;margin-bottom:4px;">📣 Class Question
         <span class="chip">students answer in-game for ⭐250</span>
         <button id="tq-close" style="margin-left:auto;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:7px 14px;font-family:inherit;font-weight:800;cursor:pointer;">✕ Close</button></div>
-      <div style="font-size:.76rem;color:#FF9B9B;font-weight:700;margin-bottom:12px;">🔒 Teacher only — hidden from the projected leaderboard. Close this before you project.</div>
+      <div style="font-size:.76rem;color:#FF9B9B;font-weight:700;margin-bottom:12px;">🔒 Teacher only, hidden from the projected leaderboard. Close this before you project.</div>
       <div id="tq-body"></div>
     </div>
   </div>
@@ -227,9 +227,9 @@ var rankMode=(function(){try{return localStorage.getItem('coopRankMode')||'lifet
 function gradeRank(g){return {S:5,A:4,B:3,C:2,D:1}[g]||0;}
 // Resolve the grade + score to display for a player under the current rank mode.
 function resolve(p){
-  if(rankMode==='lifetime') return {grade:(p.lifetimeGrade||'—'), score:(p.score==null?null:p.score)};
+  if(rankMode==='lifetime') return {grade:(p.lifetimeGrade||'-'), score:(p.score==null?null:p.score)};
   var tg=p.termGrades&&p.termGrades[rankMode];
-  return {grade:(tg?tg.grade:'—'), score:(tg?tg.score:null)};
+  return {grade:(tg?tg.grade:'-'), score:(tg?tg.score:null)};
 }
 function sortVal(p,k){
   if(k==='name') return (p.name||'').toLowerCase();
@@ -323,12 +323,12 @@ function render(list){
       '<td class="rank r'+rk+'">'+(p===champ?'👑 ':'')+rk+'</td>'+
       '<td><div class="nation"><span class="av">'+avatarSVG(p.avatar,34,40)+'</span><span>'+esc(p.name)+(p.started?'':' <span style="font-size:.7rem;color:#B7AEDB;">(setting up)</span>')+'</span></div></td>'+
       '<td><div class="bars">'+bars+'</div></td>'+
-      '<td class="house"><span class="ico">'+houseIcon(p.houseName)+'</span>'+esc(p.houseName||'—')+'</td>'+
+      '<td class="house"><span class="ico">'+houseIcon(p.houseName)+'</span>'+esc(p.houseName||'-')+'</td>'+
       '<td class="vanity">'+(p.vanity||0)+'<span class="vt">/'+(p.vanityTotal||0)+'</span></td>'+
-      '<td title="Stars won in duels: '+((p.duelStarsWon||0).toLocaleString())+'">'+((p.duelWins||p.duelLosses)?('<b style="color:#2EB872">'+(p.duelWins||0)+'W</b> <span style="color:#B7AEDB">/ '+(p.duelLosses||0)+'L</span>'):'<span style="color:#B7AEDB;">—</span>')+'</td>'+
+      '<td title="Stars won in duels: '+((p.duelStarsWon||0).toLocaleString())+'">'+((p.duelWins||p.duelLosses)?('<b style="color:#2EB872">'+(p.duelWins||0)+'W</b> <span style="color:#B7AEDB">/ '+(p.duelLosses||0)+'L</span>'):'<span style="color:#B7AEDB;">-</span>')+'</td>'+
       '<td class="score">⭐ '+((p.stars||0).toLocaleString())+'</td>'+
-      '<td>'+(r.score==null?'<span style="color:#B7AEDB;">—</span>':'<span style="color:#B7AEDB;">'+r.score.toLocaleString()+' pts</span>')+'</td>'+
-      '<td>'+(r.grade&&r.grade!=='—'?'<span class="grade '+r.grade+'">'+r.grade+'</span>':'<span style="color:#B7AEDB;">—</span>')+'</td>'+
+      '<td>'+(r.score==null?'<span style="color:#B7AEDB;">-</span>':'<span style="color:#B7AEDB;">'+r.score.toLocaleString()+' pts</span>')+'</td>'+
+      '<td>'+(r.grade&&r.grade!=='-'?'<span class="grade '+r.grade+'">'+r.grade+'</span>':'<span style="color:#B7AEDB;">-</span>')+'</td>'+
     '</tr>';
   }).join('');
   document.getElementById('lb-body').innerHTML=rows;
@@ -347,7 +347,7 @@ function render(list){
       '<div class="cbars">'+cb+'</div>'+
       '<div class="foot"><span class="badge-mini">🎩 '+(p.vanity||0)+'/'+(p.vanityTotal||0)+'</span>'+
         '<span class="score" style="color:'+(p.started?'#ED8B00':'#bbb')+'">⭐ '+((p.stars||0).toLocaleString())+'</span>'+
-        (r.grade&&r.grade!=='—'?'<span class="grade '+r.grade+'">'+r.grade+'</span>':'')+'</div>'+
+        (r.grade&&r.grade!=='-'?'<span class="grade '+r.grade+'">'+r.grade+'</span>':'')+'</div>'+
     '</div>';
   }).join('');
   document.getElementById('grid').innerHTML=cards;
@@ -384,7 +384,7 @@ function tqFormHTML(){
   return '<div class="tq-styles"><button type="button" class="tq-style'+(tqStyle==="mc"?" on":"")+'" data-s="mc">📋 Multiple choice</button>'+
     '<button type="button" class="tq-style'+(tqStyle==="short"?" on":"")+'" data-s="short">✏️ Short answer</button></div>'+
     '<textarea id="tq-text" class="tq-text" placeholder="Type your question (e.g. tie it to today\'s lesson)…"></textarea>'+
-    '<div id="tq-choices" style="display:'+(tqStyle==="mc"?"block":"none")+';"><div style="font-size:.74rem;color:#B7AEDB;font-weight:700;margin:4px 0;">Choices — pick the radio next to the correct one:</div>'+rows+'</div>'+
+    '<div id="tq-choices" style="display:'+(tqStyle==="mc"?"block":"none")+';"><div style="font-size:.74rem;color:#B7AEDB;font-weight:700;margin:4px 0;">Choices, pick the radio next to the correct one:</div>'+rows+'</div>'+
     '<div style="font-size:.74rem;color:#B7AEDB;margin:4px 0 10px;">'+(tqStyle==="short"?"Students type an answer; you approve who earns ⭐250.":"Students who pick the correct answer auto-earn ⭐250.")+'</div>'+
     '<button id="tq-post" class="tq-post">📣 Post to the class →</button><span id="tq-msg" style="margin-left:10px;color:#FFD43B;"></span>';
 }

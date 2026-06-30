@@ -1,5 +1,5 @@
 /* ──────────────────────────────────────────────────────────────
-   Co-op client — injected into the game by coop-server.js
+   Co-op client,injected into the game by coop-server.js
    • Streams this student's live state to the host every ~160ms.
    • Renders the OTHER students as avatars walking in the shared town.
    Runs in the game's global scope, so it can read player/avatar/S/P/etc.
@@ -9,7 +9,7 @@
   if (!window.COOP) return;
 
   // Per-TAB id (sessionStorage, not localStorage) so two tabs in the SAME browser
-  // are treated as distinct players — they see each other and both appear on the
+  // are treated as distinct players,they see each other and both appear on the
   // leaderboard. sessionStorage survives a reload of the same tab but is unique per tab.
   var ID;
   try {
@@ -313,7 +313,7 @@
   window.addEventListener('DOMContentLoaded', function () { document.body.appendChild(badge); });
   if (document.body) document.body.appendChild(badge);
 
-  // ── "Join a Class" code entry — lets a class (or two tabs) share one private world ──
+  // ── "Join a Class" code entry,lets a class (or two tabs) share one private world ──
   var joinBtn, joinOv;
   function refreshJoinBtn(){ if (joinBtn) joinBtn.textContent = ROOM ? ('🔑 Class ' + ROOM) : '🔑 Join a class'; }
   function openJoin(){
@@ -362,7 +362,7 @@
   window.addEventListener('DOMContentLoaded', buildJoinUI);
 
   // ══════════════════════════════════════════════════════════════
-  //  1v1 STAR DUELS — tap a nearby player, wager stars, race on the
+  //  1v1 STAR DUELS,tap a nearby player, wager stars, race on the
   //  same policy questions; most "best/most-libertarian" answers wins.
   // ══════════════════════════════════════════════════════════════
   var DUEL_RANGE = 160;                 // how close (world px) two avatars must be
@@ -579,7 +579,7 @@
     var opC = iAmFrom ? res.toCorrect : res.fromCorrect;
     var opName = iAmFrom ? d.to.name : d.from.name;
     var title, cls, line;
-    if (res.tie) { title = '🤝 Draw'; cls = 'duel-tie'; line = 'Both wagers refunded — no stars change hands.'; }
+    if (res.tie) { title = '🤝 Draw'; cls = 'duel-tie'; line = 'Both wagers refunded, no stars change hands.'; }
     else if (res.winnerId === ID) { title = '🏆 You win!'; cls = 'duel-win'; line = 'You take <b>' + res.wager.toLocaleString() + '⭐</b> from ' + esc(opName) + '.'; }
     else { title = '💔 You lose'; cls = 'duel-lose'; line = esc(opName) + ' takes your <b>' + res.wager.toLocaleString() + '⭐</b>.'; }
     openOv(
@@ -621,7 +621,7 @@
   }
 
   // ══════════════════════════════════════════════════════════════
-  //  TEACHER CLASS QUESTIONS — answer the teacher's posted question for stars
+  //  TEACHER CLASS QUESTIONS,answer the teacher's posted question for stars
   // ══════════════════════════════════════════════════════════════
   var TQNOW = null, appliedTQ = {}, tqBanner = null;
   function refreshStarBadges() {
@@ -645,7 +645,7 @@
     tqBanner = document.createElement('button');
     tqBanner.id = 'tq-banner';
     tqBanner.style.cssText = 'position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:9998;display:none;background:linear-gradient(180deg,#FFD43B,#ED8B00);color:#3a2a00;border:none;border-radius:999px;padding:10px 18px;font-family:Verdana,sans-serif;font-weight:900;font-size:.9rem;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer;animation:tqPulse 1.4s ease-in-out infinite;';
-    tqBanner.textContent = '📣 Class Question — tap to answer for ⭐';
+    tqBanner.textContent = '📣 Class Question, tap to answer for ⭐';
     tqBanner.onclick = function () { if (TQNOW) openTQAnswer(TQNOW); };
     document.body.appendChild(tqBanner);
   }
@@ -671,7 +671,7 @@
         var correct = d.mine && d.mine.correct;
         if (correct && !appliedTQ[tq.id]) { appliedTQ[tq.id] = true; applyTQStars(d.reward || tq.reward); }
         openOv('<div class="duel-h ' + (correct ? 'duel-win' : 'duel-lose') + '">' + (correct ? '✓ Correct!' : '✗ Not quite') + '</div>' +
-          '<div class="duel-sub">' + (correct ? 'You earned ⭐' + (d.reward || tq.reward) + '!' : 'No stars this time — but keep going!') + '</div>' +
+          '<div class="duel-sub">' + (correct ? 'You earned ⭐' + (d.reward || tq.reward) + '!' : 'No stars this time, but keep going!') + '</div>' +
           '<div class="duel-row"><button class="duel-btn duel-go" id="tq-done" style="flex:1;">Done</button></div>');
         card.querySelector('#tq-done').onclick = function () { closeDuelOv(); };
         trySfx(correct ? 'win' : 'bad');

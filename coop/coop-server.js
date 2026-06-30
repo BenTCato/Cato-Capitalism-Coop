@@ -1,5 +1,5 @@
 /* ──────────────────────────────────────────────────────────────
-   Cato Capitalism Game — Co-op / Classroom Host Server
+   Cato Capitalism Game, Co-op / Classroom Host Server
    Zero dependencies. Pure Node.js (http + os + fs). No npm install.
 
    What it does:
@@ -465,7 +465,7 @@ function banner(port) {
 
   if (IS_CLOUD) {
     console.log('\n' + line);
-    console.log('   CATO CAPITALISM GAME — CO-OP SERVER (cloud) LIVE');
+    console.log('   CATO CAPITALISM GAME, CO-OP SERVER (cloud) LIVE');
     console.log(line);
     console.log('   Game file: ' + (game ? path.basename(game) : 'NOT FOUND'));
     console.log('   Listening on port ' + port);
@@ -480,7 +480,7 @@ function banner(port) {
   const ip = lanIP();
   const base = 'http://' + ip + ':' + port;
   console.log('\n' + line);
-  console.log('   CATO CAPITALISM GAME — CO-OP HOST IS RUNNING');
+  console.log('   CATO CAPITALISM GAME, CO-OP HOST IS RUNNING');
   console.log(line);
   console.log('   Game file:   ' + (game ? path.basename(game) : 'NOT FOUND'));
   console.log('');

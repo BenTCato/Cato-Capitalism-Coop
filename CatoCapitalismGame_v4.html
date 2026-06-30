@@ -713,7 +713,7 @@
     </div>
     <div class="store-cta"><button class="btn btn-navy" onclick="openStore()">🎁 Star Store</button><span class="bank-chip" id="bank-chip">⭐ 0</span><button class="btn btn-navy" onclick="openHistory()">📜 History</button></div>
     <div class="diff-section">
-      <div class="nb-col-label" style="margin-bottom:10px;">🎓 Reading Level — pick your grade</div>
+      <div class="nb-col-label" style="margin-bottom:10px;">🎓 Reading Level, pick your grade</div>
       <div class="diff-row" id="grade-row">
         <button class="diff-card" id="grade-6" onclick="setGrade(6)">📗<strong>Grade 6</strong></button>
         <button class="diff-card" id="grade-7" onclick="setGrade(7)">📗<strong>Grade 7</strong></button>
@@ -731,7 +731,7 @@
 
   <div class="how-card">
     <h3>How to Play</h3>
-    <p>Each round gives you a real policy challenge with four possible responses. Pick your <strong>grade level</strong> and the questions are written at that reading level. Your nation has four health bars — <strong>Happiness, Economy, Education, and Freedom</strong> — and every choice nudges them up or down. Help all your citizens to finish a term, then keep governing term after term and climb the class leaderboard.</p>
+    <p>Each round gives you a real policy challenge with four possible responses. Pick your <strong>grade level</strong> and the questions are written at that reading level. Your nation has four health bars, <strong>Happiness, Economy, Education, and Freedom</strong>, and every choice nudges them up or down. Help all your citizens to finish a term, then keep governing term after term and climb the class leaderboard.</p>
     <div class="stat-icons">
       <div class="stat-icon">😊<strong>Citizen Happiness</strong><p>How satisfied and secure residents feel day-to-day. Drops when policies create instability, shortages, or lost rights.</p></div>
       <div class="stat-icon">💰<strong>Economic Health</strong><p>The strength of jobs, growth, and prosperity. Sensitive to taxes, regulation, and government spending.</p></div>
@@ -883,14 +883,14 @@
   </div>
   <div class="panel">
     <h3>🎭 Emotes <span id="emote-progress" style="float:right;color:var(--goldDark);">0/8</span></h3>
-    <div class="box-desc" style="margin-bottom:10px;">Buy emotes to react in the shared town — other players see them pop above your head!</div>
+    <div class="box-desc" style="margin-bottom:10px;">Buy emotes to react in the shared town, other players see them pop above your head!</div>
     <div class="store-grid" id="emote-grid"></div>
   </div>
   <div class="next-wrap"><button class="btn btn-navy" onclick="storeBack()">← Back</button></div>
 </div>
 
 <!-- ══ GAME-OVER SCREEN ══ -->
-<!-- (Old game-over screen removed — open-world mode never triggers it.) -->
+<!-- (Old game-over screen removed,open-world mode never triggers it.) -->
 
 <!-- ══ RESULTS SCREEN ══ -->
 <div id="screen-results" class="screen">
@@ -2274,7 +2274,7 @@ function setDifficulty(k,silent){
   if(!silent)sfx('click');
 }
 
-// ── Grade level (reading level) — replaces easy/normal/hard. Stats stay at a fixed baseline. ──
+// ── Grade level (reading level),replaces easy/normal/hard. Stats stay at a fixed baseline. ──
 let GRADE_KEY=8;
 function setGrade(g,silent){
   GRADE_KEY=g;
@@ -2507,7 +2507,7 @@ function computeGrade(){
 function lifetimeGrade(){
   var best=((typeof P!=='undefined'&&P&&P.lifetimeBest)||0)+((typeof S!=='undefined'&&S&&S.bestCount)||0);
   var ans=((typeof P!=='undefined'&&P&&P.lifetimeAnswered)||0)+((typeof S!=='undefined'&&S&&S.answers)?S.answers.length:0);
-  if(ans<=0)return{letter:'—'};
+  if(ans<=0)return{letter:'-'};
   var r=best/ans;
   if(r>=0.9)return{letter:'S'};
   if(r>=0.7)return{letter:'A'};
@@ -2616,7 +2616,7 @@ function pickChoice(letter){
   const finalRound=S.answers.length>=Q.length;
   if(finalRound)pts*=2;
   S.score+=pts;
-  // Stars are the spendable currency — bank them live as each question is answered
+  // Stars are the spendable currency,bank them live as each question is answered
   // (same totals as before: 250 per best answer + 50 per answer). Reverted by "Back".
   const starsEarned=50+(isBest?250:0);
   if(P){P.stars=(P.stars||0)+starsEarned;saveProfiles();}
@@ -2656,7 +2656,7 @@ function showFeedback(c,q){
 // ─────────────────────────────────────────────────────────────
 // GAME OVER
 // ─────────────────────────────────────────────────────────────
-// (Old game-over/loss screen removed — open-world mode never triggers it.)
+// (Old game-over/loss screen removed,open-world mode never triggers it.)
 
 function checkOver(){
   // Open-world mode: never show the game-over screen. Players stay in the town
@@ -2883,7 +2883,7 @@ const EMOTES=[
   {id:'think',icon:'🤔',name:'Think',cost:1200},
   {id:'fire',icon:'🔥',name:'Fire',cost:1200}
 ];
-// Free quick-chat phrases (no buying, no typing) — sent like emotes, shown above the avatar in co-op.
+// Free quick-chat phrases (no buying, no typing),sent like emotes, shown above the avatar in co-op.
 const PHRASES=[
   {id:'hi',text:'Hi! 👋'},{id:'bye',text:'Bye!'},{id:'gg',text:'Good game!'},{id:'nice',text:'Nice!'},
   {id:'ty',text:'Thanks!'},{id:'help',text:'Help!'},{id:'follow',text:'Follow me!'},{id:'yes',text:'Yes!'},{id:'no',text:'No!'},{id:'haha',text:'Haha!'}
@@ -2959,14 +2959,14 @@ function mgResult(type,amount,msg){
   S.mini=S.mini||{}; S.mini[type]=true;
   let note='';
   if(amount>0&&P){ P.stars=(P.stars||0)+amount; saveProfiles(); if(typeof updateBankUI==='function')updateBankUI(); note='⭐ +'+amount.toLocaleString()+' stars banked!'; }
-  else { note='No stars this time — come back next term!'; }
+  else { note='No stars this time, come back next term!'; }
   const b=document.getElementById('mg-body');
   b.innerHTML='<div style="text-align:center;"><div style="font-size:2.4rem;">'+(amount>0?'🎉':'🙂')+'</div>'+
     '<div style="font-weight:800;font-size:1.1rem;margin:6px 0;">'+msg+'</div>'+
     '<div style="color:'+(amount>0?'#2EB872':'#7A6A4F')+';font-weight:800;margin-bottom:14px;min-height:18px;">'+note+'</div>'+
     '<button class="btn btn-gold" onclick="closeMiniGame()">Done →</button></div>';
 }
-// 1) Town Hall — quiz
+// 1) Town Hall,quiz
 function mgQuiz(){ MG={type:'hall',i:0,correct:0,qs:shuffle(QUIZ_QS.slice()).slice(0,3)}; mgQuizStep(); }
 function mgQuizStep(){
   const b=document.getElementById('mg-body');
@@ -2986,11 +2986,11 @@ function mgQuizPick(k){
   if(!correct&&btns[q.c])btns[q.c].classList.add('mg-correct');
   MG.i++; setTimeout(mgQuizStep,800);
 }
-// 2) Market — reflex timing bar
+// 2) Market,reflex timing bar
 function mgReflex(){
   MG={type:'market',pos:0,dir:1,stopped:false};
   const b=document.getElementById('mg-body');
-  b.innerHTML='<div style="text-align:center;"><div style="font-weight:700;margin-bottom:8px;">Tap STOP in the <span style="color:#2EB872;">green zone</span> — dead center = 300 ⭐!</div>'+
+  b.innerHTML='<div style="text-align:center;"><div style="font-weight:700;margin-bottom:8px;">Tap STOP in the <span style="color:#2EB872;">green zone</span>, dead center = 300 ⭐!</div>'+
     '<div id="mg-track" style="position:relative;height:34px;background:#EFE7D3;border-radius:17px;overflow:hidden;margin:16px 0;">'+
     '<div style="position:absolute;left:38%;width:24%;top:0;bottom:0;background:rgba(46,184,114,.35);"></div>'+
     '<div style="position:absolute;left:46.5%;width:7%;top:0;bottom:0;background:rgba(46,184,114,.7);"></div>'+
@@ -3004,9 +3004,9 @@ function mgReflexStop(){
   const d=Math.abs(MG.pos-50);
   if(d>20){ sfx('bad'); mgResult('market',0,'Missed the green zone!'); return; }
   let amount=d<=3?300:d<=12?200:100;
-  sfx('win'); mgResult('market',amount,d<=3?'Bullseye! Perfect timing.':'Nice — you hit the zone!');
+  sfx('win'); mgResult('market',amount,d<=3?'Bullseye! Perfect timing.':'Nice, you hit the zone!');
 }
-// 3) Bank — memory match
+// 3) Bank,memory match
 function mgMemory(){
   const icons=['💰','🏦','📈','🪙','💎','🔑'];
   const pick=shuffle(icons.slice()).slice(0,4);
@@ -3015,7 +3015,7 @@ function mgMemory(){
 }
 function mgMemoryRender(){
   const b=document.getElementById('mg-body');
-  let s='<div style="text-align:center;font-weight:700;margin-bottom:10px;">Match all 4 pairs — fewer flips = more stars!</div>';
+  let s='<div style="text-align:center;font-weight:700;margin-bottom:10px;">Match all 4 pairs, fewer flips = more stars!</div>';
   s+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:300px;margin:0 auto;">';
   MG.deck.forEach(function(ic,i){ const shown=MG.flipped.indexOf(i)>=0||MG.matched.indexOf(i)>=0; s+='<button class="mg-card'+(shown?' flip':'')+(MG.matched.indexOf(i)>=0?' done':'')+'" onclick="mgMemoryFlip('+i+')">'+(shown?ic:'❓')+'</button>'; });
   b.innerHTML=s+'</div><div style="text-align:center;color:#7A6A4F;font-size:.8rem;margin-top:10px;">Flips: '+MG.moves+'</div>';
@@ -3192,7 +3192,7 @@ function updateBankUI(){
   if(c)c.textContent='⭐ '+(P?(P.stars||0).toLocaleString():'0');
 }
 // Stars are banked live per answer (see pickChoice), so at term end we only record the
-// round's history/stats — without re-adding stars (which would double-count the balance).
+// round's history/stats,without re-adding stars (which would double-count the balance).
 function recordTerm(amount,won){
   if(!P)return;
   P.runs=(P.runs||0)+1;
@@ -3334,7 +3334,7 @@ function openStore(from){storeFrom=(from==='town')?'town':'title';renderStore();
 function storeBack(){if(storeFrom==='town'&&S&&S.stats){renderTown();showScreen('town');}else{showScreen('title');}sfx('click');}
 function renderStore(){
   const bal=document.getElementById('store-balance');if(bal)bal.textContent=(P?(P.stars||0):0).toLocaleString();
-  const ab=document.getElementById('arcade-btn'); if(ab){ const md=miniDone('market'); ab.disabled=md; ab.textContent=md?'🕹️ Arcade played — back next term':'🕹️ Play the Market Arcade'; }
+  const ab=document.getElementById('arcade-btn'); if(ab){ const md=miniDone('market'); ab.disabled=md; ab.textContent=md?'🕹️ Arcade played, back next term':'🕹️ Play the Market Arcade'; }
   const prog=document.getElementById('store-progress');if(prog)prog.textContent=(P?P.owned.length:0)+'/'+STORE_ITEMS.length;
   const all=P&&P.owned.length>=STORE_ITEMS.length;
   const btn=document.getElementById('buy-box-btn');
@@ -3594,7 +3594,7 @@ function urban(x,y,w,floors,cols,t,bodies,winCol,extra){
   s+='<rect x="'+(w-10)+'" y="0" width="10" height="'+h+'" fill="rgba(0,0,0,.13)"/>';
   s+='<rect x="-4" y="-8" width="'+(w+8)+'" height="12" rx="3" fill="'+(t===0?'#4E6260':'rgba(0,0,0,.18)')+'"/>';
   s+=winGrid(12,14,floors,cols,t===2?'#F4F0E4':'#C9C2B2',t,[w/2-15,w/2+15]);
-  // ground floor door — framed, with a sill step (skipped windows above keep it clear)
+  // ground floor door,framed, with a sill step (skipped windows above keep it clear)
   s+='<rect x="'+(w/2-14)+'" y="'+(h-32)+'" width="28" height="32" rx="3" fill="rgba(0,0,0,.22)"/>';
   s+='<rect x="'+(w/2-12)+'" y="'+(h-30)+'" width="24" height="30" rx="3" fill="'+(t===0?'#3D4F4D':'#6E5436')+'"/>';
   s+='<rect x="'+(w/2-12)+'" y="'+(h-30)+'" width="24" height="6" rx="3" fill="rgba(255,255,255,.12)"/>';
@@ -3796,7 +3796,7 @@ function buildWorld(tiers){
     'M350,960 Q290,930 245,902',
     'M860,620 Q640,520 480,380 Q440,340 420,330']);
   w+='<ellipse cx="900" cy="630" rx="150" ry="86" fill="'+AP.road+'"/><ellipse cx="900" cy="630" rx="150" ry="86" fill="none" stroke="'+AP.dash+'" stroke-width="2.5" stroke-dasharray="10 10" opacity=".6"/>';
-  // (the river is now a full top-to-bottom waterway drawn in FINAL coords just before the expansion — see riverSVG below)
+  // (the river is now a full top-to-bottom waterway drawn in FINAL coords just before the expansion,see riverSVG below)
   // pond + dock
   w+='<ellipse cx="350" cy="1010" rx="120" ry="64" fill="'+AP.water2+'"/><ellipse cx="350" cy="1006" rx="104" ry="52" fill="'+AP.water+'"/><ellipse cx="320" cy="990" rx="24" ry="8" fill="rgba(255,255,255,.4)"/>';
   reg(232,942,238,132);
@@ -3882,7 +3882,7 @@ function expWin(wx,wy){ // a framed window with glass, muntins & a sill
     '<rect x="1" y="6.2" width="12" height="1.6" fill="#FFFDF4"/>'+                // muntin H
     '<rect x="-3" y="13.5" width="20" height="3" rx="1.2" fill="#E2D6BE"/></g>';  // sill
 }
-// HOUSE — pitched roof sits flush on the wall (eave board hides the seam); door centered low,
+// HOUSE,pitched roof sits flush on the wall (eave board hides the seam); door centered low,
 // two windows flank it in the upper wall → door and windows never overlap.
 function expHouse(x,y,i){
   var w=84, wall=38, roofH=20, H=wall+roofH;                 // 58 tall total
@@ -3907,7 +3907,7 @@ function expHouse(x,y,i){
      '<rect x="'+(dx-4)+'" y="'+(gnd-2)+'" width="'+(dw+8)+'" height="3" rx="1.5" fill="rgba(0,0,0,.2)"/>';
   return g+'</g>';
 }
-// OFFICE — flat roof with parapet + rooftop unit (no floating), framed window grid; the two
+// OFFICE,flat roof with parapet + rooftop unit (no floating), framed window grid; the two
 // ground-floor center cells are omitted so the entrance door has clear space (no overlap).
 function expOffice(x,y,floors,i){
   var w=108, fh=26, H=22+floors*fh, c=EXP_OFFICE[i%EXP_OFFICE.length];
@@ -3933,7 +3933,7 @@ function expOffice(x,y,floors,i){
   return g+'</g>';
 }
 var EXP_SHOPS={cafe:{n:'CAFÉ',b:'#C98A5E',a:'#7A3B2E',e:'☕'},bakery:{n:'BAKERY',b:'#E8C07A',a:'#B5651D',e:'🥐'},books:{n:'BOOKSHOP',b:'#5E7FA8',a:'#2D4E79',e:'📚'},toys:{n:'TOY SHOP',b:'#E86D9A',a:'#B83C6A',e:'🧸'},grocer:{n:'GROCER',b:'#7FB069',a:'#4E7F3E',e:'🥦'},pizza:{n:'PIZZERIA',b:'#D9534F',a:'#9A2F2C',e:'🍕'},icecream:{n:'ICE CREAM',b:'#9AD0E0',a:'#3FA7C0',e:'🍦'},florist:{n:'FLOWERS',b:'#C8A0D8',a:'#8A5EA8',e:'🌸'},barber:{n:'BARBER',b:'#AEB6BE',a:'#C0392B',e:'💈'},diner:{n:'DINER',b:'#E0A24E',a:'#3D4F4D',e:'🍔'},music:{n:'MUSIC',b:'#8E7CC3',a:'#5E4E93',e:'🎵'},hardware:{n:'HARDWARE',b:'#B58A6A',a:'#6E4E2E',e:'🔨'}};
-// SHOP — sign + awning on top; a display window on the LEFT and the door on the RIGHT, side by
+// SHOP,sign + awning on top; a display window on the LEFT and the door on the RIGHT, side by
 // side, so the door never overlaps the window.
 function expShop(x,y,kind){
   var k=EXP_SHOPS[kind]||EXP_SHOPS.cafe, w=108, H=60;
@@ -3962,8 +3962,8 @@ function buildExpansion(tiers){
   var R=[],SEG=[],VL=[240,520,900,1800,2400,2760,3080];
   function HR(y,x0,x1){R.push('M'+x0+','+y+' L'+x1+','+y);SEG.push({h:1,y:y,a:x0,b:x1});}
   function VR(x,y0,y1){R.push('M'+x+','+y0+' L'+x+','+y1);SEG.push({h:0,x:x,a:y0,b:y1});}
-  HR(620,871,2429);HR(1780,871,2429);VR(900,620,1780);VR(2400,620,1780);                  // downtown loop (H segments extended ±29 past the corners so the butt caps fill the corner squares — no notches)
-  HR(1337,2400,2760);                                                                      // the bridge road — the only crossing over the river
+  HR(620,871,2429);HR(1780,871,2429);VR(900,620,1780);VR(2400,620,1780);                  // downtown loop (H segments extended ±29 past the corners so the butt caps fill the corner squares,no notches)
+  HR(1337,2400,2760);                                                                      // the bridge road,the only crossing over the river
   // one short link from the loop toward downtown; the core's own curvy roads handle downtown (no clashing straight avenues)
   R.push('M900,1200 L1180,1200');
   VR(240,120,2280);VR(520,120,2280);VR(2760,120,2280);VR(3080,120,2280);                  // full-height spines (2760 = east-of-river arterial; wider blocks)
@@ -3976,23 +3976,23 @@ function buildExpansion(tiers){
   // place a row of buildings along a street; off=-44 lines the NORTH side, off=+92 the SOUTH side (both sides → a full street)
   function row(streetY,x0,x1,step,fn,off){off=(off===undefined?-44:off);var o='';for(var x=x0;x+104<=x1;x+=step){var cx=x+52,sk=false;for(var j=0;j<VL.length;j++){if(Math.abs(cx-VL[j])<92){sk=true;break;}}if(sk)continue;if(x+108>2440&&x<2680)continue;/* keep the river corridor (final x2440–2680) clear */o+=fn(x,streetY+off);}return o;}
   var bi=0;
-  // WEST neighborhood — homes line BOTH sides of every street
+  // WEST neighborhood,homes line BOTH sides of every street
   SIDE.forEach(function(y){
     s+=row(y,110,900,170,function(x,b){return expHouse(x,b,bi++);});
     s+=row(y,110,900,170,function(x,b){return expHouse(x,b,bi++);},102);
   });
-  // EAST district — each shop type appears exactly ONCE on the north side; homes line the south sides
+  // EAST district,each shop type appears exactly ONCE on the north side; homes line the south sides
   var SHOPKINDS=['cafe','bakery','books','toys','grocer','pizza','icecream','florist','barber','diner','music','hardware'],shopN=0;
   function nextShop(){ return shopN<SHOPKINDS.length ? SHOPKINDS[shopN++] : null; }
   [620,860,1100,1340].forEach(function(y){s+=row(y,2820,3500,180,function(x,b){var k=nextShop();return k?expShop(x,b,k):expHouse(x,b,bi++);});});
   s+=row(1580,2820,3500,180,function(x,b){return expHouse(x,b,bi++);});
   [620,860,1100,1340,1580].forEach(function(y){s+=row(y,2820,3500,180,function(x,b){return expHouse(x,b,bi++);},102);});
-  // SOUTH neighborhood — homes line BOTH sides
+  // SOUTH neighborhood,homes line BOTH sides
   [2040,2280].forEach(function(y){
     s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);});
     s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);},102);
   });
-  // NORTH business district — offices (tall, so a single north-side row)
+  // NORTH business district,offices (tall, so a single north-side row)
   [220,420].forEach(function(y){s+=row(y,300,3300,250,function(x,b){return expOffice(x,b,2+(bi%2),bi++);});});
   // ── props: trees / lamps / benches scattered on GRASS only (keep-out from roads, buildings, core) ──
   function nearRoad(px,py,m){for(var i=0;i<SEG.length;i++){var g=SEG[i];if(g.h){if(px>=g.a-m&&px<=g.b+m&&Math.abs(py-g.y)<m)return true;}else{if(py>=g.a-m&&py<=g.b+m&&Math.abs(px-g.x)<m)return true;}}return false;}
@@ -4030,7 +4030,7 @@ function buildMinimap(){
   const sx=100/WORLD_W, sy=100/WORLD_H;
   let s='<div class="mm-label">MAP</div>';
   MM_MARKERS.forEach(function(m){ s+='<span class="mm-dot" style="left:'+(m.x*sx).toFixed(2)+'%;top:'+(m.y*sy).toFixed(2)+'%;">'+m.ic+'</span>'; });
-  // citizen markers — show where the unanswered citizens are so players can find them
+  // citizen markers,show where the unanswered citizens are so players can find them
   for(var ni=0;ni<NPC_POS.length;ni++){ s+='<span class="mm-npc" id="mm-npc-'+ni+'" style="left:'+(NPC_POS[ni][0]*sx).toFixed(2)+'%;top:'+(NPC_POS[ni][1]*sy).toFixed(2)+'%;">💬</span>'; }
   s+='<div id="minimap-player"></div>';
   mm.innerHTML=s;
@@ -4729,7 +4729,7 @@ function MQ(npc,tag,icon,body,A,B,C,D,explain){
     ]};
 }
 QG[8]=[
-// NPC0 — Free Markets & Trade
+// NPC0,Free Markets & Trade
 MQ(0,'Free Markets','🤝',"Two neighboring towns each make something the other wants. Some leaders want to tax goods crossing the border. What should your town do?",
  ["Let the towns trade freely with no border tax",{h:4,e:7,ed:0,f:6},"When people trade freely, both sides get what they value more, so both towns end up better off."],
  ["Allow trade but add a small fee on imports",{h:1,e:-2,ed:0,f:-2},"A fee raises a little money but makes goods cost more for your own people and invites the other town to do the same."],
@@ -4742,7 +4742,7 @@ MQ(0,'Free Markets','💰',"A new shop wants to sell cheaper shoes than the old 
  ["Set one fixed price both shops must charge",{h:-2,e:-7,ed:0,f:-6},"Price controls remove the reason to improve and often cause shortages or lower quality."],
  ["Have the town run the only shoe store",{h:-6,e:-13,ed:0,f:-12},"A single government store faces no competition, so it has little reason to keep prices low or quality high."],
  "Competition, not protection, is what gives shoppers better deals over time."),
-// NPC1 — Taxes & Spending
+// NPC1,Taxes & Spending
 MQ(1,'Taxes & Spending','💵',"Your town has money saved up. Some leaders want to spend it all on new programs. Others want to keep taxes low. What's your plan?",
  ["Keep taxes low and spend carefully on core needs",{h:3,e:6,ed:1,f:5},"Low, simple taxes leave more money in people's hands to spend, save, and start businesses."],
  ["Raise taxes a little to fund several new programs",{h:3,e:-5,ed:1,f:-4},"New programs sound helpful, but each one costs money and is hard to shrink later."],
@@ -4755,7 +4755,7 @@ MQ(1,'Taxes & Spending','📊',"The town wants to build something new. Leaders a
  ["Borrow heavily now and worry about it later",{h:0,e:-9,ed:0,f:-6},"Piling up debt shifts today's costs onto tomorrow and can lead to a crisis."],
  ["Print or seize money to pay for it",{h:-5,e:-15,ed:0,f:-12},"Creating money out of thin air or seizing it destroys savings and trust."],
  "Spending within your means protects both today's taxpayers and tomorrow's."),
-// NPC2 — Education & School Choice
+// NPC2,Education & School Choice
 MQ(2,'Education','🏫',"Some families are unhappy with the only school in town. What policy gives students the best shot?",
  ["Let families choose among different schools",{h:5,e:2,ed:8,f:7},"When families can choose, schools must improve to attract students, and kids find the fit that works."],
  ["Add charter or specialty schools inside the system",{h:4,e:0,ed:6,f:4},"More options inside the public system add useful variety and a bit of healthy competition."],
@@ -4768,49 +4768,49 @@ MQ(2,'Education','🎓',"A talented student wants a program your town's school d
  ["Tell the student to take what's offered",{h:-3,e:0,ed:-4,f:-5},"Forcing one path ignores that students learn and dream differently."],
  ["Have the government assign all students and programs",{h:-6,e:-3,ed:-8,f:-12},"Central assignment treats students like parts in a machine instead of individuals."],
  "When money follows the child, families can match the school to the student."),
-// NPC3 — Money & Inflation
+// NPC3,Money & Inflation
 MQ(3,'Money & Inflation','🪙',"Prices in town keep rising fast. People's savings buy less each month. What's your move?",
  ["Stop creating extra money so prices can settle",{h:3,e:7,ed:1,f:4},"Inflation usually comes from too much money chasing the same goods; slowing money growth calms prices."],
  ["Create money more slowly while watching prices",{h:2,e:1,ed:0,f:0},"Going slower helps, but as long as you keep adding money faster than goods, prices keep climbing."],
  ["Order shops to freeze their prices",{h:-2,e:-9,ed:0,f:-7},"Price freezes hide the problem and cause shortages because shops can't cover their costs."],
  ["Print lots of money to hand out to everyone",{h:-5,e:-15,ed:0,f:-10},"Printing more money makes each dollar worth less, hurting savers the most."],
  "Stable money protects the value of what people earn and save."),
-// NPC4 — Business & Regulation
+// NPC4,Business & Regulation
 MQ(4,'Business & Rules','🏪',"A young baker wants to open a shop, but the permits take a year and cost a lot. What do you do?",
  ["Cut the red tape so honest businesses can open fast",{h:3,e:7,ed:0,f:6},"Simpler permits remove barriers without lowering real safety rules, helping newcomers most."],
  ["Keep the rules but offer a grant to a few bakers",{h:4,e:-5,ed:0,f:-4},"Grants help the chosen few while everyone else still faces the same heavy barriers."],
  ["Add even more inspections and paperwork",{h:-2,e:-9,ed:0,f:-9},"Extra paperwork hits small businesses hardest, since big firms can afford lawyers to handle it."],
  ["Have the town open its own bakery instead",{h:-5,e:-13,ed:0,f:-12},"A government bakery with no competition has little reason to control costs or improve."],
  "Clear, light rules let good ideas reach customers instead of dying in paperwork."),
-// NPC5 — Jobs & Wages
+// NPC5,Jobs & Wages
 MQ(5,'Jobs & Wages','👷',"Some workers in town earn low wages. Leaders want to force a much higher minimum wage. What do you do?",
  ["Grow the economy so employers compete for workers",{h:4,e:6,ed:1,f:5},"When businesses grow and compete for workers, wages rise without anyone losing their job."],
  ["Raise the minimum wage a small, careful amount",{h:3,e:-2,ed:0,f:-2},"A small raise may help some, but set it too high and employers cut hours or jobs."],
  ["Force a large minimum wage increase right away",{h:1,e:-8,ed:0,f:-6},"A big forced raise can price low-skill and young workers out of their first jobs."],
  ["Have the government set everyone's pay",{h:-5,e:-13,ed:0,f:-12},"Government-set pay ignores what work people actually do and kills the incentive to improve."],
  "More jobs and competition for workers lift wages better than mandates that can cut jobs."),
-// NPC6 — Property & Environment
+// NPC6,Property & Environment
 MQ(6,'Property & Land','🏡',"A factory is dumping waste into the town river, hurting neighbors downstream. What's the fair fix?",
  ["Hold the factory responsible for the harm it causes",{h:4,e:3,ed:0,f:5},"Clear property rights mean polluters must pay for the damage they do to others' land and water."],
  ["Write detailed rules for exactly how to operate",{h:2,e:-2,ed:0,f:-2},"Rules can help, but rigid ones are easy to game and may miss the real harm."],
  ["Have the government run the factory itself",{h:-3,e:-8,ed:0,f:-7},"Government-run factories often pollute too, with less accountability than private owners."],
  ["Seize the factory and the land around it",{h:-5,e:-12,ed:0,f:-13},"Seizing property destroys the trust and investment that a prosperous town needs."],
  "Protecting property rights makes polluters pay and gives owners reason to care for resources."),
-// NPC7 — Banking & Saving
+// NPC7,Banking & Saving
 MQ(7,'Banking & Saving','🏦',"Families want a safe place to save and borrow. How should banking work in your town?",
  ["Let trustworthy banks compete and be honest with savers",{h:3,e:6,ed:1,f:5},"Competition and honest rules give savers good options and push banks to serve customers well."],
  ["Let banks operate but guarantee every risky loan",{h:2,e:-4,ed:0,f:-3},"Guaranteeing risky bets encourages reckless lending, since someone else covers the losses."],
  ["Have the government run the only bank",{h:-3,e:-8,ed:0,f:-7},"A single government bank faces no competition and often lends based on politics, not sense."],
  ["Control all money and lending from the top",{h:-6,e:-13,ed:0,f:-12},"Top-down control of money invites favoritism and puts everyone's savings at risk."],
  "Honest competition among banks serves savers better than government-run finance."),
-// NPC8 — Free Speech & Civil Liberties
+// NPC8,Free Speech & Civil Liberties
 MQ(8,'Free Speech','🗽',"A newspaper prints an article criticizing town leaders. Some want it shut down. What do you do?",
  ["Protect the right to speak, even when it's critical",{h:4,e:1,ed:2,f:9},"Free speech lets people question power and find the truth; silencing critics is how mistakes hide."],
  ["Allow it but require articles be approved first",{h:0,e:-2,ed:-1,f:-6},"Approval-first rules are a soft form of censorship that scares people away from honest debate."],
  ["Ban articles that make leaders look bad",{h:-4,e:-3,ed:-3,f:-12},"Banning criticism protects the powerful, not the people, and ends real accountability."],
  ["Take over the press and control the news",{h:-7,e:-5,ed:-4,f:-16},"State-controlled news is propaganda; people lose the ability to know what's really happening."],
  "Free speech and a free press keep leaders honest and let truth compete with falsehood."),
-// NPC9 — Health Care
+// NPC9,Health Care
 MQ(9,'Health Care','🏥',"Care in town is getting expensive. People disagree on how to make it affordable. What do you choose?",
  ["Let providers compete and let prices be clear",{h:4,e:5,ed:0,f:6},"Competition and clear prices push quality up and costs down, like in other markets."],
  ["Keep the system but add government subsidies",{h:4,e:-5,ed:0,f:-3},"Subsidies help some people afford care but can hide costs and push prices even higher."],
@@ -5190,7 +5190,7 @@ MQ(9,'Health Care','🏥',"Escalating costs strain households; proposals span co
  ["Establish single-payer control of provision and pricing",{h:-5,e:-12,ed:0,f:-12},"Monopsony control commonly yields waiting lists and constrained choice."],
  "Competition and transparency improve quality while restraining costs.")
 ];
-// Grade 8 — second set (different scenarios per citizen, for replay variety)
+// Grade 8,second set (different scenarios per citizen, for replay variety)
 QG[8].push(
 MQ(0,'Free Markets','🤝',"A trader buys goods cheaply in one town and sells them in yours for more. Some call it unfair. What do you do?",
  ["Allow it; the trader took a risk and moved goods to where they're wanted",{h:4,e:6,ed:0,f:6},"Traders who move goods to where people want them add value and help supply meet demand."],
@@ -5253,7 +5253,7 @@ MQ(9,'Health Care','🏥',"Skilled nurses could handle more basic care, but stri
  ["Have the government assign all care tasks",{h:-5,e:-11,ed:0,f:-11},"Central control of who does what care reduces flexibility and choice."],
  "Letting qualified professionals do more care cuts costs and waits.")
 );
-// Grade 6 — second set (simple language, new scenarios)
+// Grade 6,second set (simple language, new scenarios)
 QG[6].push(
 MQ(0,'Free Markets','🤝',"A trader buys toys cheap in one town and sells them in your town for a bit more. Some say that is unfair. What do you do?",
  ["Let the trader sell. They moved the toys to where kids want them.",{h:4,e:6,ed:0,f:6},"Traders help by bringing things to where people want them."],
@@ -5316,7 +5316,7 @@ MQ(9,'Health Care','🏥',"Skilled nurses could do more basic care, but the rule
  ["Have the town assign all care jobs.",{h:-5,e:-11,ed:0,f:-11},"Town control of care jobs lowers choice."],
  "Letting skilled nurses do more cuts waits and costs.")
 );
-// Grade 12 — second set (advanced vocabulary, new scenarios)
+// Grade 12,second set (advanced vocabulary, new scenarios)
 QG[12].push(
 MQ(0,'Free Markets & Trade','🤝',"An arbitrageur purchases goods cheaply in one market and resells them in yours at a markup. Critics decry the practice as exploitative. How do you respond?",
  ["Permit it; arbitrage allocates goods toward their highest-valued uses",{h:4,e:6,ed:0,f:6},"Arbitrage moves goods to where they are most valued and smooths price differences, benefiting consumers overall."],
@@ -5336,7 +5336,7 @@ MQ(2,'Education & School Choice','🏫',"Families request the latitude to homesc
  ["Discourage alternatives and funnel students to the district",{h:-2,e:-2,ed:-3,f:-6},"Channeling all students into one model ignores heterogeneous needs."],
  ["Prohibit alternatives and compel uniform attendance",{h:-5,e:-3,ed:-6,f:-12},"Compulsory uniformity overrides parental authority over education."],
  "Educational pluralism respects family choice and lets varied approaches compete."),
-MQ(3,'Money & Inflation','🪙',"Some officials propose monetary financing — printing money — to fund a civic festival. What is your response?",
+MQ(3,'Money & Inflation','🪙',"Some officials propose monetary financing, printing money, to fund a civic festival. What is your response?",
  ["Fund it from real revenue or forgo it",{h:3,e:5,ed:0,f:4},"Financing spending with real resources avoids the hidden inflation tax of money creation."],
  ["Authorize a small one-time monetary issuance",{h:1,e:-4,ed:0,f:-3},"Even limited issuance imposes a diffuse inflation tax on all holders of currency."],
  ["Print whatever the festival requires",{h:-3,e:-11,ed:0,f:-8},"Monetary financing debases the currency and erodes purchasing power."],
@@ -5379,7 +5379,7 @@ MQ(9,'Health Care','🏥',"Qualified nurses could perform more routine care, but
  ["Have the state allocate all clinical tasks",{h:-5,e:-11,ed:0,f:-11},"Central allocation of clinical roles reduces flexibility and responsiveness."],
  "Broadening scope-of-practice for qualified clinicians lowers costs and widens access.")
 );
-// Grade 7 — second set
+// Grade 7,second set
 QG[7].push(
 MQ(0,'Free Markets','🤝',"A trader buys goods cheaply in one town and resells them in yours for more. Some call it unfair. What do you do?",
  ["Let the trader sell; they moved goods to where people want them",{h:4,e:6,ed:0,f:6},"Traders add value by moving goods to where they're wanted and earning a return for the risk."],
@@ -5442,7 +5442,7 @@ MQ(9,'Health Care','🏥',"Skilled nurses could do more basic care, but rules re
  ["Have the government assign all care tasks",{h:-5,e:-11,ed:0,f:-11},"Central control of care reduces flexibility."],
  "Letting qualified professionals do more cuts costs and waits.")
 );
-// Grade 9 — second set
+// Grade 9,second set
 QG[9].push(
 MQ(0,'Free Markets & Trade','🤝',"A reseller buys goods cheaply in one market and sells them in yours at a markup. Critics call it unfair. How do you respond?",
  ["Allow it; resellers move goods to where they're valued and earn a return",{h:4,e:6,ed:0,f:6},"Resellers add value by moving goods to where demand is higher, smoothing supply."],
@@ -5568,7 +5568,7 @@ MQ(9,'Health Care','🏥',"Qualified nurses could perform more routine care, yet
  "Broadening qualified clinicians' scope lowers costs and shortens waits.")
 );
 QG[11].push(
-MQ(0,'Free Markets & Trade','🤝',"A trader exploits a price differential—buying surplus goods in a distant market and reselling them locally at a markup. Detractors decry it as profiteering. How do you respond?",
+MQ(0,'Free Markets & Trade','🤝',"A trader exploits a price differential, buying surplus goods in a distant market and reselling them locally at a markup. Detractors decry it as profiteering. How do you respond?",
  ["Permit it; arbitrage reallocates goods toward their highest-valued uses and compensates risk-bearing",{h:4,e:6,ed:0,f:6},"Arbitrage transmits information through prices and smooths regional supply imbalances."],
  ["Permit it while imposing a statutory ceiling on the markup",{h:1,e:-4,ed:0,f:-3},"Price ceilings attenuate the incentive to supply markets experiencing scarcity."],
  ["Prohibit resale above the original acquisition cost",{h:-2,e:-8,ed:0,f:-6},"Such prohibitions disregard the real costs of transport, storage, and uncertainty."],
@@ -6724,16 +6724,16 @@ const CATO_CHARTS=[
     {label:"Recent",value:69.8,pct:100,color:"#30d158"}]}},
  {match:function(q){return q.npc===2 && /voucher|charter|education savings|savings account|private school/i.test(q.body);},
   chart:{title:"High-School Graduation: Voucher vs. Public School",unit:"%",source:"Cato; Wolf et al. 2013, Cowen et al. 2013",rows:[
-    {label:"City A — Vouchers",value:82,pct:100,color:"#30d158"},
-    {label:"City A — Public",value:70,pct:85,color:"#ff453a"},
-    {label:"City B — Vouchers",value:77,pct:94,color:"#4ade80"},
-    {label:"City B — Public",value:74,pct:90,color:"#ff9f0a"}]}},
+    {label:"City A, Vouchers",value:82,pct:100,color:"#30d158"},
+    {label:"City A, Public",value:70,pct:85,color:"#ff453a"},
+    {label:"City B, Vouchers",value:77,pct:94,color:"#4ade80"},
+    {label:"City B, Public",value:74,pct:90,color:"#ff9f0a"}]}},
  {match:function(q){return q.npc===4 && /red tape|forms and permits|licen|braid|mover|moving|food.?cart/i.test(q.body);},
   chart:{title:"Share of U.S. Jobs Requiring a Government License",unit:"%",source:"Cato, “Do We Really Need to License Your Lawncare Guy”",rows:[
     {label:"1950s",value:5,pct:23,color:"#4ade80"},
     {label:"2021",value:22,pct:100,color:"#ff453a"}]}},
  {match:function(q){return q.npc===5 && (/minimum wage|lowest wage/i.test(q.body));},
-  chart:{title:"$15 Federal Minimum Wage — CBO Estimate (millions of jobs)",unit:"M",source:"Cato, citing CBO (2021)",rows:[
+  chart:{title:"$15 Federal Minimum Wage, CBO Estimate (millions of jobs)",unit:"M",source:"Cato, citing CBO (2021)",rows:[
     {label:"Workers given a raise",value:27,pct:100,color:"#4ade80"},
     {label:"Jobs eliminated",value:1.4,pct:6,color:"#ff453a"}]}},
  {match:function(q){return q.npc===6 && /rent/i.test(q.body);},
@@ -6807,7 +6807,7 @@ const CHART_LINKS={
  "Share of U.S. Income Taxes Paid by the Top 10% of Earners":{text:"Cato: Good Luck and High Taxes",url:"https://www.cato.org/commentary/good-luck-high-taxes"},
  "High-School Graduation: Voucher vs. Public School":{text:"Cato Handbook: School Choice",url:"https://www.cato.org/cato-handbook-policymakers/cato-handbook-policymakers-9th-edition-2022/school-choice"},
  "Share of U.S. Jobs Requiring a Government License":{text:"Cato: Do We Really Need to License Your Lawncare Guy?",url:"https://www.cato.org/commentary/do-we-really-need-license-lawncare-guy"},
- "$15 Federal Minimum Wage — CBO Estimate (millions of jobs)":{text:"Cato: The Case against a $15 Federal Minimum Wage",url:"https://www.cato.org/commentary/case-against-15-federal-minimum-wage-qa"},
+ "$15 Federal Minimum Wage, CBO Estimate (millions of jobs)":{text:"Cato: The Case against a $15 Federal Minimum Wage",url:"https://www.cato.org/commentary/case-against-15-federal-minimum-wage-qa"},
  "San Francisco Rent Control: Measured Effects":{text:"Cato: Housing Affordability",url:"https://www.cato.org/publications/housing-affordability"},
  "How Much Zoning Raises Apartment Costs":{text:"Cato: Housing Markets First",url:"https://www.cato.org/briefing-paper/housing-markets-first-housing-supply-affordability-are-key-reducing-homelessness"}
 };

@@ -676,8 +676,7 @@
   <div class="title-hero">
     <span class="emoji">🏛️</span>
     <h1>The Policy Game</h1>
-    <div class="tag" id="title-tag">Name your nation and begin</div>
-    <p>You're about to be elected leader. Ten real policy crises await. Every decision shapes your society, and history's greatest thinkers will weigh in on each choice.</p>
+    <div class="tag" id="title-tag">Lead a nation. Every choice tests your principles.</div>
   </div>
 
   <!-- ══ NATION NAME BUILDER ══ -->
@@ -690,20 +689,15 @@
         <button class="btn btn-gold" onclick="cloudSignIn()" style="white-space:nowrap;">Sign in →</button>
       </div>
       <div id="signin-msg" style="margin-top:6px;font-weight:700;font-size:.9rem;min-height:1.1em;"></div>
-      <div style="margin-top:2px;color:#667;font-size:.82rem;">New? Pick a name and a PIN you will remember, then create your leader below. Your progress saves by itself and loads on any device. Keep your PIN private and do not reuse a real password. (No email needed.)</div>
+      <div style="margin-top:2px;color:#667;font-size:.82rem;">New? Pick a name and a PIN, then build your leader below. Progress saves automatically and loads on any device.</div>
     </div>
-    <div class="nb-col-label" style="margin-bottom:10px;">👥 Choose Your Leader, each saves their own ⭐ bank &amp; closet</div>
+    <div class="nb-col-label" style="margin-bottom:10px;">👥 Your Leaders</div>
     <div class="profile-row" id="profile-row"></div>
     <div style="border-top:2px dashed var(--line2);margin:4px 0 18px;"></div>
     <div class="nb-title">🗺️ Name Your Nation</div>
-    <div class="nb-subtitle">Type your own name, or let the game pick one for you.</div>
     <div class="nb-simple">
-      <input class="nb-custom nb-name-input" id="nb-name-input" type="text" maxlength="24" placeholder="Type your nation's name&#8230;" oninput="customNationName(this.value)">
+      <input class="nb-custom nb-name-input" id="nb-name-input" type="text" maxlength="24" placeholder="Type a name, or use 🎲" oninput="customNationName(this.value)">
       <button class="btn-dice" onclick="autoNationName()">🎲 Pick For Me</button>
-    </div>
-    <div class="nb-preview">
-      <div class="nb-preview-label">Your Nation</div>
-      <div class="nb-preview-name" id="nb-preview-name">Freedomtopia</div>
     </div>
         <div id="creator-slot-title"></div>
     <div class="nb-avatar-section" id="creator-wrap">
@@ -719,11 +713,10 @@
         </div>
       </div>
       <div class="av-hint" id="av-store-hint" style="display:none;color:#C92A2A;">🔒 That one's a Star Store collectible, play rounds, bank stars, open mystery boxes!</div>
-      <div class="av-hint">Mix and match any combination, this leader is 100% yours. Their mood, expression and surroundings will react to how your nation is doing in the game.</div>
+      <div class="av-hint">Mix and match, your leader reacts to how your nation is doing.</div>
     </div>
-    <div class="store-cta"><button class="btn btn-navy" onclick="openStore()">🎁 Star Store</button><span class="bank-chip" id="bank-chip">⭐ 0</span><button class="btn btn-navy" onclick="openHistory()">📜 History</button></div>
     <div class="diff-section">
-      <div class="nb-col-label" style="margin-bottom:10px;">🎓 Reading Level, pick your grade</div>
+      <div class="nb-col-label" style="margin-bottom:10px;">🎓 Reading Level</div>
       <div class="diff-row" id="grade-row">
         <button class="diff-card" id="grade-6" onclick="setGrade(6)">📗<strong>Grade 6</strong></button>
         <button class="diff-card" id="grade-7" onclick="setGrade(7)">📗<strong>Grade 7</strong></button>
@@ -739,9 +732,9 @@
     </div>
   </div>
 
-  <div class="how-card">
-    <h3>How to Play</h3>
-    <p>Each round gives you a real policy challenge with four possible responses. Pick your <strong>grade level</strong> and the questions are written at that reading level. Your nation has four health bars, <strong>Happiness, Economy, Education, and Freedom</strong>, and every choice nudges them up or down. Help all your citizens to finish a term, then keep governing term after term and climb the class leaderboard.</p>
+  <details class="how-card">
+    <summary style="cursor:pointer;font-weight:800;color:var(--navy);font-size:1.1rem;list-style:revert;">❔ How to Play</summary>
+    <p style="margin-top:12px;">Each round gives you a real policy challenge with four possible responses. Pick your <strong>grade level</strong> and the questions are written at that reading level. Your nation has four health bars, <strong>Happiness, Economy, Education, and Freedom</strong>, and every choice nudges them up or down. Help all your citizens to finish a term, then keep governing term after term and climb the class leaderboard.</p>
     <div class="stat-icons">
       <div class="stat-icon">😊<strong>Citizen Happiness</strong><p>How satisfied and secure residents feel day-to-day. Drops when policies create instability, shortages, or lost rights.</p></div>
       <div class="stat-icon">💰<strong>Economic Health</strong><p>The strength of jobs, growth, and prosperity. Sensitive to taxes, regulation, and government spending.</p></div>
@@ -757,7 +750,7 @@
       <div class="demo-row"><div class="demo-label">🗽 Freedom</div><div class="demo-bar-wrap"><div class="demo-bar anim-f"></div></div></div>
       <div class="demo-caption">⚠️ DANGER. Individual Freedom below 25%! Society collapsing…</div>
     </div>
-  </div>
+  </details>
 </div>
 
 <!-- ══ TOWN SCREEN ══ -->

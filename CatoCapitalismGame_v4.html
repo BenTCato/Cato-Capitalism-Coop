@@ -682,6 +682,16 @@
 
   <!-- ══ NATION NAME BUILDER ══ -->
   <div class="name-builder">
+    <div id="signin-card" style="background:linear-gradient(180deg,#eef3ff,#ffffff);border:2px solid #cdd9f5;border-radius:16px;padding:14px 16px;margin-bottom:16px;text-align:left;">
+      <div style="font-weight:800;color:#1F3A93;font-size:1.02rem;margin-bottom:8px;">🔑 Sign in, your progress saves automatically</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input id="acct-name" type="text" maxlength="24" placeholder="Your name" autocomplete="off" style="flex:2;min-width:150px;padding:11px 12px;border:2px solid #cdd9f5;border-radius:10px;font-family:inherit;font-size:.95rem;">
+        <input id="acct-pin" type="password" inputmode="numeric" maxlength="6" placeholder="PIN (3-6 digits)" autocomplete="off" onkeydown="if(event.key==='Enter')cloudSignIn()" style="flex:1;min-width:120px;padding:11px 12px;border:2px solid #cdd9f5;border-radius:10px;font-family:inherit;font-size:.95rem;">
+        <button class="btn btn-gold" onclick="cloudSignIn()" style="white-space:nowrap;">Sign in →</button>
+      </div>
+      <div id="signin-msg" style="margin-top:6px;font-weight:700;font-size:.9rem;min-height:1.1em;"></div>
+      <div style="margin-top:2px;color:#667;font-size:.82rem;">New? Pick a name and a PIN you will remember, then create your leader below. Your progress saves by itself and loads on any device. Keep your PIN private and do not reuse a real password. (No email needed.)</div>
+    </div>
     <div class="nb-col-label" style="margin-bottom:10px;">👥 Choose Your Leader, each saves their own ⭐ bank &amp; closet</div>
     <div class="profile-row" id="profile-row"></div>
     <div style="border-top:2px dashed var(--line2);margin:4px 0 18px;"></div>
@@ -3094,6 +3104,7 @@ function loadProfiles(){
 function saveProfiles(){
   if(P){P.name=nationName;P.avatar=Object.assign({},avatar);}
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(PROFILES));}catch(e){}
+  if(typeof scheduleCloudSave==='function')scheduleCloudSave();   // if signed in, auto-save progress to the cloud (debounced)
 }
 function sanitizeAvatar(){
   ['extra','glasses','outfit'].forEach(function(part){
@@ -3138,26 +3149,23 @@ function deleteProfile(i,ev){
   saveProfiles();sfx('bad');
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-// ── Export / Import a leader (carry avatar + progress between games) ──
-function exportProfile(){
-  if(!P)return;
+// ── Save Code: sign in / carry avatar + full progress across devices ──
+function saveCodeString(){
+  if(!P)return '';
   saveProfiles(); // fold current name + avatar into the active profile first
-  const data={v:1,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0};
-  let code;
-  try{code='CATO~'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));}
-  catch(e){code='CATO~'+JSON.stringify(data);}
-  try{if(navigator.clipboard&&navigator.clipboard.writeText){var _cw=navigator.clipboard.writeText(code);if(_cw&&_cw.catch)_cw.catch(function(){});}}catch(e){}
-  sfx('good');
-  window.prompt('Your leader code is copied! Press Ctrl+C / Cmd+C to be sure, then paste it into another game with Import:',code);
+  const data={v:2,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0,
+    lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[]};
+  try{return 'CATO~'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));}
+  catch(e){return 'CATO~'+JSON.stringify(data);}
 }
-function importProfile(){
-  const raw=window.prompt('Paste your leader code here:');
-  if(!raw)return;
-  let s=raw.trim();if(s.indexOf('CATO~')===0)s=s.slice(5);
+function decodeSaveCode(raw){
+  let s=String(raw||'').trim(); if(s.indexOf('CATO~')===0)s=s.slice(5);
   let data=null;
   try{data=JSON.parse(decodeURIComponent(escape(atob(s))));}catch(e){try{data=JSON.parse(s);}catch(e2){}}
-  if(!data||!data.avatar){alert('That code did not look right. Make sure you copied the whole thing.');sfx('bad');return;}
-  if(!P)return;
+  return data;
+}
+function applySaveData(data){ // load a decoded Save Code into the active leader
+  if(!P||!data||!data.avatar)return false;
   P.owned=Array.isArray(data.owned)?data.owned:(P.owned||[]);
   P.avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},data.avatar);
   if(typeof data.name==='string'&&data.name)P.name=data.name;
@@ -3165,12 +3173,72 @@ function importProfile(){
   if(typeof data.house==='number')P.house=data.house;
   if(typeof data.best==='number')P.best=data.best;
   if(typeof data.runs==='number')P.runs=data.runs;
+  if(typeof data.lifetimeScore==='number')P.lifetimeScore=data.lifetimeScore;
+  if(typeof data.lifetimeBest==='number')P.lifetimeBest=data.lifetimeBest;
+  if(typeof data.lifetimeAnswered==='number')P.lifetimeAnswered=data.lifetimeAnswered;
+  if(Array.isArray(data.terms))P.terms=data.terms;
+  if(Array.isArray(data.emotes))P.emotes=data.emotes;
   avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},P.avatar);
   sanitizeAvatar();nationName=P.name||'Freedomtopia';
   updateNbPreview();renderAvCreator();renderAvatarPreview();renderProfiles();updateBankUI();
-  saveProfiles();sfx('event');
-  alert('Imported '+(P.name||'your leader')+'! Avatar and progress loaded.');
+  return true;
 }
+function exportProfile(){ // "My Save Code": copy the current progress code
+  if(!P)return;
+  const code=saveCodeString();
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){var _cw=navigator.clipboard.writeText(code);if(_cw&&_cw.catch)_cw.catch(function(){});}}catch(e){}
+  sfx('good');
+  window.prompt('🔑 This is YOUR Save Code (already copied). Keep it somewhere safe, then paste it next time to sign in and keep your avatar, stars, and progress:',code);
+}
+function importProfile(){ // "Load Code": paste a code to sign in
+  const raw=window.prompt('Paste your Save Code here to sign in:');
+  if(!raw)return;
+  if(!applySaveData(decodeSaveCode(raw))){alert('That code did not look right. Make sure you copied the whole thing (it starts with CATO~).');sfx('bad');return;}
+  saveProfiles();sfx('event');
+  alert('Signed in as '+(P.name||'your leader')+'! Your avatar and progress are loaded.');
+}
+// title-screen "Sign in with your Save Code"
+function signinMsg(msg,bad){var el=document.getElementById('signin-msg');if(el){el.textContent=msg;el.style.color=bad?'#C92A2A':'#1F7A3D';}}
+function signInWithCode(){
+  const inp=document.getElementById('signin-code'),raw=inp?inp.value:'';
+  if(!raw||!raw.trim()){signinMsg('Paste your Save Code first (it starts with CATO~).',true);sfx('bad');return;}
+  if(!applySaveData(decodeSaveCode(raw))){signinMsg('That code did not look right, copy the whole thing and try again.',true);sfx('bad');return;}
+  saveProfiles();sfx('event');
+  signinMsg('Signed in as '+(P.name||'your leader')+'! Loading your town…',false);
+  setTimeout(beginWithName,650);
+}
+// ── Automatic cloud accounts (name + PIN): durable auto-save via the server ──
+var ACCOUNT=null;
+function loadAccount(){ try{ACCOUNT=JSON.parse(localStorage.getItem('catoAccount')||'null');}catch(e){ACCOUNT=null;} if(ACCOUNT&&(!ACCOUNT.name||!ACCOUNT.pin))ACCOUNT=null; }
+function setAccount(n,pin){ ACCOUNT={name:n,pin:pin}; try{localStorage.setItem('catoAccount',JSON.stringify(ACCOUNT));}catch(e){} }
+function accountSaveData(){ if(!P)return null; return {v:2,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0,lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[]}; }
+var _cloudT=null;
+function scheduleCloudSave(){ if(!ACCOUNT)return; clearTimeout(_cloudT); _cloudT=setTimeout(cloudSave,3500); }
+function cloudSave(){ if(!ACCOUNT||!P)return; try{ fetch('/__coop/account/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:ACCOUNT.name,pin:ACCOUNT.pin,data:accountSaveData()})}).catch(function(){}); }catch(e){} }
+function cloudSignIn(){
+  var ni=document.getElementById('acct-name'),pi=document.getElementById('acct-pin');
+  var n=(ni?ni.value:'').trim(), pin=(pi?pi.value:'');
+  if(n.length<2){signinMsg('Enter your name (at least 2 letters).',true);sfx('bad');return;}
+  if(!/^\d{3,6}$/.test(pin)){signinMsg('Your PIN must be 3 to 6 digits.',true);sfx('bad');return;}
+  signinMsg('Signing in…',false);
+  fetch('/__coop/account/signin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,pin:pin})})
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(!res||!res.ok){
+        var m=(res&&res.error==='wrong_pin')?'That name is taken with a different PIN. Pick another name, or check your PIN.'
+          :(res&&res.error==='storage_off')?'Automatic saving is not set up yet. You can still play now, and use a Save Code below to keep progress.'
+          :(res&&res.error==='invalid')?'Name needs 2 to 24 letters, PIN needs 3 to 6 digits.'
+          :'Could not sign in right now. Check your connection, or use a Save Code below.';
+        signinMsg(m,true);sfx('bad');return;
+      }
+      setAccount(n,pin);
+      if(res.data){ applySaveData(res.data); signinMsg('Welcome back, '+(P.name||n)+'! Loading your town…',false); sfx('event'); setTimeout(beginWithName,650); }
+      else { signinMsg('Account created! Make your leader below, it saves automatically as you play.',false); sfx('good'); var c=document.getElementById('creator-wrap'); if(c&&c.scrollIntoView)c.scrollIntoView({behavior:'smooth',block:'center'}); }
+    })
+    .catch(function(){ signinMsg('Could not reach the server. Check your connection, or use a Save Code below.',true); sfx('bad'); });
+}
+function prefillAccount(){ loadAccount(); if(!ACCOUNT)return; var ni=document.getElementById('acct-name'),pi=document.getElementById('acct-pin'); if(ni)ni.value=ACCOUNT.name; if(pi)pi.value=ACCOUNT.pin; signinMsg('Welcome back, '+ACCOUNT.name+'! Tap Sign in to load your saved progress.',false); }
+window.addEventListener('beforeunload',function(){ if(ACCOUNT&&navigator.sendBeacon){ try{ navigator.sendBeacon('/__coop/account/save', new Blob([JSON.stringify({name:ACCOUNT.name,pin:ACCOUNT.pin,data:accountSaveData()})],{type:'application/json'})); }catch(e){} } });
 function renderProfiles(){
   const box=document.getElementById('profile-row');if(!box)return;
   let html=PROFILES.list.map(function(pr,i){
@@ -3181,8 +3249,8 @@ function renderProfiles(){
       '<div class="prof-meta">⭐ '+(pr.stars||0).toLocaleString()+' · 🎁 '+(pr.owned?pr.owned.length:0)+'/'+STORE_ITEMS.length+'</div></div>';
   }).join('');
   if(PROFILES.list.length<MAX_PROFILES)html+='<button class="prof-card prof-new" onclick="newProfile()"><span style="font-size:1.6rem;">➕</span><div class="prof-name">New Leader</div></button>';
-  html+='<button class="prof-card prof-new" onclick="exportProfile()" title="Copy a code to move this leader to another game"><span style="font-size:1.6rem;">📤</span><div class="prof-name">Export</div></button>';
-  html+='<button class="prof-card prof-new" onclick="importProfile()" title="Paste a code from another game"><span style="font-size:1.6rem;">📥</span><div class="prof-name">Import</div></button>';
+  html+='<button class="prof-card prof-new" onclick="exportProfile()" title="Copy your Save Code, keep it to sign in and continue next time (any device)"><span style="font-size:1.6rem;">🔑</span><div class="prof-name">My Save Code</div></button>';
+  html+='<button class="prof-card prof-new" onclick="importProfile()" title="Paste a Save Code to sign in as that leader"><span style="font-size:1.6rem;">📥</span><div class="prof-name">Load Code</div></button>';
   box.innerHTML=html;
 }
 
@@ -6844,7 +6912,7 @@ function startGame(){Q=dealTerm(null);S=freshState();shuffleMap=[];pendingNext=f
 function restartGame(){const wrap=document.getElementById('creator-wrap'),slot=document.getElementById('creator-slot-title');if(wrap&&slot&&wrap.parentElement!==slot)slot.appendChild(wrap);showScreen('title');setTimeout(function(){renderAvatarPreview();renderAvCreator();},50);}
 
 // Init on page load
-document.addEventListener('DOMContentLoaded',function(){setDifficulty('normal',true);setGrade(8,true);loadProfiles();initTownControls();});
+document.addEventListener('DOMContentLoaded',function(){setDifficulty('normal',true);setGrade(8,true);loadProfiles();prefillAccount();initTownControls();});
 </script>
 </body>
 </html>

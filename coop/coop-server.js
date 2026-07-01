@@ -15,9 +15,11 @@
 
 'use strict';
 const http = require('http');
+const https = require('https');
 const fs   = require('fs');
 const os   = require('os');
 const path = require('path');
+const crypto = require('crypto');
 const { exec } = require('child_process');
 
 const ROOT       = path.join(__dirname, '..');     // project folder (holds the game html)
@@ -26,6 +28,31 @@ const START_PORT = 3000;
 const STALE_MS   = 8000;                            // drop a player after 8s of silence
 const ENV_PORT   = process.env.PORT ? Number(process.env.PORT) : null;
 const IS_CLOUD   = ENV_PORT !== null;
+
+// ── durable player accounts (name + PIN), stored in Upstash Redis via its REST API ──
+// Set these two env vars in Render (from a free Upstash database) to turn on automatic cloud saves.
+const REDIS_URL   = (process.env.UPSTASH_REDIS_REST_URL || '').replace(/\/+$/, '');
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
+const STORE_ON    = !!(REDIS_URL && REDIS_TOKEN);
+// run one Redis command, e.g. redis(['SET','key','value']) → resolves the result
+function redis(cmd) {
+  return new Promise((resolve, reject) => {
+    if (!STORE_ON) return reject(new Error('storage_off'));
+    let u; try { u = new URL(REDIS_URL); } catch (e) { return reject(e); }
+    const body = JSON.stringify(cmd);
+    const r = https.request(
+      { hostname: u.hostname, port: u.port || 443, path: (u.pathname && u.pathname !== '/' ? u.pathname : '/'), method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + REDIS_TOKEN, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } },
+      (resp) => { let s = ''; resp.on('data', c => s += c); resp.on('end', () => {
+        try { const j = JSON.parse(s); if (j && j.error) reject(new Error(String(j.error))); else resolve(j ? j.result : null); }
+        catch (e) { reject(e); } }); });
+    r.on('error', reject);
+    r.setTimeout(8000, () => r.destroy(new Error('timeout')));
+    r.write(body); r.end();
+  });
+}
+function acctKey(name) { return 'cato:acct:' + String(name || '').toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_-]/g, '').slice(0, 40); }
+function pinHash(name, pin) { return crypto.createHash('sha256').update('cato|' + String(name || '').toLowerCase().trim() + '|' + String(pin || '')).digest('hex'); }
 
 // ── choose which game file to serve ───────────────────────────────
 function gameScore(f) {
@@ -269,6 +296,42 @@ const server = http.createServer(async (req, res) => {
     const r = { name: name || ('Class ' + code), players: new Map(), touched: Date.now() };
     rooms.set(code, r);
     return send(res, 200, 'application/json', JSON.stringify({ ok: true, code: code, world: r.name }));
+  }
+
+  // ── ACCOUNTS: name + PIN sign-in with durable auto-save (Upstash) ──
+  // sign in (or create): {name, pin} → {ok, isNew, data}
+  if (p === '/__coop/account/signin' && req.method === 'POST') {
+    const raw = await readBody(req);
+    let d; try { d = JSON.parse(raw); } catch (e) { return send(res, 400, 'application/json', '{"ok":false,"error":"bad_json"}'); }
+    const name = String((d && d.name) || '').trim(), pin = String((d && d.pin) || '');
+    if (name.length < 2 || name.length > 24 || !/^\d{3,6}$/.test(pin)) return send(res, 200, 'application/json', '{"ok":false,"error":"invalid"}');
+    if (!STORE_ON) return send(res, 200, 'application/json', '{"ok":false,"error":"storage_off"}');
+    try {
+      const key = acctKey(name), want = pinHash(name, pin), cur = await redis(['GET', key]);
+      if (!cur) { const rec = { pin: want, display: name, data: null, created: Date.now(), updated: Date.now() };
+        await redis(['SET', key, JSON.stringify(rec)]);
+        return send(res, 200, 'application/json', '{"ok":true,"isNew":true,"data":null}'); }
+      let rec = null; try { rec = JSON.parse(cur); } catch (e) {}
+      if (!rec) return send(res, 200, 'application/json', '{"ok":false,"error":"corrupt"}');
+      if (rec.pin !== want) return send(res, 200, 'application/json', '{"ok":false,"error":"wrong_pin"}');
+      return send(res, 200, 'application/json', JSON.stringify({ ok: true, isNew: false, data: rec.data || null }));
+    } catch (e) { return send(res, 200, 'application/json', '{"ok":false,"error":"store_error"}'); }
+  }
+  // auto-save: {name, pin, data} → {ok}
+  if (p === '/__coop/account/save' && req.method === 'POST') {
+    const raw = await readBody(req);
+    let d; try { d = JSON.parse(raw); } catch (e) { return send(res, 400, 'application/json', '{"ok":false,"error":"bad_json"}'); }
+    const name = String((d && d.name) || '').trim(), pin = String((d && d.pin) || '');
+    if (!STORE_ON) return send(res, 200, 'application/json', '{"ok":false,"error":"storage_off"}');
+    if (name.length < 2 || !/^\d{3,6}$/.test(pin)) return send(res, 200, 'application/json', '{"ok":false,"error":"invalid"}');
+    try {
+      const key = acctKey(name), want = pinHash(name, pin), cur = await redis(['GET', key]);
+      let rec = null; try { rec = cur ? JSON.parse(cur) : null; } catch (e) {}
+      if (!rec || rec.pin !== want) return send(res, 200, 'application/json', '{"ok":false,"error":"auth"}');
+      rec.data = d.data || null; rec.updated = Date.now();
+      await redis(['SET', key, JSON.stringify(rec)]);
+      return send(res, 200, 'application/json', '{"ok":true}');
+    } catch (e) { return send(res, 200, 'application/json', '{"ok":false,"error":"store_error"}'); }
   }
 
   // student posts its state, gets back the other players IN THE SAME ROOM

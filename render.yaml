@@ -1,4 +1,4 @@
-# Render.com Blueprint — deploys the co-op server for free.
+# Render.com Blueprint, deploys the co-op server for free.
 # Render reads this automatically when you create a "Blueprint" from the repo.
 services:
   - type: web
@@ -8,3 +8,12 @@ services:
     buildCommand: npm install
     startCommand: node coop/coop-server.js
     autoDeploy: true
+    envVars:
+      # Automatic student sign-in / progress save. Create a FREE Upstash Redis database
+      # (https://upstash.com), open its "REST API" tab, and paste the two values into Render:
+      #   Render dashboard, service, Environment, Add Environment Variable.
+      # Leave them unset to keep the game working without cloud saves (local + Save Code only).
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false

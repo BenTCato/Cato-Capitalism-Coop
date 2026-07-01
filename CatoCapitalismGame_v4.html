@@ -757,7 +757,7 @@
 <div id="screen-town" class="screen">
   <div class="town-top">
     <div><div class="town-name" id="town-name">Freedomtopia</div><div class="town-progress" id="town-progress">0/10 citizens helped</div></div>
-    <div style="display:flex;gap:8px;align-items:center;"><span class="score-chip"><span id="town-score">⭐ 0</span></span><button class="hist-btn" onclick="openHistory()" style="margin-top:0;">📜</button></div>
+    <div style="display:flex;gap:8px;align-items:center;"><span class="score-chip"><span id="town-score">⭐ 0</span></span><button class="hist-btn" onclick="openBuild()" style="margin-top:0;" title="Build your city">🏗️ Build</button><button class="hist-btn" onclick="openHistory()" style="margin-top:0;">📜</button></div>
   </div>
   <div class="town-statstrip" id="town-statstrip"></div>
   <div class="town-viewport"><div id="town-map"></div><div class="vignette"></div>
@@ -777,6 +777,20 @@
   </div>
   <div class="town-hint">⌨️ <strong>W A S D</strong> to walk · <strong>SPACE</strong> to talk to citizens · the world changes with your choices · visit the <strong>MARKET</strong> to spend your ⭐</div>
   <div id="town-mobile-hint">🕹️ Drag to walk · tap the gold <strong>button</strong> to interact</div>
+</div>
+
+<!-- ══ BUILD YOUR CITY (buy land + shops with stars) ══ -->
+<div id="build-overlay" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(8,6,22,.82);overflow:auto;padding:30px 14px;">
+  <div style="max-width:720px;margin:0 auto;background:var(--card,#fff);border-radius:20px;padding:20px 22px;box-shadow:0 24px 70px rgba(0,0,0,.5);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+      <div style="font-size:1.25rem;font-weight:900;color:var(--navy,#13234a);">🏗️ Build Your City</div>
+      <span id="build-bal" style="background:#FFF4E0;border:2px solid #F2B23E;color:#9A6200;border-radius:30px;padding:5px 12px;font-weight:800;font-size:.9rem;">⭐ 0</span>
+      <button onclick="closeBuild()" style="margin-left:auto;background:rgba(0,0,0,.08);border:none;border-radius:10px;padding:8px 14px;font-family:inherit;font-weight:800;cursor:pointer;">✕ Close</button>
+    </div>
+    <div style="font-size:.84rem;color:#667;margin-bottom:6px;">Answer citizens to earn ⭐, then buy land and shops. A growing free economy lifts your meters (Education and Freedom still depend most on your policies).</div>
+    <div id="build-bonus" style="font-size:.85rem;color:#1F7A3D;font-weight:800;margin-bottom:12px;"></div>
+    <div id="build-body"></div>
+  </div>
 </div>
 
 <!-- ══ QUESTION SCREEN ══ -->
@@ -2531,7 +2545,8 @@ function clamp(v){return Math.min(100,Math.max(0,v));}
 function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
 function updateHUD(shake){
-  const map=[['bar-h','val-h',S.stats.h],['bar-e','val-e',S.stats.e],['bar-ed','val-ed',S.stats.ed],['bar-f','val-f',S.stats.f]];
+  const D=(typeof dispStats==='function')?dispStats():S.stats;   // policy stats + your town's growth bonus
+  const map=[['bar-h','val-h',D.h],['bar-e','val-e',D.e],['bar-ed','val-ed',D.ed],['bar-f','val-f',D.f]];
   let danger=false;
   map.forEach(([bid,vid,v])=>{const b=document.getElementById(bid),t=document.getElementById(vid);if(b){b.style.width=v+'%';b.className='bar '+barClass(v);}if(t)t.textContent=v+'%';if(v<=THRESHOLD)danger=true;});
   if(shake&&danger){const h=document.getElementById('hud');h.classList.remove('shake');void h.offsetWidth;h.classList.add('shake');setTimeout(()=>h.classList.remove('shake'),500);}
@@ -2621,7 +2636,7 @@ function pickChoice(letter){
   S.score+=pts;
   // Stars are the spendable currency,bank them live as each question is answered
   // (same totals as before: 250 per best answer + 50 per answer). Reverted by "Back".
-  const starsEarned=50+(isBest?250:0);
+  const starsEarned=120+(isBest?380:0);   // more stars per question, to fund buying land + shops for your town
   if(P){P.stars=(P.stars||0)+starsEarned;saveProfiles();}
   updateScoreHUD();updateBankUI();spawnScorePop(starsEarned,false);spawnStatChips(c.fx);
   sfx(net>=0?'good':'bad');
@@ -3084,7 +3099,88 @@ const SPECIAL_OUTFIT=[
 ];
 
 // ── Profiles ──
-function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0,lifetimeScore:0,lifetimeBest:0,lifetimeAnswered:0,terms:[],emotes:[]};}
+function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0,lifetimeScore:0,lifetimeBest:0,lifetimeAnswered:0,terms:[],emotes:[],town:{districts:{},dev:{}}};}
+// ── TOWN BUILDING: buy land (districts), then developments (shops/homes) to grow your city ──
+// You start with just downtown; buying land + shops adds a steady bonus to the meters (a growing free economy).
+var TOWN_DISTRICTS={
+  west:  {name:'West Neighborhood',      icon:'🏘️', cost:1500},
+  east:  {name:'East Market District',   icon:'🏬', cost:2200},
+  south: {name:'South Neighborhood',     icon:'🏡', cost:1500},
+  north: {name:'North Business District',icon:'🏢', cost:2600}
+};
+var DISTRICT_BONUS={west:{h:2},east:{e:3,f:2},south:{h:2},north:{e:2,f:1,ed:1}};
+var TOWN_DEVS={
+  west_homes:   {dist:'west',  name:'Family Homes',   icon:'🏠', cost:900,  bonus:{h:6,e:1}},
+  east_shops:   {dist:'east',  name:'Shopping Street', icon:'🛍️', cost:1400, bonus:{e:7,h:2}},
+  east_homes:   {dist:'east',  name:'East Homes',     icon:'🏠', cost:800,  bonus:{h:4}},
+  south_homes:  {dist:'south', name:'Family Homes',   icon:'🏠', cost:900,  bonus:{h:6,e:1}},
+  north_offices:{dist:'north', name:'Offices & Jobs', icon:'🏢', cost:1600, bonus:{e:7,ed:2}}
+};
+var TOWN_BONUS_CAP=18; // per meter, so building never fully replaces good policy
+function ensureTown(){ if(P&&(!P.town||typeof P.town!=='object'))P.town={districts:{},dev:{}}; if(P&&P.town){ P.town.districts=P.town.districts||{}; P.town.dev=P.town.dev||{}; } }
+function ownsDistrict(k){ return !!(P&&P.town&&P.town.districts&&P.town.districts[k]); }
+function ownsDev(k){ return !!(P&&P.town&&P.town.dev&&P.town.dev[k]); }
+function townBonus(){
+  var b={h:0,e:0,ed:0,f:0};
+  if(!P||!P.town)return b;
+  Object.keys(TOWN_DISTRICTS).forEach(function(k){ if(ownsDistrict(k)){ var d=DISTRICT_BONUS[k]||{}; for(var s in d)b[s]=(b[s]||0)+d[s]; } });
+  Object.keys(TOWN_DEVS).forEach(function(k){ if(ownsDev(k)){ var d=TOWN_DEVS[k].bonus||{}; for(var s in d)b[s]=(b[s]||0)+d[s]; } });
+  ['h','e','ed','f'].forEach(function(s){ if(b[s]>TOWN_BONUS_CAP)b[s]=TOWN_BONUS_CAP; });
+  return b;
+}
+// policy stats + the town-development bonus, clamped, used for the displayed meters + town mood
+function dispStats(){
+  var s=(S&&S.stats)?S.stats:{h:65,e:65,ed:65,f:65}, b=townBonus();
+  return {h:clamp(s.h+b.h), e:clamp(s.e+b.e), ed:clamp(s.ed+b.ed), f:clamp(s.f+b.f)};
+}
+// ── Build menu: buy land (districts) + developments; each adds a bonus + fills the map ──
+function bonusChips(b){ var p=[]; if(b.h)p.push('+'+b.h+'😊'); if(b.e)p.push('+'+b.e+'💰'); if(b.ed)p.push('+'+b.ed+'📚'); if(b.f)p.push('+'+b.f+'🗽'); return p.join(' '); }
+function openBuild(){ ensureTown(); renderBuild(); var o=document.getElementById('build-overlay'); if(o)o.style.display='block'; if(typeof sfx==='function')sfx('click'); }
+function closeBuild(){ var o=document.getElementById('build-overlay'); if(o)o.style.display='none'; }
+function renderBuild(){
+  ensureTown();
+  var bal=document.getElementById('build-bal'); if(bal)bal.textContent='⭐ '+(P?(P.stars||0).toLocaleString():'0');
+  var bt=document.getElementById('build-bonus'); if(bt){ var tb=townBonus(); var t=bonusChips(tb); bt.textContent=t?('Your growing town adds '+t+' to your meters'):'Buy land and shops to boost your meters as your economy grows.'; }
+  var body=document.getElementById('build-body'); if(!body)return;
+  var html='';
+  Object.keys(TOWN_DISTRICTS).forEach(function(dk){
+    var D=TOWN_DISTRICTS[dk], owned=ownsDistrict(dk), canBuy=(P&&(P.stars||0)>=D.cost);
+    html+='<div style="border:2px solid rgba(0,0,0,.1);border-radius:14px;padding:12px 14px;margin-bottom:12px;">'+
+      '<div style="display:flex;align-items:center;gap:10px;">'+
+        '<span style="font-size:1.4rem;">'+D.icon+'</span>'+
+        '<div style="flex:1;min-width:0;"><div style="font-weight:800;color:var(--navy,#13234a);">'+D.name+'</div>'+
+          '<div style="font-size:.76rem;color:#778;">'+(owned?'Land owned':'Buy the land, then build shops and homes here')+'</div></div>'+
+        (owned?'<span style="color:#2EB872;font-weight:800;white-space:nowrap;">✓ Owned</span>'
+              :'<button onclick="buyDistrict(\''+dk+'\')" '+(canBuy?'':'disabled')+' style="background:linear-gradient(180deg,#FFD43B,#ED8B00);color:#3a2a00;border:none;border-radius:10px;padding:9px 14px;font-family:inherit;font-weight:900;cursor:pointer;white-space:nowrap;'+(canBuy?'':'opacity:.45;cursor:not-allowed;')+'">Buy land ⭐'+D.cost.toLocaleString()+'</button>')+
+      '</div>';
+    if(owned){
+      html+='<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">';
+      Object.keys(TOWN_DEVS).forEach(function(vk){
+        var V=TOWN_DEVS[vk]; if(V.dist!==dk)return;
+        var vo=ownsDev(vk), vc=(P&&(P.stars||0)>=V.cost);
+        html+='<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.045);border-radius:10px;padding:8px 10px;">'+
+          '<span style="font-size:1.1rem;">'+V.icon+'</span>'+
+          '<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.9rem;color:var(--navy,#13234a);">'+V.name+'</div><div style="font-size:.72rem;color:#2EB872;font-weight:700;">'+bonusChips(V.bonus)+'</div></div>'+
+          (vo?'<span style="color:#2EB872;font-weight:800;font-size:.85rem;white-space:nowrap;">✓ Built</span>'
+             :'<button onclick="buyDev(\''+vk+'\')" '+(vc?'':'disabled')+' style="background:#2D6FD6;color:#fff;border:none;border-radius:9px;padding:7px 12px;font-family:inherit;font-weight:800;cursor:pointer;white-space:nowrap;'+(vc?'':'opacity:.45;cursor:not-allowed;')+'">Build ⭐'+V.cost.toLocaleString()+'</button>')+
+          '</div>';
+      });
+      html+='</div>';
+    }
+    html+='</div>';
+  });
+  body.innerHTML=html;
+}
+function afterBuild(){
+  saveProfiles(); if(typeof sfx==='function')sfx('win');
+  if(typeof updateBankUI==='function')updateBankUI();
+  if(typeof updateScoreHUD==='function')updateScoreHUD();
+  var ts=document.getElementById('town-score'); if(ts&&P)ts.textContent='⭐ '+(P.stars||0).toLocaleString();
+  if(S&&S.stats){ renderTown(); updateHUD(false); }
+  renderBuild();
+}
+function buyDistrict(k){ ensureTown(); var D=TOWN_DISTRICTS[k]; if(!D||ownsDistrict(k))return; if((P.stars||0)<D.cost){sfx('bad');return;} P.stars-=D.cost; P.town.districts[k]=true; afterBuild(); }
+function buyDev(k){ ensureTown(); var V=TOWN_DEVS[k]; if(!V||ownsDev(k))return; if(!ownsDistrict(V.dist)){sfx('bad');return;} if((P.stars||0)<V.cost){sfx('bad');return;} P.stars-=V.cost; P.town.dev[k]=true; afterBuild(); }
 function loadProfiles(){
   try{
     const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
@@ -3116,7 +3212,7 @@ function sanitizeAvatar(){
 function activateProfile(i,silent){
   if(i<0||i>=PROFILES.list.length)return;
   PROFILES.active=i;P=PROFILES.list[i];
-  P.owned=P.owned||[];P.history=P.history||[];P.house=P.house||0;P.lifetimeScore=P.lifetimeScore||0;P.lifetimeBest=P.lifetimeBest||0;P.lifetimeAnswered=P.lifetimeAnswered||0;P.terms=P.terms||[];P.emotes=P.emotes||[];
+  P.owned=P.owned||[];P.history=P.history||[];P.house=P.house||0;P.lifetimeScore=P.lifetimeScore||0;P.lifetimeBest=P.lifetimeBest||0;P.lifetimeAnswered=P.lifetimeAnswered||0;P.terms=P.terms||[];P.emotes=P.emotes||[];ensureTown();
   avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},P.avatar);
   sanitizeAvatar();
   nationName=P.name||'Freedomtopia';
@@ -3147,7 +3243,7 @@ function saveCodeString(){
   if(!P)return '';
   saveProfiles(); // fold current name + avatar into the active profile first
   const data={v:2,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0,
-    lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[]};
+    lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[],town:P.town||{districts:{},dev:{}}};
   try{return 'CATO~'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));}
   catch(e){return 'CATO~'+JSON.stringify(data);}
 }
@@ -3171,6 +3267,7 @@ function applySaveData(data){ // load a decoded Save Code into the active leader
   if(typeof data.lifetimeAnswered==='number')P.lifetimeAnswered=data.lifetimeAnswered;
   if(Array.isArray(data.terms))P.terms=data.terms;
   if(Array.isArray(data.emotes))P.emotes=data.emotes;
+  if(data.town&&typeof data.town==='object')P.town=data.town;
   avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},P.avatar);
   sanitizeAvatar();nationName=P.name||'Freedomtopia';
   updateNbPreview();renderAvCreator();renderAvatarPreview();renderProfiles();updateBankUI();
@@ -3204,7 +3301,7 @@ function signInWithCode(){
 var ACCOUNT=null;
 function loadAccount(){ try{ACCOUNT=JSON.parse(localStorage.getItem('catoAccount')||'null');}catch(e){ACCOUNT=null;} if(ACCOUNT&&(!ACCOUNT.name||!ACCOUNT.pin))ACCOUNT=null; }
 function setAccount(n,pin){ ACCOUNT={name:n,pin:pin}; try{localStorage.setItem('catoAccount',JSON.stringify(ACCOUNT));}catch(e){} }
-function accountSaveData(){ if(!P)return null; return {v:2,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0,lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[]}; }
+function accountSaveData(){ if(!P)return null; return {v:2,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0,lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[],town:P.town||{districts:{},dev:{}}}; }
 var _cloudT=null;
 function scheduleCloudSave(){ if(!ACCOUNT)return; clearTimeout(_cloudT); _cloudT=setTimeout(cloudSave,3500); }
 function cloudSave(){ if(!ACCOUNT||!P)return; try{ fetch('/__coop/account/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:ACCOUNT.name,pin:ACCOUNT.pin,data:accountSaveData()})}).catch(function(){}); }catch(e){} }
@@ -4037,24 +4134,37 @@ function buildExpansion(tiers){
   // place a row of buildings along a street; off=-44 lines the NORTH side, off=+92 the SOUTH side (both sides → a full street)
   function row(streetY,x0,x1,step,fn,off){off=(off===undefined?-44:off);var o='';for(var x=x0;x+104<=x1;x+=step){var cx=x+52,sk=false;for(var j=0;j<VL.length;j++){if(Math.abs(cx-VL[j])<92){sk=true;break;}}if(sk)continue;if(x+108>2440&&x<2680)continue;/* keep the river corridor (final x2440–2680) clear */o+=fn(x,streetY+off);}return o;}
   var bi=0;
-  // WEST neighborhood,homes line BOTH sides of every street
-  SIDE.forEach(function(y){
-    s+=row(y,110,900,170,function(x,b){return expHouse(x,b,bi++);});
-    s+=row(y,110,900,170,function(x,b){return expHouse(x,b,bi++);},102);
-  });
-  // EAST district,each shop type appears exactly ONCE on the north side; homes line the south sides
+  // Signs for districts you can buy in the Build menu (roads are the town's street plan and always show)
+  function forSaleSign(x,y){ return '<g transform="translate('+x+','+y+')">'+sh(0,28,78,10)+
+    '<rect x="-4" y="-6" width="8" height="36" fill="#8A6038"/>'+
+    '<rect x="-94" y="-48" width="188" height="46" rx="9" fill="#FBF3DC" stroke="#C9912E" stroke-width="3"/>'+
+    '<text x="0" y="-27" text-anchor="middle" font-size="13" font-weight="900" fill="#8A6020" font-family="Verdana">🪧 LAND FOR SALE</text>'+
+    '<text x="0" y="-11" text-anchor="middle" font-size="10" font-weight="700" fill="#B5651D" font-family="Verdana">Buy it in the 🏗️ Build menu</text></g>'; }
+  function readySign(x,y){ return '<g transform="translate('+x+','+y+')" opacity="0.95">'+
+    '<rect x="-98" y="-23" width="196" height="44" rx="10" fill="rgba(46,184,114,.16)" stroke="#2EB872" stroke-width="2.5" stroke-dasharray="9 6"/>'+
+    '<text x="0" y="4" text-anchor="middle" font-size="12" font-weight="900" fill="#1F7A3D" font-family="Verdana">🏗️ YOUR LAND, READY TO BUILD</text></g>'; }
   var SHOPKINDS=['cafe','bakery','books','toys','grocer','pizza','icecream','florist','barber','diner','music','hardware'],shopN=0;
   function nextShop(){ return shopN<SHOPKINDS.length ? SHOPKINDS[shopN++] : null; }
-  [620,860,1100,1340].forEach(function(y){s+=row(y,2820,3500,180,function(x,b){var k=nextShop();return k?expShop(x,b,k):expHouse(x,b,bi++);});});
-  s+=row(1580,2820,3500,180,function(x,b){return expHouse(x,b,bi++);});
-  [620,860,1100,1340,1580].forEach(function(y){s+=row(y,2820,3500,180,function(x,b){return expHouse(x,b,bi++);},102);});
-  // SOUTH neighborhood,homes line BOTH sides
-  [2040,2280].forEach(function(y){
-    s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);});
-    s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);},102);
-  });
-  // NORTH business district,offices (tall, so a single north-side row)
-  [220,420].forEach(function(y){s+=row(y,300,3300,250,function(x,b){return expOffice(x,b,2+(bi%2),bi++);});});
+  // WEST neighborhood
+  if(!ownsDistrict('west')) s+=forSaleSign(500,1200);
+  else if(ownsDev('west_homes')) SIDE.forEach(function(y){ s+=row(y,110,900,170,function(x,b){return expHouse(x,b,bi++);}); s+=row(y,110,900,170,function(x,b){return expHouse(x,b,bi++);},102); });
+  else s+=readySign(500,1200);
+  // EAST market district (shops on the north rows, homes on the south)
+  if(!ownsDistrict('east')) s+=forSaleSign(3150,1200);
+  else {
+    var eastBuilt=false;
+    if(ownsDev('east_shops')){ [620,860,1100,1340].forEach(function(y){s+=row(y,2820,3500,180,function(x,b){var k=nextShop();return k?expShop(x,b,k):expHouse(x,b,bi++);});}); eastBuilt=true; }
+    if(ownsDev('east_homes')){ s+=row(1580,2820,3500,180,function(x,b){return expHouse(x,b,bi++);}); [620,860,1100,1340,1580].forEach(function(y){s+=row(y,2820,3500,180,function(x,b){return expHouse(x,b,bi++);},102);}); eastBuilt=true; }
+    if(!eastBuilt) s+=readySign(3150,1200);
+  }
+  // SOUTH neighborhood
+  if(!ownsDistrict('south')) s+=forSaleSign(1800,2160);
+  else if(ownsDev('south_homes')) [2040,2280].forEach(function(y){ s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);}); s+=row(y,120,3500,180,function(x,b){return expHouse(x,b,bi++);},102); });
+  else s+=readySign(1800,2160);
+  // NORTH business district (offices)
+  if(!ownsDistrict('north')) s+=forSaleSign(1800,330);
+  else if(ownsDev('north_offices')) [220,420].forEach(function(y){s+=row(y,300,3300,250,function(x,b){return expOffice(x,b,2+(bi%2),bi++);});});
+  else s+=readySign(1800,330);
   // ── props: trees / lamps / benches scattered on GRASS only (keep-out from roads, buildings, core) ──
   function nearRoad(px,py,m){for(var i=0;i<SEG.length;i++){var g=SEG[i];if(g.h){if(px>=g.a-m&&px<=g.b+m&&Math.abs(py-g.y)<m)return true;}else{if(py>=g.a-m&&py<=g.b+m&&Math.abs(px-g.x)<m)return true;}}return false;}
   function onBldg(px,py,m){for(var i=0;i<EXP_BR.length;i++){var b=EXP_BR[i];if(px>b.x-m&&px<b.x+b.w+m&&py>b.y-m&&py<b.y+b.h+m)return true;}return false;}
@@ -4098,7 +4208,7 @@ function buildMinimap(){
 }
 function renderTown(){
   const map=document.getElementById('town-map');if(!map)return;
-  const st=S.stats||{h:65,e:65,ed:65,f:65};
+  const st=(typeof dispStats==='function')?dispStats():(S.stats||{h:65,e:65,ed:65,f:65});   // policy stats + town growth bonus drive how thriving the town looks
   const avgVal=(st.h+st.e+st.ed+st.f)/4;
   const tiers={h:tTier(st.h),e:tTier(st.e),ed:tTier(st.ed),f:tTier(st.f),avg:tTier(avgVal),avgVal:avgVal,hVal:st.h};
   const fgStr=GFX.fgTrees.map(function(t){return '<g transform="translate('+t[0]+','+t[1]+') scale('+t[2]+')"><circle cx="3" cy="-30" r="19" fill="'+AP.tree2+'"/><circle cx="-3" cy="-34" r="19" fill="'+AP.tree+'"/></g>';}).join('');

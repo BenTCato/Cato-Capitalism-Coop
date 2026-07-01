@@ -757,7 +757,7 @@
 <div id="screen-town" class="screen">
   <div class="town-top">
     <div><div class="town-name" id="town-name">Freedomtopia</div><div class="town-progress" id="town-progress">0/10 citizens helped</div></div>
-    <div style="display:flex;gap:8px;align-items:center;"><span class="score-chip"><span id="town-score">⭐ 0</span></span><button class="hist-btn" onclick="openBuild()" style="margin-top:0;" title="Build your city">🏗️ Build</button><button class="hist-btn" onclick="openHistory()" style="margin-top:0;">📜</button></div>
+    <div style="display:flex;gap:8px;align-items:center;"><span class="score-chip"><span id="town-score">⭐ 0</span></span><button class="hist-btn" onclick="openBuild()" style="margin-top:0;" title="Build your city">🏗️ Build</button><button class="hist-btn" onclick="openBank()" style="margin-top:0;" title="Save stars and earn interest">🏦 Bank</button><button class="hist-btn" onclick="openHistory()" style="margin-top:0;">📜</button></div>
   </div>
   <div class="town-statstrip" id="town-statstrip"></div>
   <div class="town-viewport"><div id="town-map"></div><div class="vignette"></div>
@@ -790,6 +790,27 @@
     <div style="font-size:.84rem;color:#667;margin-bottom:6px;">Answer citizens to earn ⭐, then buy land and shops. A growing free economy lifts your meters (Education and Freedom still depend most on your policies).</div>
     <div id="build-bonus" style="font-size:.85rem;color:#1F7A3D;font-weight:800;margin-bottom:12px;"></div>
     <div id="build-body"></div>
+  </div>
+</div>
+
+<!-- ══ SAVINGS BANK ══ -->
+<div id="bank-overlay" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(8,6,22,.82);overflow:auto;padding:30px 14px;">
+  <div style="max-width:520px;margin:0 auto;background:var(--card,#fff);border-radius:20px;padding:20px 22px;box-shadow:0 24px 70px rgba(0,0,0,.5);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+      <div style="font-size:1.25rem;font-weight:900;color:var(--navy,#13234a);">🏦 Savings Bank</div>
+      <button onclick="closeBank()" style="margin-left:auto;background:rgba(0,0,0,.08);border:none;border-radius:10px;padding:8px 14px;font-family:inherit;font-weight:800;cursor:pointer;">✕ Close</button>
+    </div>
+    <div style="font-size:.84rem;color:#667;margin-bottom:14px;">Put stars in the bank and they grow <b>5% every 5 minutes</b>. That is compound interest: your saved stars earn more stars, and then those earn even more. Saving pays off.</div>
+    <div style="display:flex;gap:12px;margin-bottom:12px;">
+      <div style="flex:1;background:rgba(0,0,0,.05);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:.72rem;color:#889;font-weight:800;letter-spacing:.5px;">WALLET</div><div id="bank-wallet" style="font-size:1.25rem;font-weight:900;color:#9A6200;">⭐ 0</div></div>
+      <div style="flex:1;background:rgba(46,184,114,.12);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:.72rem;color:#1F7A3D;font-weight:800;letter-spacing:.5px;">IN SAVINGS</div><div id="bank-balance-v" style="font-size:1.25rem;font-weight:900;color:#1F7A3D;">⭐ 0</div></div>
+    </div>
+    <div id="bank-next" style="text-align:center;font-size:.82rem;color:#2EB872;font-weight:800;margin-bottom:14px;min-height:1em;"></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="bank-amt" type="number" min="0" placeholder="Number of stars" style="flex:1;min-width:130px;padding:10px 12px;border:2px solid #cdd9f5;border-radius:10px;font-family:inherit;font-size:.95rem;">
+      <button onclick="bankDeposit(bankAmt())" style="background:#2EB872;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:inherit;font-weight:800;cursor:pointer;">Deposit</button>
+      <button onclick="bankWithdraw(bankAmt())" style="background:#2D6FD6;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:inherit;font-weight:800;cursor:pointer;">Withdraw</button>
+    </div>
   </div>
 </div>
 
@@ -3099,7 +3120,7 @@ const SPECIAL_OUTFIT=[
 ];
 
 // ── Profiles ──
-function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0,lifetimeScore:0,lifetimeBest:0,lifetimeAnswered:0,terms:[],emotes:[],town:{districts:{},dev:{}}};}
+function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0,lifetimeScore:0,lifetimeBest:0,lifetimeAnswered:0,terms:[],emotes:[],town:{districts:{},dev:{}},bank:{balance:0,last:0}};}
 // ── TOWN BUILDING: buy land (districts), then developments (shops/homes) to grow your city ──
 // You start with just downtown; buying land + shops adds a steady bonus to the meters (a growing free economy).
 var TOWN_DISTRICTS={
@@ -3181,6 +3202,34 @@ function afterBuild(){
 }
 function buyDistrict(k){ ensureTown(); var D=TOWN_DISTRICTS[k]; if(!D||ownsDistrict(k))return; if((P.stars||0)<D.cost){sfx('bad');return;} P.stars-=D.cost; P.town.districts[k]=true; afterBuild(); }
 function buyDev(k){ ensureTown(); var V=TOWN_DEVS[k]; if(!V||ownsDev(k))return; if(!ownsDistrict(V.dist)){sfx('bad');return;} if((P.stars||0)<V.cost){sfx('bad');return;} P.stars-=V.cost; P.town.dev[k]=true; afterBuild(); }
+
+/* ══ SAVINGS BANK: deposit stars, earn compound interest every 5 minutes ══ */
+var BANK_RATE=0.05, BANK_TICK_MS=5*60*1000, BANK_MAX_TICKS=6; /* 5% per 5 min, cap 6 ticks (30 min) per accrual so a long absence cannot mint infinite stars */
+function ensureBank(){ if(!P)return; if(!P.bank||typeof P.bank!=='object')P.bank={balance:0,last:0}; if(!P.bank.last)P.bank.last=Date.now(); if(typeof P.bank.balance!=='number'||P.bank.balance<0)P.bank.balance=0; }
+function accrueBank(){
+  if(!P)return; ensureBank();
+  var now=Date.now(), ticks=Math.floor((now-P.bank.last)/BANK_TICK_MS);
+  if(ticks>0){
+    var use=Math.min(ticks,BANK_MAX_TICKS);
+    if(P.bank.balance>0)P.bank.balance=Math.round(P.bank.balance*Math.pow(1+BANK_RATE,use));
+    P.bank.last=now;
+    saveProfiles();
+  }
+}
+function bankTimeToNext(){ if(!P||!P.bank)return 0; var ms=BANK_TICK_MS-((Date.now()-(P.bank.last||Date.now()))%BANK_TICK_MS); return Math.max(0,Math.ceil(ms/1000)); }
+function bankSetHUD(){ var ts=document.getElementById('town-score'); if(ts&&P)ts.textContent='⭐ '+(P.stars||0).toLocaleString(); }
+function bankAmt(){ var el=document.getElementById('bank-amt'); var v=el?parseInt(el.value,10):0; return isNaN(v)?0:Math.max(0,v); }
+function bankDeposit(n){ ensureBank(); accrueBank(); n=Math.min(n,P.stars||0); if(n<=0){sfx('bad');return;} P.stars-=n; P.bank.balance+=n; saveProfiles(); bankSetHUD(); renderBank(); sfx('good'); }
+function bankWithdraw(n){ ensureBank(); accrueBank(); n=Math.min(n,P.bank.balance||0); if(n<=0){sfx('bad');return;} P.bank.balance-=n; P.stars=(P.stars||0)+n; saveProfiles(); bankSetHUD(); renderBank(); sfx('good'); }
+function renderBank(){
+  ensureBank();
+  var w=document.getElementById('bank-wallet'); if(w)w.textContent='⭐ '+(P?(P.stars||0).toLocaleString():'0');
+  var b=document.getElementById('bank-balance-v'); if(b)b.textContent='⭐ '+(P?(P.bank.balance||0).toLocaleString():'0');
+  var nx=document.getElementById('bank-next');
+  if(nx){ if(P&&P.bank.balance>0){ var s=bankTimeToNext(); nx.textContent='Next interest in '+Math.floor(s/60)+'m '+(s%60<10?'0':'')+(s%60)+'s (+'+Math.round(P.bank.balance*BANK_RATE).toLocaleString()+' ⭐)'; } else nx.textContent='Deposit stars to start earning 5% interest every 5 minutes.'; }
+}
+function openBank(){ ensureBank(); accrueBank(); renderBank(); var o=document.getElementById('bank-overlay'); if(o)o.style.display='block'; if(!window._bankTimer)window._bankTimer=setInterval(function(){ var ov=document.getElementById('bank-overlay'); if(ov&&ov.style.display==='block'){ accrueBank(); renderBank(); } },1000); if(typeof sfx==='function')sfx('click'); }
+function closeBank(){ var o=document.getElementById('bank-overlay'); if(o)o.style.display='none'; }
 function loadProfiles(){
   try{
     const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
@@ -3212,7 +3261,7 @@ function sanitizeAvatar(){
 function activateProfile(i,silent){
   if(i<0||i>=PROFILES.list.length)return;
   PROFILES.active=i;P=PROFILES.list[i];
-  P.owned=P.owned||[];P.history=P.history||[];P.house=P.house||0;P.lifetimeScore=P.lifetimeScore||0;P.lifetimeBest=P.lifetimeBest||0;P.lifetimeAnswered=P.lifetimeAnswered||0;P.terms=P.terms||[];P.emotes=P.emotes||[];ensureTown();
+  P.owned=P.owned||[];P.history=P.history||[];P.house=P.house||0;P.lifetimeScore=P.lifetimeScore||0;P.lifetimeBest=P.lifetimeBest||0;P.lifetimeAnswered=P.lifetimeAnswered||0;P.terms=P.terms||[];P.emotes=P.emotes||[];ensureTown();if(!P.bank||typeof P.bank!=='object')P.bank={balance:0,last:0};
   avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},P.avatar);
   sanitizeAvatar();
   nationName=P.name||'Freedomtopia';
@@ -3243,7 +3292,7 @@ function saveCodeString(){
   if(!P)return '';
   saveProfiles(); // fold current name + avatar into the active profile first
   const data={v:2,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0,
-    lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[],town:P.town||{districts:{},dev:{}}};
+    lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[],town:P.town||{districts:{},dev:{}},bank:P.bank||{balance:0,last:0}};
   try{return 'CATO~'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));}
   catch(e){return 'CATO~'+JSON.stringify(data);}
 }
@@ -3268,6 +3317,7 @@ function applySaveData(data){ // load a decoded Save Code into the active leader
   if(Array.isArray(data.terms))P.terms=data.terms;
   if(Array.isArray(data.emotes))P.emotes=data.emotes;
   if(data.town&&typeof data.town==='object')P.town=data.town;
+  if(data.bank&&typeof data.bank==='object')P.bank=data.bank;
   avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},P.avatar);
   sanitizeAvatar();nationName=P.name||'Freedomtopia';
   updateNbPreview();renderAvCreator();renderAvatarPreview();renderProfiles();updateBankUI();
@@ -3301,7 +3351,7 @@ function signInWithCode(){
 var ACCOUNT=null;
 function loadAccount(){ try{ACCOUNT=JSON.parse(localStorage.getItem('catoAccount')||'null');}catch(e){ACCOUNT=null;} if(ACCOUNT&&(!ACCOUNT.name||!ACCOUNT.pin))ACCOUNT=null; }
 function setAccount(n,pin){ ACCOUNT={name:n,pin:pin}; try{localStorage.setItem('catoAccount',JSON.stringify(ACCOUNT));}catch(e){} }
-function accountSaveData(){ if(!P)return null; return {v:2,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0,lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[],town:P.town||{districts:{},dev:{}}}; }
+function accountSaveData(){ if(!P)return null; return {v:2,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0,lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[],town:P.town||{districts:{},dev:{}},bank:P.bank||{balance:0,last:0}}; }
 var _cloudT=null;
 function scheduleCloudSave(){ if(!ACCOUNT)return; clearTimeout(_cloudT); _cloudT=setTimeout(cloudSave,3500); }
 function cloudSave(){ if(!ACCOUNT||!P)return; try{ fetch('/__coop/account/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:ACCOUNT.name,pin:ACCOUNT.pin,data:accountSaveData()})}).catch(function(){}); }catch(e){} }
@@ -3795,11 +3845,11 @@ function bHouse(x,y,t,hue){return urban(x,y-64,92,1,4,t,['#4E6260','#A8918A',hue
   (t===2?'<rect x="6" y="58" width="22" height="9" rx="4.5" fill="'+AP.tree+'"/>':''));}
 const HOUSE_TIERS=[
  {name:'Cozy Cottage',icon:'🏠',cost:0,w:100,fl:1,cols:4,bodies:['#5E7370','#C9A876','#F4D06F']},
- {name:'Family House',icon:'🏡',cost:2500,w:130,fl:1,cols:5,bodies:['#5E7370','#CFA878','#F7DA8A']},
- {name:'Mansion',icon:'🏛️',cost:6000,w:170,fl:2,cols:7,bodies:['#6E7B79','#D9C28F','#F4E2B8']},
- {name:'Apartment Complex',icon:'🏢',cost:12000,w:150,fl:3,cols:6,bodies:['#5E6B70','#9FB4C9','#BCD2E8']},
- {name:'Skyscraper',icon:'🏙️',cost:25000,w:120,fl:6,cols:5,bodies:['#4E5660','#7E96AC','#9FC4E8']},
- {name:'Royal Palace',icon:'🏰',cost:50000,w:190,fl:2,cols:8,bodies:['#6E6258','#E2C792','#F4DFAE']}
+ {name:'Family House',icon:'🏡',cost:2000,w:130,fl:1,cols:5,bodies:['#5E7370','#CFA878','#F7DA8A']},
+ {name:'Mansion',icon:'🏛️',cost:4500,w:170,fl:2,cols:7,bodies:['#6E7B79','#D9C28F','#F4E2B8']},
+ {name:'Apartment Complex',icon:'🏢',cost:8000,w:150,fl:3,cols:6,bodies:['#5E6B70','#9FB4C9','#BCD2E8']},
+ {name:'Skyscraper',icon:'🏙️',cost:13000,w:120,fl:6,cols:5,bodies:['#4E5660','#7E96AC','#9FC4E8']},
+ {name:'Royal Palace',icon:'🏰',cost:20000,w:190,fl:2,cols:8,bodies:['#6E6258','#E2C792','#F4DFAE']}
 ];
 function bHome(x,yBase,t,ht){
   ht=Math.min(ht||0,HOUSE_TIERS.length-1);const HT=HOUSE_TIERS[ht];
@@ -7015,7 +7065,7 @@ function startGame(){Q=dealTerm(null);S=freshState();shuffleMap=[];pendingNext=f
 function restartGame(){const wrap=document.getElementById('creator-wrap'),slot=document.getElementById('creator-slot-title');if(wrap&&slot&&wrap.parentElement!==slot)slot.appendChild(wrap);showScreen('title');setTimeout(function(){renderAvatarPreview();renderAvCreator();},50);}
 
 // Init on page load
-document.addEventListener('DOMContentLoaded',function(){setDifficulty('normal',true);setGrade(8,true);loadProfiles();prefillAccount();initTownControls();});
+document.addEventListener('DOMContentLoaded',function(){setDifficulty('normal',true);setGrade(8,true);loadProfiles();if(typeof accrueBank==='function')accrueBank();prefillAccount();initTownControls();});
 </script>
 </body>
 </html>

@@ -1022,7 +1022,7 @@
       <div class="box-title">Mystery Policy Box</div>
       <div class="box-desc">One random collectible per box. Duplicates auto-refund stars by rarity. Collect all 16!</div>
       <div class="box-odds"><span style="color:#2EB872;">Uncommon 50%</span> · <span style="color:#3E8EF7;">Rare 30%</span> · <span style="color:#ED8B00;">Legendary 15%</span> · <span style="color:#C026D3;">Mythic 5%</span></div>
-      <button class="btn btn-gold" id="buy-box-btn" onclick="buyBox()">Open Box. 2,500 ⭐</button>
+      <button class="btn btn-gold" id="buy-box-btn" onclick="buyBox()">Open Box, 2,500 ⭐</button>
     </div>
     <div class="store-note" id="store-note"></div>
     <button class="btn btn-navy" id="arcade-btn" style="margin-top:10px;" onclick="openMiniGame('market')">🕹️ Play the Market Arcade</button>
@@ -1046,7 +1046,7 @@
 <div id="screen-results" class="screen">
   <div class="end-hero win">
     <span class="e-emoji">🏆</span>
-    <h1 class="win">Game Complete!</h1>
+    <h1 class="win">📜 Term Report</h1>
     <div class="ideo-pill" id="ideo-label">Your Ideology</div>
     <p id="ideo-desc" style="margin-top:10px"></p>
   </div>
@@ -2751,7 +2751,7 @@ function renderQ(){
   const art=document.getElementById('scene-art');art.style.background=q.gradient;
   document.getElementById('art-emoji').textContent=q.icon;
   document.getElementById('art-label').textContent=q.tag;
-  const displayLetters=['A','B','C','D'];const shuffled=shuffle(q.choices);shuffleMap[S.qIdx]=shuffled;
+  const displayLetters=['A','B','C','D'];const shuffled=shuffleMap[S.qIdx]||shuffle(q.choices);shuffleMap[S.qIdx]=shuffled;
   const wrap=document.getElementById('choices');wrap.innerHTML='';
   shuffled.forEach((c,vi)=>{const btn=document.createElement('button');btn.className='choice';btn.innerHTML=`<div class="cletter">${displayLetters[vi]}</div><div class="ctext"><strong>${c.label}</strong></div>`;btn.onclick=()=>pickChoice(c.letter);wrap.appendChild(btn);});
   document.getElementById('feedback').classList.remove('show');
@@ -2860,13 +2860,13 @@ function doNextQ(){if(S.answers.length>=Q.length){buildResults();showScreen('res
 // ─────────────────────────────────────────────────────────────
 function ideologyResult(){
   const t=S.answers.length||1;const p={};Object.keys(S.counts).forEach(k=>p[k]=S.counts[k]/t);
-  if(p.cap>=0.6)return{label:'🟡 Libertarian Capitalist',desc:'You consistently chose free markets, individual liberty, and limited government, the philosophy behind the most dramatic improvements in global living standards in history. Well done.'};
-  if(p.soc>=0.5)return{label:'🔴 Social Democrat',desc:'You frequently chose government-led solutions: regulation, redistribution, and collective action. While well-intentioned, evidence consistently shows these policies reduce economic dynamism and personal freedom over time.'};
-  if(p.com>=0.4)return{label:'🟣 Authoritarian Statist',desc:"Your choices concentrated power in the state at the expense of individual rights and economic freedom. History's clearest lesson, from the Soviet Union to Venezuela, is that centralized control destroys both prosperity and human dignity."};
-  if(p.mix>=0.5)return{label:'🔵 Pragmatic Centrist',desc:'You took a mixed approach, splitting the difference between markets and government. While pragmatic, consistent application of free market principles consistently outperforms the mixed approach in real-world evidence.'};
+  if(p.cap>=0.6)return{label:'🟡 Libertarian Capitalist',desc:'You backed free markets, personal liberty, and a limited government. That is the mix behind the biggest rise in living standards in human history. Nicely played, leader.'};
+  if(p.soc>=0.5)return{label:'🔴 Social Democrat',desc:'You leaned on government to fix problems through regulation and redistribution. The goal is fairness, but the usual trade-off is slower growth and less personal freedom. Worth deciding which you value more.'};
+  if(p.com>=0.4)return{label:'🟣 Authoritarian Statist',desc:"You handed most power to the state over individual rights. From the Soviet Union to Venezuela, that path has a steep record of lost prosperity and lost freedom. A hard one to defend."};
+  if(p.mix>=0.5)return{label:'🔵 Pragmatic Centrist',desc:'You split the difference between markets and government. It is a safe instinct, though the track record says leaning harder on markets usually delivers more growth and choice. Try a bolder run and compare your bars.'};
   const winner=Object.keys(S.counts).reduce((a,b)=>S.counts[a]>=S.counts[b]?a:b);
   const fb={cap:'🟡 Leaning Libertarian',mix:'🔵 Leaning Centrist',soc:'🔴 Leaning Socialist',com:'🟣 Leaning Authoritarian'};
-  return{label:fb[winner],desc:'Your choices were varied, leaning in one direction. Exploring the consistent evidence for free market policies may reveal why principled economic freedom produces the best outcomes for everyone.'};
+  return{label:fb[winner],desc:'Your choices ranged widely, with a slight lean one way. Play a few more terms and watch which approach keeps all four bars highest.'};
 }
 function buildResults(){
   const rh=document.querySelector('#screen-results .end-hero h1');
@@ -3252,17 +3252,17 @@ function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairC
 // ── TOWN BUILDING: buy land (districts), then developments (shops/homes) to grow your city ──
 // You start with just downtown; buying land + shops adds a steady bonus to the meters (a growing free economy).
 var TOWN_DISTRICTS={
-  west:  {name:'West Neighborhood',      icon:'🏘️', cost:1500},
-  east:  {name:'East Market District',   icon:'🏬', cost:2200},
-  south: {name:'South Neighborhood',     icon:'🏡', cost:1500},
-  north: {name:'North Business District',icon:'🏢', cost:2600}
+  west:  {name:'Cottage Row',        icon:'🏘️', cost:1500},
+  east:  {name:'Market Quarter',     icon:'🏬', cost:2200},
+  south: {name:'Riverside Commons',  icon:'🏡', cost:1500},
+  north: {name:'Uptown Business Center',icon:'🏢', cost:2600}
 };
-var DISTRICT_BONUS={west:{h:2},east:{e:3,f:2},south:{h:2},north:{e:2,f:1,ed:1}};
+var DISTRICT_BONUS={west:{h:2},east:{e:3,f:2},south:{h:1,f:1},north:{e:2,f:1,ed:1}};
 var TOWN_DEVS={
-  west_homes:   {dist:'west',  name:'Family Homes',   icon:'🏠', cost:900,  bonus:{h:6,e:1}},
+  west_homes:   {dist:'west',  name:'Cottage Row Homes', icon:'🏠', cost:900,  bonus:{h:6,e:1}},
   east_shops:   {dist:'east',  name:'Shopping Street', icon:'🛍️', cost:1400, bonus:{e:7,h:2}},
-  east_homes:   {dist:'east',  name:'East Homes',     icon:'🏠', cost:800,  bonus:{h:4}},
-  south_homes:  {dist:'south', name:'Family Homes',   icon:'🏠', cost:900,  bonus:{h:6,e:1}},
+  east_homes:   {dist:'east',  name:'Market Lofts',    icon:'🏠', cost:800,  bonus:{h:4}},
+  south_homes:  {dist:'south', name:'Riverside Homes', icon:'🏠', cost:900,  bonus:{h:5,e:1,ed:1}},
   north_offices:{dist:'north', name:'Offices & Jobs', icon:'🏢', cost:1600, bonus:{e:7,ed:2}}
 };
 // ── ATTRACTIONS: cool standalone complexes you buy individually (no land needed). They sit in the
@@ -3390,7 +3390,7 @@ function placeRectAt(cx,gy){ return {x0:cx-ATTR_W/2, y0:gy-ATTR_H, x1:cx+ATTR_W/
 function canPlaceAt(cx,gy){
   var r=placeRectAt(cx,gy);
   if(r.x0<60||r.x1>WORLD_W-60||r.y0<140||r.y1>WORLD_H-16)return false;   // inside the map
-  if(!inOwnedZone(cx,gy)||!inOwnedZone(r.x0+10,gy)||!inOwnedZone(r.x1-10,gy))return false; // on land you own
+  if(!inOwnedZone(cx,gy)||!inOwnedZone(r.x0+10,gy)||!inOwnedZone(r.x1-10,gy)||!inOwnedZone(r.x0+10,r.y0+6)||!inOwnedZone(r.x1-10,r.y0+6))return false; // whole footprint on land you own
   for(var i=0;i<ROAD_RECTS.length;i++){ if(rectsHit(r,ROAD_RECTS[i],1))return false; }     // not on a road
   for(var j=0;j<colliders.length;j++){ var c=colliders[j]; if(rectsHit(r,{x0:c.x,y0:c.y,x1:c.x+c.w,y1:c.y+c.h},4))return false; } // not on water or another building
   return true;
@@ -3465,7 +3465,7 @@ function renderBank(){
   if(nx){ if(P&&P.bank.balance>0){ var s=bankTimeToNext(); nx.textContent='Next interest in '+Math.floor(s/60)+'m '+(s%60<10?'0':'')+(s%60)+'s (+'+Math.round(P.bank.balance*BANK_RATE).toLocaleString()+' ⭐)'; } else nx.textContent='Deposit stars to start earning 5% interest every 5 minutes.'; }
 }
 function openBank(){ ensureBank(); accrueBank(); renderBank(); var o=document.getElementById('bank-overlay'); if(o)o.style.display='block'; if(!window._bankTimer)window._bankTimer=setInterval(function(){ var ov=document.getElementById('bank-overlay'); if(ov&&ov.style.display==='block'){ accrueBank(); renderBank(); } },1000); if(typeof sfx==='function')sfx('click'); }
-function closeBank(){ var o=document.getElementById('bank-overlay'); if(o)o.style.display='none'; }
+function closeBank(){ var o=document.getElementById('bank-overlay'); if(o)o.style.display='none'; if(window._bankTimer){clearInterval(window._bankTimer);window._bankTimer=null;} }
 function loadProfiles(){
   try{
     const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
@@ -3528,7 +3528,7 @@ function saveCodeString(){
   if(!P)return '';
   saveProfiles(); // fold current name + avatar into the active profile first
   const data={v:2,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0,
-    lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[],town:P.town||{districts:{},dev:{}},bank:P.bank||{balance:0,last:0}};
+    lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[],town:P.town||{districts:{},dev:{},attr:{},pos:{}},bank:P.bank||{balance:0,last:0}};
   try{return 'CATO~'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));}
   catch(e){return 'CATO~'+JSON.stringify(data);}
 }
@@ -3554,6 +3554,8 @@ function applySaveData(data){ // load a decoded Save Code into the active leader
   if(Array.isArray(data.emotes))P.emotes=data.emotes;
   if(data.town&&typeof data.town==='object')P.town=data.town;
   if(data.bank&&typeof data.bank==='object')P.bank=data.bank;
+  if(typeof ensureTown==='function')ensureTown();   // restore any missing town.attr/pos so placed attractions survive an older/partial save
+  if(typeof ensureBank==='function')ensureBank();
   avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},P.avatar);
   sanitizeAvatar();nationName=P.name||'Freedomtopia';
   updateNbPreview();renderAvCreator();renderAvatarPreview();renderProfiles();updateBankUI();
@@ -3587,7 +3589,7 @@ function signInWithCode(){
 var ACCOUNT=null;
 function loadAccount(){ try{ACCOUNT=JSON.parse(localStorage.getItem('catoAccount')||'null');}catch(e){ACCOUNT=null;} if(ACCOUNT&&(!ACCOUNT.name||!ACCOUNT.pin))ACCOUNT=null; }
 function setAccount(n,pin){ ACCOUNT={name:n,pin:pin}; try{localStorage.setItem('catoAccount',JSON.stringify(ACCOUNT));}catch(e){} }
-function accountSaveData(){ if(!P)return null; return {v:2,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0,lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[],town:P.town||{districts:{},dev:{}},bank:P.bank||{balance:0,last:0}}; }
+function accountSaveData(){ if(!P)return null; return {v:2,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0,lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[],town:P.town||{districts:{},dev:{},attr:{},pos:{}},bank:P.bank||{balance:0,last:0}}; }
 var _cloudT=null;
 function scheduleCloudSave(){ if(!ACCOUNT)return; clearTimeout(_cloudT); _cloudT=setTimeout(cloudSave,3500); }
 function cloudSave(){ if(!ACCOUNT||!P)return; try{ fetch('/__coop/account/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:ACCOUNT.name,pin:ACCOUNT.pin,data:accountSaveData()})}).catch(function(){}); }catch(e){} }
@@ -4584,8 +4586,8 @@ function buildExpansion(tiers){
     if(clash)continue;
     props.push([px,py]);
   }}
-  for(var pi=0;pi<props.length;pi++){var P=props[pi],t=(P[0]*7+P[1])%7;
-    s+= t<3?ftree(P[0],P[1],0.85+(t%2)*0.2) : (t<5?flamp(P[0],P[1]) : (t<6?fbench(P[0],P[1]):fflower(P[0],P[1])));
+  for(var pi=0;pi<props.length;pi++){var pp=props[pi],t=(pp[0]*7+pp[1])%7;
+    s+= t<3?ftree(pp[0],pp[1],0.85+(t%2)*0.2) : (t<5?flamp(pp[0],pp[1]) : (t<6?fbench(pp[0],pp[1]):fflower(pp[0],pp[1])));
   }
   // a couple of green parks (clusters of trees in the open blocks south of downtown)
   s+=fbush(420,1730,1.2)+fbush(470,1760,1)+fbush(3180,1730,1.1)+fbush(3230,1760,1);
@@ -5313,12 +5315,15 @@ function gradePool(grade,npcIndex){ return (QG[grade]||[]).concat(QGB[bandOf(gra
 function dealTerm(exclude){
   // One question per citizen (Q[i] = NPC i). Pull from that citizen's grade pool.
   // Safety fallback (pools are always full): any question for this grade+band.
-  const term=[],used=[];
+  exclude=exclude||[];
+  const term=[];
   for(let i=0;i<10;i++){
     let pool=gradePool(GRADE_KEY,i);
     if(!pool.length){ pool=(QG[GRADE_KEY]||[]).concat(QGB[bandOf(GRADE_KEY)]||[]); }
-    let pick=pool.length?pool[Math.floor(Math.random()*pool.length)]:null;
-    if(pick){ used.push(pick); term.push(pick); }
+    let fresh=pool.filter(function(q){return exclude.indexOf(q)<0;});   // avoid repeating last term's questions
+    let src=fresh.length?fresh:pool;                                    // fall back to full pool if all were used
+    let pick=src.length?src[Math.floor(Math.random()*src.length)]:null;
+    if(pick)term.push(pick);
   }
   return term;
 }

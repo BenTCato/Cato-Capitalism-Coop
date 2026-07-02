@@ -151,9 +151,12 @@ function newTqId(){ return 't_' + Math.random().toString(36).slice(2, 9); }
 function tqStudentView(tq, sid){
   if (!tq) return null;
   const mine = tq.responses[sid] || null;
+  // grant the reward ONCE: report the pre-mark credited state, then mark it so reloads cannot re-claim stars
+  let wasCredited = false;
+  if (mine) { wasCredited = !!mine.credited; if (mine.awarded && !mine.credited) mine.credited = true; }
   return { id: tq.id, style: tq.style, text: tq.text, choices: tq.choices, reward: tq.reward, // note: `correct` is NOT sent to students
     answered: !!mine,
-    mine: mine ? { answer: mine.answer, decided: mine.decided, awarded: mine.awarded, correct: mine.correct } : null };
+    mine: mine ? { answer: mine.answer, decided: mine.decided, awarded: mine.awarded, correct: mine.correct, credited: wasCredited } : null };
 }
 function tqDashView(tq){
   if (!tq) return null;
@@ -167,7 +170,7 @@ function tqDashView(tq){
 //                    answers{id:{letters,done}}, result, created, touched }
 const duels = new Map();
 const DUEL_PENDING_MS = 35000;   // a challenge expires if not answered in time
-const DUEL_DONE_MS    = 20000;   // a finished duel lingers this long so both clients see the result
+const DUEL_DONE_MS    = 60000;   // a finished duel lingers this long so both clients see the result (60s covers a reload during settling so the winner still gets the star delta)
 
 function newDuelId() {
   let id;
@@ -223,6 +226,7 @@ function pruneDuels() {
     if (d.status === 'pending' && now - d.created > DUEL_PENDING_MS) duels.delete(id);
     else if (d.status === 'done' && now - d.touched > DUEL_DONE_MS) duels.delete(id);
     else if ((d.status === 'declined' || d.status === 'cancelled') && now - d.touched > 8000) duels.delete(id);
+    else if (d.status === 'active' && now - d.touched > 90000) duels.delete(id); // opponent vanished mid-duel: void it so the survivor is freed (no stars have moved yet)
   }
 }
 
@@ -418,7 +422,7 @@ const server = http.createServer(async (req, res) => {
   if (p === '/__coop/duel/cancel' && req.method === 'POST') {
     const raw = await readBody(req);
     try { const d = JSON.parse(raw); const duel = duels.get(d && d.duelId);
-      if (duel && (duel.from.id === d.id || duel.to.id === d.id) && duel.status === 'pending') { duel.status = 'cancelled'; duel.touched = Date.now(); }
+      if (duel && (duel.from.id === d.id || duel.to.id === d.id) && (duel.status === 'pending' || duel.status === 'active')) { duel.status = 'cancelled'; duel.touched = Date.now(); } // allow leaving an active duel too (no stars have moved before it is 'done')
     } catch (e) {}
     return send(res, 200, 'application/json', '{"ok":true}');
   }

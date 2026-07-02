@@ -543,7 +543,9 @@
   }
   function renderWaitingOpp(d) {
     openOv('<div class="duel-h">✅ Answers in!</div><div class="duel-sub">Waiting for your opponent to finish…</div>' +
-      '<div style="font-size:2rem;">⏳</div>');
+      '<div style="font-size:2rem;">⏳</div>' +
+      '<div class="duel-row"><button class="duel-btn duel-ghost" id="duel-leave">Leave duel</button></div>');
+    var lb = card && card.querySelector('#duel-leave'); if (lb) lb.onclick = function () { cancelChallenge(); }; // free the survivor immediately if the opponent vanished
   }
   function applyResultOnce(d) {
     if (!d.result || applied[d.id]) return;
@@ -690,7 +692,7 @@
     if (!tq) { if (tqBanner) tqBanner.style.display = 'none'; return; }
     if (tq.answered) {
       if (tqBanner) tqBanner.style.display = 'none';
-      if (tq.mine && tq.mine.awarded && !appliedTQ[tq.id]) { appliedTQ[tq.id] = true; applyTQStars(tq.reward); toast('📣 Your teacher awarded you ⭐' + tq.reward + '!'); trySfx('win'); }
+      if (tq.mine && tq.mine.awarded && !tq.mine.credited && !appliedTQ[tq.id]) { appliedTQ[tq.id] = true; applyTQStars(tq.reward); toast('📣 Your teacher awarded you ⭐' + tq.reward + '!'); trySfx('win'); } // server credited flag blocks re-claim on reload
     } else {
       var show = townActive() && (!ov || ov.style.display === 'none');
       if (tqBanner) tqBanner.style.display = show ? '' : 'none';

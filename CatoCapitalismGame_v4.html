@@ -493,7 +493,7 @@
     #minimap .mm-dot{position:absolute;transform:translate(-50%,-50%);font-size:11px;line-height:1;}
     #minimap .mm-npc{position:absolute;transform:translate(-50%,-50%);font-size:10px;line-height:1;z-index:2;filter:drop-shadow(0 0 2px rgba(0,0,0,.6));}
     #minimap-player{position:absolute;width:9px;height:9px;background:#FFD43B;border:1.5px solid #1a1456;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 5px #FFD43B;z-index:2;}
-    #emote-tray{position:absolute;right:14px;bottom:74px;z-index:30;display:none;flex-direction:column;gap:6px;background:rgba(16,22,40,.94);padding:10px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.45);}
+    #emote-tray{position:absolute;right:14px;bottom:140px;z-index:41;display:none;flex-direction:column;gap:6px;background:rgba(16,22,40,.94);padding:10px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.45);}
     #emote-tray.open{display:flex;}
     #emote-tray button{font-size:1.7rem;line-height:1;background:transparent;border:none;cursor:pointer;padding:4px;border-radius:8px;}
     #emote-tray button:hover{background:rgba(255,255,255,.12);}
@@ -744,10 +744,10 @@
     <summary style="cursor:pointer;font-weight:800;color:var(--navy);font-size:1.1rem;list-style:revert;">❔ How to Play</summary>
     <p style="margin-top:12px;">Each round gives you a real policy challenge with four possible responses. Pick your <strong>grade level</strong> and the questions are written at that reading level. Your nation has four health bars, <strong>Happiness, Economy, Education, and Freedom</strong>, and every choice nudges them up or down. Help all your citizens to finish a term, then keep governing term after term and climb the class leaderboard.</p>
     <div class="stat-icons">
-      <div class="stat-icon">😊<strong>Citizen Happiness</strong><p>How satisfied and secure residents feel day-to-day. Drops when policies create instability, shortages, or lost rights.</p></div>
-      <div class="stat-icon">💰<strong>Economic Health</strong><p>The strength of jobs, growth, and prosperity. Sensitive to taxes, regulation, and government spending.</p></div>
-      <div class="stat-icon">📚<strong>Education Quality</strong><p>How well schools prepare young people. Affected by competition, funding allocation, and government control.</p></div>
-      <div class="stat-icon">🗽<strong>Individual Freedom</strong><p>The degree to which citizens can live, speak, and work without government interference. Fragile once eroded.</p></div>
+      <div class="stat-icon">😊<strong>Happiness</strong><p>How good life feels for the people in your town. It drops when things get chaotic, run short, or feel unfair.</p></div>
+      <div class="stat-icon">💰<strong>Economy</strong><p>How strong jobs and money are. It reacts to taxes, rules, and how much the government spends.</p></div>
+      <div class="stat-icon">📚<strong>Education</strong><p>How well schools help kids learn. It rises with more choice and falls with too much top-down control.</p></div>
+      <div class="stat-icon">🗽<strong>Freedom</strong><p>How much people can live, speak, and work without being told what to do. Easy to lose, hard to win back.</p></div>
     </div>
     <!-- ── Animated HUD Demo ── -->
     <div class="demo-hud">
@@ -2684,7 +2684,7 @@ function lifetimeGrade(){
 function freshState(){
   const st=DIFFS[DIFF_KEY].start;
   return{qIdx:0,term:1,stats:{h:st,e:st,ed:st,f:st},answers:[],counts:{cap:0,mix:0,soc:0,com:0},locked:false,
-    score:0,streak:0,maxStreak:0,bestCount:0,minStats:{h:st,e:st,ed:st,f:st},mini:{}};
+    score:0,streak:0,maxStreak:0,bestCount:0,starsThisTerm:0,minStats:{h:st,e:st,ed:st,f:st},mini:{}};
 }
 
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');window.scrollTo(0,0);}
@@ -2782,9 +2782,9 @@ function pickChoice(letter){
   const finalRound=S.answers.length>=Q.length;
   if(finalRound)pts*=2;
   S.score+=pts;
-  // Stars are the spendable currency,bank them live as each question is answered
-  // (same totals as before: 250 per best answer + 50 per answer). Reverted by "Back".
-  const starsEarned=120+(isBest?380:0);   // more stars per question, to fund buying land + shops for your town
+  // Stars are the spendable currency, banked live as each question is answered.
+  const starsEarned=120+(isBest?380:0);   // 120 per answer, plus 380 for a best answer
+  S.starsThisTerm=(S.starsThisTerm||0)+starsEarned;   // track the real total so the Results screen matches what was banked
   if(P){P.stars=(P.stars||0)+starsEarned;saveProfiles();}
   updateScoreHUD();updateBankUI();spawnScorePop(starsEarned,false);spawnStatChips(c.fx);
   sfx(net>=0?'good':'bad');
@@ -2853,7 +2853,7 @@ function nextQ(){
   if(!c||!c.headline){doNextQ();return;} // compact (quote-free) questions skip the newspaper beat
   pendingNext=true;openPaper(c,q);
 }
-function doNextQ(){if(S.answers.length>=Q.length){buildResults();showScreen('results');launchConfetti();sfx('win');}else{renderTown();showScreen('town');maybeWorldEvent();}}
+function doNextQ(){if(S.answers.length>=Q.length){buildResults();showScreen('results');var _mv=((S.stats.h||0)+(S.stats.e||0)+(S.stats.ed||0)+(S.stats.f||0))/4;if(_mv>=THRESHOLD){launchConfetti();sfx('win');}else{sfx('lose');}}else{renderTown();showScreen('town');maybeWorldEvent();}}
 
 // ─────────────────────────────────────────────────────────────
 // RESULTS
@@ -2869,21 +2869,26 @@ function ideologyResult(){
   return{label:fb[winner],desc:'Your choices ranged widely, with a slight lean one way. Play a few more terms and watch which approach keeps all four bars highest.'};
 }
 function buildResults(){
+  // did the nation survive? tone the whole results screen off the real meter average, not a hard-coded true
+  var _mavg=((S.stats.h||0)+(S.stats.e||0)+(S.stats.ed||0)+(S.stats.f||0))/4;
+  var won=_mavg>=THRESHOLD;
+  const hero=document.querySelector('#screen-results .end-hero');
+  if(hero){ hero.classList.toggle('win',won); hero.classList.toggle('lose',!won); }
   const rh=document.querySelector('#screen-results .end-hero h1');
-  if(rh)rh.textContent='📜 Term '+(S.term||1)+' Report';
+  if(rh){ rh.textContent=(won?'📜 Term ':'📉 Term ')+(S.term||1)+' Report'; rh.classList.toggle('win',won); rh.classList.toggle('lose',!won); }
   const ideo=ideologyResult();
   document.getElementById('ideo-label').textContent=ideo.label;document.getElementById('ideo-desc').textContent=ideo.desc;
   const rs=document.getElementById('review-section');rs.innerHTML='<h3>Question-by-Question Review</h3>';renderReview(rs);
   const grid=document.getElementById('resource-grid');grid.innerHTML='';
   RESULT_RESOURCES.forEach(r=>{const a=document.createElement('a');a.href=r.url;a.target='_blank';a.rel='noopener noreferrer';a.className='resource-card';a.innerHTML=`<div class="rc-tag">${r.tag}</div><div class="rc-title">${r.title}</div><div class="rc-src">${r.src} ↗</div>`;grid.appendChild(a);});
-  renderCity(cityTier(true),'city-panel');
+  renderCity(cityTier(won),'city-panel');
   const g=computeGrade();
   document.getElementById('grade-medal').textContent=g.medal;
   document.getElementById('grade-letter').textContent=g.letter;
   document.getElementById('grade-score').textContent='⭐ '+S.score.toLocaleString()+' pts · '+S.bestCount+'/10 best answers · longest streak '+S.maxStreak;
   document.getElementById('grade-note').textContent=g.note;
   renderAchievements('ach-grid');
-  const earned=S.bestCount*250+S.answers.length*50;recordTerm(earned,true);renderBankPanel('bank-panel',earned,true);maybeAskFeedback();
+  const earned=(S.starsThisTerm!=null)?S.starsThisTerm:(S.bestCount*250+S.answers.length*50);recordTerm(earned,won);renderBankPanel('bank-panel',earned,won);maybeAskFeedback();
   setFinalBars();
   const t=S.answers.length||1;['cap','mix','soc','com'].forEach(k=>{document.getElementById('if-'+k).style.width=(S.counts[k]/t*100)+'%';document.getElementById('ic-'+k).textContent=S.counts[k]+'/'+t;});
 }
@@ -3307,7 +3312,9 @@ var buildTab='land';
 function openBuild(){ ensureTown(); if(!buildTab)buildTab='land'; renderBuild(); var o=document.getElementById('build-overlay'); if(o)o.style.display='block'; if(typeof sfx==='function')sfx('click'); }
 function closeBuild(){ var o=document.getElementById('build-overlay'); if(o)o.style.display='none'; }
 function setBuildTab(t){ buildTab=t; renderBuild(); if(typeof sfx==='function')sfx('tab'); }
-function badgeRow(b){ var p=''; if(b.h)p+='<span class="bld-badge">+'+b.h+' 😊</span>'; if(b.e)p+='<span class="bld-badge">+'+b.e+' 💰</span>'; if(b.ed)p+='<span class="bld-badge">+'+b.ed+' 📚</span>'; if(b.f)p+='<span class="bld-badge">+'+b.f+' 🗽</span>'; return p; }
+function badgeRow(b,cur){ cur=cur||{}; var cap=(typeof TOWN_BONUS_CAP!=='undefined')?TOWN_BONUS_CAP:99;
+  function chip(v,ic,k){ var capped=(cur[k]||0)>=cap; return '<span class="bld-badge"'+(capped?' style="opacity:.5;text-decoration:line-through;" title="This meter is already maxed, this bonus is wasted"':'')+'>+'+v+' '+ic+'</span>'; }
+  var p=''; if(b.h)p+=chip(b.h,'😊','h'); if(b.e)p+=chip(b.e,'💰','e'); if(b.ed)p+=chip(b.ed,'📚','ed'); if(b.f)p+=chip(b.f,'🗽','f'); return p; }
 function attractionThumb(a){ return '<svg viewBox="-18 -56 186 172" preserveAspectRatio="xMidYMax meet">'+venueArt(Object.assign({},a,{x:0,y:104}))+'</svg>'; }
 function renderBuild(){
   ensureTown();
@@ -3332,7 +3339,7 @@ function renderBuild(){
         Object.keys(TOWN_DEVS).forEach(function(vk){ var V=TOWN_DEVS[vk]; if(V.dist!==dk)return;
           var vo=ownsDev(vk), vc=(P&&(P.stars||0)>=V.cost);
           subs+='<div class="bld-card"><div class="bld-thumb icon" style="font-size:1.8rem;width:58px;height:58px;flex-basis:58px;">'+V.icon+'</div>'+
-            '<div class="bld-info"><div class="bld-name" style="font-size:.92rem;">'+V.name+'</div><div class="bld-badges">'+badgeRow(V.bonus)+'</div></div>'+
+            '<div class="bld-info"><div class="bld-name" style="font-size:.92rem;">'+V.name+'</div><div class="bld-badges">'+badgeRow(V.bonus,townBonus())+'</div></div>'+
             '<div class="bld-act">'+(vo?'<span class="bld-owned">✓ Built</span>'
                :'<button class="bld-btn blue" onclick="buyDev(\''+vk+'\')" '+(vc?'':'disabled')+'>Build ⭐'+V.cost.toLocaleString()+'</button>')+'</div>'+
           '</div>';
@@ -3349,7 +3356,7 @@ function renderBuild(){
         : '<button class="bld-btn green" onclick="closeBuild();startPlacing(\''+ak+'\')">📍 Place it</button>'; }
       else act='<button class="bld-btn purple" onclick="buyAttraction(\''+ak+'\')" '+(ac?'':'disabled')+'>Build ⭐'+A.cost.toLocaleString()+'</button>';
       html+='<div class="bld-card"><div class="bld-thumb">'+attractionThumb(A)+'</div>'+
-        '<div class="bld-info"><div class="bld-name">'+A.name+'</div><div class="bld-badges">'+badgeRow(A.bonus)+'</div></div>'+
+        '<div class="bld-info"><div class="bld-name">'+A.name+'</div><div class="bld-badges">'+badgeRow(A.bonus,townBonus())+'</div></div>'+
         '<div class="bld-act">'+act+'</div></div>';
     });
   }
@@ -3390,7 +3397,7 @@ function placeRectAt(cx,gy){ return {x0:cx-ATTR_W/2, y0:gy-ATTR_H, x1:cx+ATTR_W/
 function canPlaceAt(cx,gy){
   var r=placeRectAt(cx,gy);
   if(r.x0<60||r.x1>WORLD_W-60||r.y0<140||r.y1>WORLD_H-16)return false;   // inside the map
-  if(!inOwnedZone(cx,gy)||!inOwnedZone(r.x0+10,gy)||!inOwnedZone(r.x1-10,gy)||!inOwnedZone(r.x0+10,r.y0+6)||!inOwnedZone(r.x1-10,r.y0+6))return false; // whole footprint on land you own
+  if(!inOwnedZone(cx,gy)||!inOwnedZone(r.x0+10,gy)||!inOwnedZone(r.x1-10,gy))return false; // building BASE (ground contact) on land you own; the roof may rise above the band, roads/water are blocked separately below
   for(var i=0;i<ROAD_RECTS.length;i++){ if(rectsHit(r,ROAD_RECTS[i],1))return false; }     // not on a road
   for(var j=0;j<colliders.length;j++){ var c=colliders[j]; if(rectsHit(r,{x0:c.x,y0:c.y,x1:c.x+c.w,y1:c.y+c.h},4))return false; } // not on water or another building
   return true;
@@ -3808,7 +3815,7 @@ function renderStore(){
   }
 }
 function buyBox(){
-  if(!P||(P.stars||0)<BOX_COST)return;
+  if(!P||(P.stars||0)<BOX_COST){ if(typeof sfx==='function')sfx('deny'); return; } // deny cue when broke, matching other buy paths
   if(P.owned.length>=STORE_ITEMS.length)return;
   const item=rollBoxItem();
   if(!item)return;
@@ -5314,7 +5321,11 @@ const QG={}; // QG[grade] = [ {npc:0-9, tag,title,icon,gradient,body,choices:[{l
 // Shared reading-band pools (NY Next Gen bands): A=grades 6-8, B=9-10, C=11-12. Every grade draws from its own QG[grade] PLUS its band pool.
 const QGB={A:[],B:[],C:[]};
 function bandOf(g){ return g<=8?'A':(g<=10?'B':'C'); }
-function gradePool(grade,npcIndex){ return (QG[grade]||[]).concat(QGB[bandOf(grade)]||[]).filter(function(q){return q.npc===npcIndex;}); }
+function gradePool(grade,npcIndex){
+  var own=(QG[grade]||[]).filter(function(q){return q.npc===npcIndex;});
+  if(grade<=6) return own.length?own:(QGB.A||[]).filter(function(q){return q.npc===npcIndex;}); // Grade 6 stays in its own age-level pool, never the higher 6-8 band
+  return own.concat((QGB[bandOf(grade)]||[]).filter(function(q){return q.npc===npcIndex;}));
+}
 function dealTerm(exclude){
   // One question per citizen (Q[i] = NPC i). Pull from that citizen's grade pool.
   // Safety fallback (pools are always full): any question for this grade+band.
@@ -7482,7 +7493,7 @@ function continueTerm(){
   }
   Q=dealTerm(Q);
   S.term=(S.term||1)+1;
-  S.qIdx=0;S.answers=[];S.locked=false;S.score=0;S.streak=0;S.maxStreak=0;S.bestCount=0;
+  S.qIdx=0;S.answers=[];S.locked=false;S.score=0;S.streak=0;S.maxStreak=0;S.bestCount=0;S.starsThisTerm=0;
   S.counts={cap:0,mix:0,soc:0,com:0};
   S.minStats={h:S.stats.h,e:S.stats.e,ed:S.stats.ed,f:S.stats.f};
   S.mini={};

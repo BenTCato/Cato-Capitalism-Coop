@@ -162,8 +162,8 @@
     .choices{display:grid;gap:12px;}
     .choice{position:relative;background:#fff;border:none;border-radius:16px;padding:15px 18px 15px 22px;cursor:pointer;text-align:left;transition:all .12s ease;font-family:inherit;font-size:.9rem;line-height:1.55;color:var(--text);display:flex;gap:13px;align-items:flex-start;box-shadow:0 5px 0 rgba(0,0,0,.22),0 10px 24px rgba(0,0,0,.25);overflow:hidden;}
     .choice::before{content:'';position:absolute;left:0;top:0;bottom:0;width:7px;}
-    .choice:nth-child(1)::before{background:#FF6B6B;}.choice:nth-child(2)::before{background:#4ECDC4;}.choice:nth-child(3)::before{background:#FFB020;}.choice:nth-child(4)::before{background:#A78BFA;}
-    .choice:nth-child(1) .cletter{background:#FF6B6B;box-shadow:0 2px 0 #C94747;}.choice:nth-child(2) .cletter{background:#4ECDC4;box-shadow:0 2px 0 #2FA39B;}.choice:nth-child(3) .cletter{background:#FFB020;box-shadow:0 2px 0 #C98512;}.choice:nth-child(4) .cletter{background:#A78BFA;box-shadow:0 2px 0 #7E5FD0;}
+    .choice:nth-child(1)::before{background:#F2B23E;}.choice:nth-child(2)::before{background:#2D6FD6;}.choice:nth-child(3)::before{background:#1F9A5A;}.choice:nth-child(4)::before{background:#7A4ED6;}
+    .choice:nth-child(1) .cletter{background:#F2B23E;box-shadow:0 2px 0 #C97E12;}.choice:nth-child(2) .cletter{background:#2D6FD6;box-shadow:0 2px 0 #1F51A0;}.choice:nth-child(3) .cletter{background:#1F9A5A;box-shadow:0 2px 0 #14713F;}.choice:nth-child(4) .cletter{background:#7A4ED6;box-shadow:0 2px 0 #5A38A8;}
     .choice:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.22);}
     .choice:hover{transform:translateY(-2px);box-shadow:0 7px 0 rgba(0,0,0,.25),0 14px 30px rgba(0,0,0,.3);}
     .choice.chosen-pos{background:linear-gradient(135deg,#2EB872,#27A865);box-shadow:0 5px 0 #1F8A53;}
@@ -777,11 +777,11 @@
   </div>
   <div class="town-hint">⌨️ <strong>W A S D</strong> to walk · <strong>SPACE</strong> to talk to citizens · the world changes with your choices · visit the <strong>MARKET</strong> to spend your ⭐</div>
   <div id="town-mobile-hint">🕹️ Drag to walk · tap the gold <strong>button</strong> to interact</div>
-  <div id="place-bar" style="display:none;position:fixed;top:150px;left:50%;transform:translateX(-50%);z-index:2500;background:rgba(19,35,74,.96);color:#fff;border-radius:14px;padding:9px 12px;align-items:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.45);font-family:inherit;flex-wrap:wrap;justify-content:center;max-width:94%;">
-    <span style="font-weight:800;white-space:nowrap;">📍 Placing <span id="place-name">Building</span></span>
+  <div id="place-bar" style="display:none;position:fixed;top:150px;left:50%;transform:translateX(-50%);z-index:2500;background:linear-gradient(180deg,#1c3266,#13234a);color:#fff;border-radius:16px;border:2.5px solid var(--gp-gold);padding:10px 14px;align-items:center;gap:10px;box-shadow:0 12px 34px rgba(0,0,0,.5),inset 0 1px 0 rgba(242,178,62,.35);font-family:inherit;flex-wrap:wrap;justify-content:center;max-width:94%;">
+    <span style="font-weight:900;white-space:nowrap;">📍 Placing <span id="place-name">Building</span></span>
     <span style="font-size:.78rem;opacity:.85;white-space:nowrap;">Walk to a spot on your land, then build</span>
-    <button id="place-ok" onclick="confirmPlace()" style="background:#2EB872;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-family:inherit;font-weight:800;cursor:pointer;white-space:nowrap;">✅ Build here</button>
-    <button onclick="cancelPlace()" style="background:rgba(255,255,255,.18);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-family:inherit;font-weight:800;cursor:pointer;white-space:nowrap;">Cancel</button>
+    <button id="place-ok" class="gp-btn green" onclick="confirmPlace()">✅ Build here</button>
+    <button class="gp-btn grey" onclick="cancelPlace()">Cancel</button>
   </div>
 </div>
 
@@ -827,6 +827,54 @@
 #build-overlay .bld-sublist{margin:2px 0 6px 12px;padding-left:10px;border-left:2px dashed rgba(19,35,74,.15);}
 #build-overlay .bld-locked{opacity:.72;}
 </style>
+<style>
+/* ══ Shared city-builder UI kit (.gp-*): reusable panel/card/button system, Cato navy + gold ══ */
+:root{
+  --gp-navy:#13234a; --gp-navy2:#1c3266; --gp-gold:#F2B23E; --gp-gold2:#FFD060; --gp-goldedge:#C97E12; --gp-goldink:#3a2400;
+  --gp-blue:#2D6FD6; --gp-blue2:#5B9BEA; --gp-green:#1F9A5A; --gp-green2:#5AD08C; --gp-purple:#7A4ED6; --gp-purple2:#B98CE8; --gp-red:#E03131;
+  --gp-hair:rgba(19,35,74,.12);
+}
+.gp-scrim{position:fixed;inset:0;z-index:3000;background:radial-gradient(120% 90% at 50% 0%,rgba(30,50,102,.55),rgba(6,8,20,.9));display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:26px 12px;animation:gpFade .22s ease;}
+.gp-panel{position:relative;width:100%;max-width:640px;background:linear-gradient(180deg,#f4f6fb,#e7ecf6);border-radius:20px;border:3px solid var(--gp-gold);box-shadow:0 26px 80px rgba(0,0,0,.6),inset 0 2px 0 rgba(255,255,255,.7);overflow:hidden;font-family:inherit;animation:gpPop .3s cubic-bezier(.34,1.56,.64,1);}
+.gp-head{position:relative;background:linear-gradient(180deg,var(--gp-navy2),var(--gp-navy));padding:14px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:3px solid var(--gp-gold);box-shadow:inset 0 1px 0 rgba(242,178,62,.35);}
+.gp-title{color:#fff;font-weight:900;font-size:1.15rem;letter-spacing:.3px;text-shadow:0 2px 0 rgba(0,0,0,.35);display:flex;align-items:center;gap:8px;}
+.gp-coin{margin-left:auto;background:linear-gradient(180deg,var(--gp-gold2),#E8951C);color:var(--gp-goldink);border-radius:999px;padding:7px 14px 7px 10px;font-weight:900;font-size:.98rem;box-shadow:inset 0 2px 0 rgba(255,255,255,.6),0 3px 6px rgba(0,0,0,.35);border:2px solid var(--gp-goldedge);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+.gp-coin .dot{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFF0B0,#F2B23E 70%,#C97E12);display:flex;align-items:center;justify-content:center;font-size:.7rem;box-shadow:inset 0 -2px 2px rgba(0,0,0,.2);}
+.gp-x{width:34px;height:34px;border-radius:10px;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;font-weight:900;font-size:1rem;cursor:pointer;}
+.gp-x:active{transform:translateY(1px);}
+.gp-body{padding:14px;max-height:66vh;overflow:auto;background:#fff;}
+.gp-card{position:relative;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#ffffff,#f3f6fc);border:1.5px solid var(--gp-hair);border-radius:16px;padding:11px;margin-bottom:10px;box-shadow:0 2px 5px rgba(19,35,74,.07);}
+.gp-thumb{width:74px;height:74px;flex:0 0 74px;border-radius:13px;background:linear-gradient(180deg,#bfe3ff 0%,#dff0d8 62%,#cfe6bd 100%);border:1.5px solid rgba(19,35,74,.15);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:inset 0 2px 4px rgba(255,255,255,.6),inset 0 -3px 6px rgba(0,0,0,.08);font-size:2.2rem;}
+.gp-info{flex:1;min-width:0;}
+.gp-name{font-weight:900;color:var(--gp-navy);font-size:1rem;line-height:1.15;}
+.gp-sub{font-size:.74rem;color:#77859e;margin-top:2px;}
+.gp-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
+.gp-badge{font-size:.72rem;font-weight:800;border-radius:7px;padding:2px 8px;background:#eef7f0;color:#1F7A3D;border:1px solid #c7e6ce;}
+.gp-act{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:0 0 auto;}
+.gp-btn{border:none;border-radius:12px;padding:9px 15px;font-family:inherit;font-weight:900;font-size:.9rem;cursor:pointer;color:#fff;white-space:nowrap;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 4px 0 rgba(0,0,0,.18);transition:transform .06s,box-shadow .06s;}
+.gp-btn:active{transform:translateY(3px);box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 1px 0 rgba(0,0,0,.18);}
+.gp-btn.gold{background:linear-gradient(180deg,#FFD264,#E8951C);color:var(--gp-goldink);}
+.gp-btn.blue{background:linear-gradient(180deg,var(--gp-blue2),var(--gp-blue));}
+.gp-btn.green{background:linear-gradient(180deg,var(--gp-green2),var(--gp-green));}
+.gp-btn.purple{background:linear-gradient(180deg,var(--gp-purple2),var(--gp-purple));}
+.gp-btn.grey{background:linear-gradient(180deg,#9aa6bd,#6b7891);}
+.gp-btn.mini{padding:6px 11px;font-size:.78rem;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 2px 0 rgba(0,0,0,.18);}
+.gp-btn[disabled]{filter:grayscale(.6);opacity:.5;cursor:not-allowed;box-shadow:none;}
+.gp-owned{background:linear-gradient(180deg,#38c172,#1F9A5A);color:#fff;font-weight:900;font-size:.8rem;border-radius:999px;padding:4px 11px;box-shadow:inset 0 1px 0 rgba(255,255,255,.4);white-space:nowrap;}
+.gp-input{width:100%;padding:11px 13px;border:2px solid #cdd9f5;border-radius:12px;font-family:inherit;font-size:.95rem;background:#F6F9FF;color:var(--gp-navy);}
+.gp-input:focus{outline:none;border-color:var(--gp-gold);box-shadow:0 0 0 3px rgba(242,178,62,.25);}
+@keyframes gpFade{from{opacity:0}to{opacity:1}}
+@keyframes gpPop{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
+/* screen enter + tactile button press + ghost pulse (game-feel) */
+.screen.active{animation:gpScreenIn .24s ease;}
+@keyframes gpScreenIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.btn:active,.btn-gold:active,.hist-btn:active,.choice:active{transform:translateY(2px) scale(.99);}
+.gp-shake{animation:gpShake .4s ease;}
+@keyframes gpShake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-5px)}40%,60%{transform:translateX(5px)}}
+#build-overlay .bld-scrim{animation:gpFade .22s ease;}
+#build-overlay .bld-panel{animation:gpPop .3s cubic-bezier(.34,1.56,.64,1);}
+@media (prefers-reduced-motion: reduce){.screen.active,.gp-panel,.gp-scrim,.gp-shake,#build-overlay .bld-scrim,#build-overlay .bld-panel{animation:none!important;}}
+</style>
 <div id="build-overlay" style="display:none;">
   <div class="bld-scrim">
     <div class="bld-panel">
@@ -846,24 +894,28 @@
 </div>
 
 <!-- ══ SAVINGS BANK ══ -->
-<div id="bank-overlay" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(8,6,22,.82);overflow:auto;padding:30px 14px;">
-  <div style="max-width:520px;margin:0 auto;background:var(--card,#fff);border-radius:20px;padding:20px 22px;box-shadow:0 24px 70px rgba(0,0,0,.5);">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
-      <div style="font-size:1.25rem;font-weight:900;color:var(--navy,#13234a);">🏦 Savings Bank</div>
-      <button onclick="closeBank()" style="margin-left:auto;background:rgba(0,0,0,.08);border:none;border-radius:10px;padding:8px 14px;font-family:inherit;font-weight:800;cursor:pointer;">✕ Close</button>
+<div id="bank-overlay" style="display:none;">
+ <div class="gp-scrim">
+  <div class="gp-panel" style="max-width:520px;">
+    <div class="gp-head">
+      <div class="gp-title">🏦 Savings Bank</div>
+      <button class="gp-x" onclick="closeBank()" title="Close">✕</button>
     </div>
-    <div style="font-size:.84rem;color:#667;margin-bottom:14px;">Put stars in the bank and they grow <b>5% every 5 minutes</b>. That is compound interest: your saved stars earn more stars, and then those earn even more. Saving pays off.</div>
-    <div style="display:flex;gap:12px;margin-bottom:12px;">
-      <div style="flex:1;background:rgba(0,0,0,.05);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:.72rem;color:#889;font-weight:800;letter-spacing:.5px;">WALLET</div><div id="bank-wallet" style="font-size:1.25rem;font-weight:900;color:#9A6200;">⭐ 0</div></div>
-      <div style="flex:1;background:rgba(46,184,114,.12);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:.72rem;color:#1F7A3D;font-weight:800;letter-spacing:.5px;">IN SAVINGS</div><div id="bank-balance-v" style="font-size:1.25rem;font-weight:900;color:#1F7A3D;">⭐ 0</div></div>
-    </div>
-    <div id="bank-next" style="text-align:center;font-size:.82rem;color:#2EB872;font-weight:800;margin-bottom:14px;min-height:1em;"></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <input id="bank-amt" type="number" min="0" placeholder="Number of stars" style="flex:1;min-width:130px;padding:10px 12px;border:2px solid #cdd9f5;border-radius:10px;font-family:inherit;font-size:.95rem;">
-      <button onclick="bankDeposit(bankAmt())" style="background:#2EB872;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:inherit;font-weight:800;cursor:pointer;">Deposit</button>
-      <button onclick="bankWithdraw(bankAmt())" style="background:#2D6FD6;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:inherit;font-weight:800;cursor:pointer;">Withdraw</button>
+    <div class="gp-body">
+      <div style="font-size:.84rem;color:#5a6a8a;margin-bottom:14px;">Put stars in the bank and they grow <b style="color:var(--gp-green)">5% every 5 minutes</b>. That is compound interest: your saved stars earn more stars, and then those earn even more. Saving pays off.</div>
+      <div style="display:flex;gap:12px;margin-bottom:12px;">
+        <div class="gp-card" style="flex:1;flex-direction:column;text-align:center;gap:4px;margin:0;"><div style="font-size:.72rem;color:#889;font-weight:800;letter-spacing:.5px;">WALLET</div><div id="bank-wallet" style="font-size:1.3rem;font-weight:900;color:#9A6200;">⭐ 0</div></div>
+        <div class="gp-card" style="flex:1;flex-direction:column;text-align:center;gap:4px;margin:0;background:linear-gradient(180deg,#ecfaf1,#ddf3e6);"><div style="font-size:.72rem;color:#1F7A3D;font-weight:800;letter-spacing:.5px;">IN SAVINGS</div><div id="bank-balance-v" style="font-size:1.3rem;font-weight:900;color:#1F7A3D;">⭐ 0</div></div>
+      </div>
+      <div style="text-align:center;margin-bottom:14px;min-height:1.4em;"><span id="bank-next" class="gp-badge" style="background:#FFF4E0;color:#9A6200;border-color:var(--gp-gold);"></span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input id="bank-amt" type="number" min="0" placeholder="Number of stars" class="gp-input" style="flex:1;min-width:130px;width:auto;">
+        <button class="gp-btn green" onclick="bankDeposit(bankAmt())">Deposit</button>
+        <button class="gp-btn blue" onclick="bankWithdraw(bankAmt())">Withdraw</button>
+      </div>
     </div>
   </div>
+ </div>
 </div>
 
 <!-- ══ QUESTION SCREEN ══ -->
@@ -2388,11 +2440,17 @@ function sfx(type){
       event:[[440,.1,0],[554,.1,.09],[659,.16,.18]],
       win:[[523,.12,0],[659,.12,.12],[784,.12,.24],[1047,.3,.36]],
       mythic:[[523,.1,0],[659,.1,.1],[784,.1,.2],[1047,.14,.3],[1319,.35,.44]],
-      lose:[[330,.22,0],[247,.34,.18]]
+      lose:[[330,.22,0],[247,.34,.18]],
+      place:[[180,.09,0],[120,.13,.02]],
+      deny:[[220,.10,0],[165,.15,.06]],
+      buy:[[659,.08,0],[880,.10,.07],[1175,.15,.15]],
+      coin:[[988,.05,0],[1319,.07,.04]],
+      tab:[[520,.035,0]],
+      term:[[523,.12,0],[659,.12,.1],[784,.12,.2],[1047,.14,.3],[1319,.4,.42]]
     };
     (tones[type]||tones.click).forEach(([f,d,off])=>{
       const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-      o.type=(type==='bad'||type==='lose')?'triangle':'sine';
+      o.type=(type==='bad'||type==='lose'||type==='place'||type==='deny')?'triangle':'sine';
       o.frequency.value=f;
       g.gain.setValueAtTime(.13,t+off);
       g.gain.exponentialRampToValueAtTime(.001,t+off+d);
@@ -2419,8 +2477,17 @@ function spawnScorePop(pts,dbl){
   sc.appendChild(p);setTimeout(()=>p.remove(),1400);
   sfx('pop');
 }
+// roll a star counter up/down with easeOutCubic (game-feel); respects reduced motion
+function _numVal(el){ var v=parseInt((el.dataset&&el.dataset.v!=null)?el.dataset.v:(el.textContent||'0').replace(/[^0-9-]/g,''),10); return isNaN(v)?0:v; }
+function tweenStars(el,to){
+  if(!el)return; to=Math.round(to||0); var from=_numVal(el); if(el.dataset)el.dataset.v=to;
+  if(from===to||(typeof GFX!=='undefined'&&GFX.reduceMotion)){ el.textContent='⭐ '+to.toLocaleString(); return; }
+  var t0=performance.now(), d=to-from, ms=Math.abs(d)>400?430:300;
+  function step(now){ var p=Math.min(1,(now-t0)/ms), e=1-Math.pow(1-p,3); el.textContent='⭐ '+Math.round(from+d*e).toLocaleString(); if(p<1)requestAnimationFrame(step); }
+  requestAnimationFrame(step);
+}
 function updateScoreHUD(){
-  const sv=document.getElementById('score-val');if(sv)sv.textContent='⭐ '+(((P&&P.stars)||0)).toLocaleString();
+  const sv=document.getElementById('score-val');if(sv)tweenStars(sv,(P&&P.stars)||0);
   const st=document.getElementById('streak-chip');
   if(st){if(S.streak>=2){st.style.display='inline-block';st.textContent='\u{1F525} ×'+S.streak;}else st.style.display='none';}
 }
@@ -2713,6 +2780,7 @@ function pickChoice(letter){
   if(P){P.stars=(P.stars||0)+starsEarned;saveProfiles();}
   updateScoreHUD();updateBankUI();spawnScorePop(starsEarned,false);spawnStatChips(c.fx);
   sfx(net>=0?'good':'bad');
+  if(typeof sfx==='function')setTimeout(function(){sfx('coin');},70);   // bright star-earn chime after the result cue
   const btns=document.querySelectorAll('#choices .choice');
   btns.forEach((b,i)=>{if(i===vi)b.classList.add(net>=0?'chosen-pos':'chosen-neg');else b.classList.add('dimmed');});
   showFeedback(c,q);updateHUD(true);
@@ -3230,7 +3298,7 @@ function bonusChips(b){ var p=[]; if(b.h)p.push('+'+b.h+'😊'); if(b.e)p.push('
 var buildTab='land';
 function openBuild(){ ensureTown(); if(!buildTab)buildTab='land'; renderBuild(); var o=document.getElementById('build-overlay'); if(o)o.style.display='block'; if(typeof sfx==='function')sfx('click'); }
 function closeBuild(){ var o=document.getElementById('build-overlay'); if(o)o.style.display='none'; }
-function setBuildTab(t){ buildTab=t; renderBuild(); if(typeof sfx==='function')sfx('click'); }
+function setBuildTab(t){ buildTab=t; renderBuild(); if(typeof sfx==='function')sfx('tab'); }
 function badgeRow(b){ var p=''; if(b.h)p+='<span class="bld-badge">+'+b.h+' 😊</span>'; if(b.e)p+='<span class="bld-badge">+'+b.e+' 💰</span>'; if(b.ed)p+='<span class="bld-badge">+'+b.ed+' 📚</span>'; if(b.f)p+='<span class="bld-badge">+'+b.f+' 🗽</span>'; return p; }
 function attractionThumb(a){ return '<svg viewBox="-18 -56 186 172" preserveAspectRatio="xMidYMax meet">'+venueArt(Object.assign({},a,{x:0,y:104}))+'</svg>'; }
 function renderBuild(){
@@ -3280,16 +3348,19 @@ function renderBuild(){
   body.innerHTML=html;
 }
 function afterBuild(){
-  saveProfiles(); if(typeof sfx==='function')sfx('win');
+  saveProfiles(); if(typeof sfx==='function')sfx('buy');
   if(typeof updateBankUI==='function')updateBankUI();
   if(typeof updateScoreHUD==='function')updateScoreHUD();
-  var ts=document.getElementById('town-score'); if(ts&&P)ts.textContent='⭐ '+(P.stars||0).toLocaleString();
+  var ts=document.getElementById('town-score'); if(ts&&P)tweenStars(ts,P.stars||0);
   if(S&&S.stats){ renderTown(); updateHUD(false); }
+  if(typeof coinBurst==='function')coinBurst(7);
   renderBuild();
 }
-function buyDistrict(k){ ensureTown(); var D=TOWN_DISTRICTS[k]; if(!D||ownsDistrict(k))return; if((P.stars||0)<D.cost){sfx('bad');return;} P.stars-=D.cost; P.town.districts[k]=true; afterBuild(); }
-function buyDev(k){ ensureTown(); var V=TOWN_DEVS[k]; if(!V||ownsDev(k))return; if(!ownsDistrict(V.dist)){sfx('bad');return;} if((P.stars||0)<V.cost){sfx('bad');return;} P.stars-=V.cost; P.town.dev[k]=true; afterBuild(); }
-function buyAttraction(k){ ensureTown(); var A=TOWN_ATTRACTIONS[k]; if(!A||ownsAttraction(k))return; if((P.stars||0)<A.cost){sfx('bad');return;} P.stars-=A.cost; P.town.attr[k]=true; afterBuild(); closeBuild(); startPlacing(k); }
+// deny feedback: sound + shake the build panel (can't afford / need land first)
+function denyBuy(){ if(typeof sfx==='function')sfx('deny'); var pn=document.querySelector('#build-overlay .bld-panel'); if(pn){ pn.classList.remove('gp-shake'); void pn.offsetWidth; pn.classList.add('gp-shake'); setTimeout(function(){pn.classList.remove('gp-shake');},450); } }
+function buyDistrict(k){ ensureTown(); var D=TOWN_DISTRICTS[k]; if(!D||ownsDistrict(k))return; if((P.stars||0)<D.cost){denyBuy();return;} P.stars-=D.cost; P.town.districts[k]=true; afterBuild(); }
+function buyDev(k){ ensureTown(); var V=TOWN_DEVS[k]; if(!V||ownsDev(k))return; if(!ownsDistrict(V.dist)){denyBuy();return;} if((P.stars||0)<V.cost){denyBuy();return;} P.stars-=V.cost; P.town.dev[k]=true; afterBuild(); }
+function buyAttraction(k){ ensureTown(); var A=TOWN_ATTRACTIONS[k]; if(!A||ownsAttraction(k))return; if((P.stars||0)<A.cost){denyBuy();return;} P.stars-=A.cost; P.town.attr[k]=true; afterBuild(); closeBuild(); startPlacing(k); }
 function isPlaced(k){ return !!(P&&P.town&&P.town.pos&&P.town.pos[k]); }
 
 /* ══ WALK-AND-DROP PLACEMENT: pick where each attraction sits, on land you own ══ */
@@ -3323,9 +3394,16 @@ function updatePlaceGhost(){
   var art=venueArt(Object.assign({},A,{x:p.cx-ATTR_W/2,y:p.gy}));
   var box='<rect x="'+(p.cx-ATTR_W/2)+'" y="'+(p.gy-ATTR_H)+'" width="'+ATTR_W+'" height="'+ATTR_H+'" rx="6" fill="'+(ok?'rgba(46,184,114,.32)':'rgba(230,60,60,.4)')+'" stroke="'+(ok?'#2EB872':'#E63C3C')+'" stroke-width="3.5"/>';
   g.innerHTML=box+art;
+  var tf=(typeof tickFrame!=='undefined')?tickFrame:0;
+  g.setAttribute('opacity', ok?(0.62+0.16*Math.sin(tf/6)).toFixed(2):(0.5+0.26*Math.sin(tf/3)).toFixed(2));  // pulse: ready vs blocked
   PLACE.valid=ok;
   var btn=document.getElementById('place-ok'); if(btn){ btn.disabled=!ok; btn.style.opacity=ok?'1':'.45'; btn.style.cursor=ok?'pointer':'not-allowed'; btn.textContent=ok?'✅ Build here':'🚫 Move to your land'; }
 }
+// juice helpers: camera shake (viewBox offset, no reflow), coin burst, placement thunk
+var _shakeUntil=0,_shakeAmp=0;
+function townShake(amp,ms){ if(typeof GFX!=='undefined'&&GFX.reduceMotion)return; _shakeAmp=amp||6; _shakeUntil=Date.now()+(ms||220); }
+function coinBurst(n){ if(typeof FX==='undefined'||!FX.coin||typeof fxSpawn!=='function'||typeof player==='undefined')return; n=n||8; for(var i=0;i<n;i++)fxSpawn(FX.coin, player.x+(Math.random()-.5)*30, player.y-24, (Math.random()-.5)*1.3, -1.3-Math.random(), 0.85); }
+function placeThunk(cx,gy){ if(typeof FX!=='undefined'&&FX.dust&&typeof fxSpawn==='function'){ for(var i=0;i<8;i++){ var a=i/8*Math.PI*2; fxSpawn(FX.dust, cx, gy, Math.cos(a)*1.3, Math.sin(a)*0.7-0.3, 0.7); } } townShake(6,200); }
 function startPlacing(k){
   if(!TOWN_ATTRACTIONS[k]||!ownsAttraction(k))return; ensureTown();
   PLACE={key:k,valid:false};
@@ -3337,13 +3415,15 @@ function startPlacing(k){
 }
 function confirmPlace(){
   if(!PLACE)return; var p=placeGhostPos();
-  if(!canPlaceAt(p.cx,p.gy)){ if(typeof sfx==='function')sfx('bad'); return; }
+  if(!canPlaceAt(p.cx,p.gy)){ if(typeof sfx==='function')sfx('deny'); townShake(4,160); return; }
   ensureTown(); P.town.pos[PLACE.key]={x:Math.round(p.cx-ATTR_W/2),y:Math.round(p.gy)};
+  var cx=p.cx, gy=p.gy;
   PLACE=null; var g=document.getElementById('place-ghost'); if(g)g.remove();
   var bar=document.getElementById('place-bar'); if(bar)bar.style.display='none';
   saveProfiles(); if(typeof cloudSave==='function')cloudSave();
   if(typeof renderTown==='function')renderTown(); if(typeof updateHUD==='function')updateHUD(false);
-  if(typeof sfx==='function')sfx('win');
+  if(typeof placeThunk==='function')placeThunk(cx,gy);   // dust ring + camera thunk on the fresh layer
+  if(typeof sfx==='function')sfx('place');
 }
 function cancelPlace(){
   PLACE=null; var g=document.getElementById('place-ghost'); if(g)g.remove();
@@ -4522,12 +4602,13 @@ function renderTown(){
 }
 // GFX engine config (skill: never hardcode values)
 const GFX={daySeconds:140,speed:7.2,dtMin:1,dtMax:3,lightEvery:24,fxEvery:2,wander:true,wanderSpeed:0.55,wanderRange:44,
+  reduceMotion:(typeof window!=='undefined'&&window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)||false,
   grade:['saturate(.55) contrast(.96) brightness(.95)','saturate(.92)','saturate(1.07) brightness(1.02)'],
   lampSpots:[[832,508],[985,500],[1192,660],[684,824]],fgTrees:[[560,640,1.15],[1140,920,1.35],[640,140,1.2]]};
 let TC={}; // cached node refs (skill: cache, never query in the update loop)
 let lastTick=0,tickFrame=0;
 const FXNS='http://www.w3.org/2000/svg';
-let FX={dust:[],leaf:[],drop:[],fly:[],distMoved:0};
+let FX={dust:[],leaf:[],drop:[],fly:[],coin:[],distMoved:0};
 let npcState=[];
 function fxPool(n,tag,attrs){
   const out=[];
@@ -4547,6 +4628,7 @@ function fxInit(){
   FX.leaf=fxPool(10,'rect',{width:'5',height:'3',rx:'1.5',fill:'#8FBF6E'});
   FX.drop=fxPool(10,'circle',{r:'2',fill:'#D9F2FF'});
   FX.fly=fxPool(12,'circle',{r:'2',fill:'#FFE9A8'});
+  FX.coin=fxPool(12,'circle',{r:'3.4',fill:'#FFC93C',stroke:'#C97E12','stroke-width':'1'});
 }
 function fxSpawn(pool,x,y,vx,vy,life){
   for(let i=0;i<pool.length;i++){if(pool[i].life<=0){const p=pool[i];p.x=x;p.y=y;p.vx=vx;p.vy=vy;p.life=life;return;}}
@@ -4604,7 +4686,8 @@ function townTick(){
     if(TC.bob)TC.bob.setAttribute('transform','translate(0,'+(player.moving?(Math.sin(player.step/12)*1.4).toFixed(2):'0')+')');}
   if(TC.mmp){TC.mmp.style.left=(player.x*100/WORLD_W).toFixed(2)+'%';TC.mmp.style.top=(player.y*100/WORLD_H).toFixed(2)+'%';}
   if(TC.npcMarks&&tickFrame%15===0){for(let mi=0;mi<TC.npcMarks.length;mi++){const mk=TC.npcMarks[mi];if(!mk)continue;const done=S.answers.some(function(a){return a.qi===mi;});mk.style.display=done?'none':'';const np=npcState[mi];if(np&&!done){mk.style.left=(np.x*100/WORLD_W).toFixed(2)+'%';mk.style.top=(np.y*100/WORLD_H).toFixed(2)+'%';}}}
-  TC.svg.setAttribute('viewBox',camX()+' '+camY()+' '+VIEW_W+' '+VIEW_H);
+  var _sx=0,_sy=0; if(_shakeUntil>Date.now()){ _sx=(Math.random()-0.5)*_shakeAmp; _sy=(Math.random()-0.5)*_shakeAmp; }
+  TC.svg.setAttribute('viewBox',(camX()+_sx).toFixed(1)+' '+(camY()+_sy).toFixed(1)+' '+VIEW_W+' '+VIEW_H);
   if(PLACE){ updatePlaceGhost(); if(TC.pr)TC.pr.style.display='none'; if(IS_TOUCH){var _pab=document.getElementById('act-btn');if(_pab)_pab.classList.remove('show');} return; } // placement mode: ghost follows player, skip normal prompts
   // particles (pooled; stepped at half rate; camera-culled)
   if(tickFrame%GFX.fxEvery===0){
@@ -4613,7 +4696,7 @@ function townTick(){
       fxSpawn(FX.drop,(895+CORE_DX)+Math.random()*10,(576+CORE_DY),(Math.random()-0.5)*1.6,-1.4-Math.random(),0.9);
     const na=nightAmount();
     if(na>0.45&&tickFrame%14===0)fxSpawn(FX.fly,camX()+Math.random()*VIEW_W,camY()+120+Math.random()*(VIEW_H-200),(Math.random()-0.5)*0.6,(Math.random()-0.5)*0.4,1.4);
-    fxStep(FX.dust,0.05,0);fxStep(FX.leaf,0.01,0.012);fxStep(FX.drop,0.05,0.12);fxStep(FX.fly,0.012,0);
+    fxStep(FX.dust,0.05,0);fxStep(FX.leaf,0.01,0.012);fxStep(FX.drop,0.05,0.12);fxStep(FX.fly,0.012,0);fxStep(FX.coin,0.035,0.1);
   }
   // lighting pass (low frequency)
   if(tickFrame%GFX.lightEvery===0&&TC.night){

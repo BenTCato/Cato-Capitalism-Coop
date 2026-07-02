@@ -476,6 +476,13 @@
     @keyframes smokeRise{0%,100%{opacity:.9;transform:translateY(0)}50%{opacity:.4;transform:translateY(-7px)}}
     .shimmer{animation:shim 2.6s ease-in-out infinite;}
     @keyframes shim{0%,100%{opacity:.5}50%{opacity:.15}}
+    .sway{transform-box:fill-box;transform-origin:50% 100%;animation:sway 4.8s ease-in-out infinite;}
+    .sway2{animation-duration:6.1s;animation-delay:-1.6s;}
+    @keyframes sway{0%,100%{transform:rotate(-1.5deg)}50%{transform:rotate(1.5deg)}}
+    .flow{animation:flow 6s linear infinite;}
+    @keyframes flow{from{transform:translateY(0)}to{transform:translateY(60px)}}
+    .no-wind .sway,.no-wind .cl,.no-wind .cl2,.no-wind .cl3,.no-wind .flow,.no-wind .smoke{animation:none!important;}
+    @media (prefers-reduced-motion: reduce){.sway,.flow{animation:none!important;}}
     .dlg{display:none;position:absolute;left:0;right:0;bottom:0;z-index:20;padding:10px;}
     .dlg.open{display:block;animation:fadeUp .22s ease;}
     #emote-fab{position:absolute;right:14px;bottom:14px;z-index:30;width:50px;height:50px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(16,22,40,.85);color:#fff;font-size:1.5rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);}
@@ -3862,7 +3869,8 @@ const WORLD_W=3600,WORLD_H=2820,VIEW_W=900,VIEW_H=600;
 // reg() adds REG_DX/DY so collision boxes line up with the translated core render.
 const CORE_DX=900,CORE_DY=600;
 let REG_DX=0,REG_DY=0;
-let player={x:900+CORE_DX,y:700+CORE_DY,dir:1,step:0,moving:false};
+let player={x:900+CORE_DX,y:700+CORE_DY,dir:1,step:0,moving:false,vx:0,vy:0,wasMoving:false};
+let camCX=900+CORE_DX, camCY=700+CORE_DY;   // smoothed camera center for inertial follow
 let keysDown={},townLoopOn=false,nearNPC=-1,nearShop=false,dlgOpen=false,colliders=[];
 // Mobile/touch support: detect coarse pointers and feed an on-screen joystick into movement.
 var IS_TOUCH=(('ontouchstart' in window)||(navigator.maxTouchPoints>0)||(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches));
@@ -3972,8 +3980,8 @@ function blendAmb(avg){
 }
 function sh(x,y,rx,ry){return '<ellipse cx="'+x+'" cy="'+y+'" rx="'+rx+'" ry="'+ry+'" fill="rgba(20,30,40,.13)"/>';}
 function treeDefs(){
-  return '<defs><g id="treeD">'+sh(0,3,16,5)+'<rect x="-3" y="-14" width="6" height="16" rx="2" fill="#8A7355"/><circle cx="3" cy="-30" r="19" fill="'+AP.tree2+'"/><circle cx="-3" cy="-34" r="19" fill="'+AP.tree+'"/></g>'+
-  '<g id="treeD2">'+sh(0,3,15,5)+'<rect x="-3" y="-13" width="6" height="15" rx="2" fill="#7E6A4E"/><circle cx="-3" cy="-28" r="17" fill="'+AP.tree2+'"/><circle cx="3" cy="-32" r="17" fill="'+AP.tree+'"/><circle cx="-6" cy="-36" r="7" fill="'+AP.tree+'" opacity=".8"/></g></defs>';
+  return '<defs><g id="treeD">'+sh(0,3,16,5)+'<rect x="-3" y="-14" width="6" height="16" rx="2" fill="#8A7355"/><g class="sway"><circle cx="3" cy="-30" r="19" fill="'+AP.tree2+'"/><circle cx="-3" cy="-34" r="19" fill="'+AP.tree+'"/><circle cx="-9" cy="-30" r="8" fill="rgba(255,255,255,.14)"/></g></g>'+
+  '<g id="treeD2">'+sh(0,3,15,5)+'<rect x="-3" y="-13" width="6" height="15" rx="2" fill="#7E6A4E"/><g class="sway sway2"><circle cx="-3" cy="-28" r="17" fill="'+AP.tree2+'"/><circle cx="3" cy="-32" r="17" fill="'+AP.tree+'"/><circle cx="-6" cy="-36" r="7" fill="'+AP.tree+'" opacity=".8"/><circle cx="8" cy="-28" r="7" fill="rgba(255,255,255,.13)"/></g></g></defs>';
 }
 function ftree(x,y,s){reg(x-12*s,y-8*s,24*s,12*s);
   return '<use href="#treeD'+(((x*7+y)%3===0)?'2':'')+'" transform="translate('+x+','+y+') scale('+s+')"/>';}
@@ -4287,7 +4295,7 @@ function buildWorld(tiers){
     var RX=2560;                                                          // straight channel center: clear of the loop road (west) and the arterial (east)
     w+='<rect x="'+(RX-50)+'" y="-40" width="100" height="2860" fill="'+AP.water2+'"/>';   // shore/bank (runs to the new fairgrounds bottom)
     w+='<rect x="'+(RX-40)+'" y="-40" width="80" height="2860" fill="'+AP.water+'"/>';      // water
-    w+='<path class="shimmer" d="M'+(RX-9)+',140 q-6,70 0,140 M'+(RX+9)+',640 q6,70 0,140 M'+(RX-9)+',1180 q-6,70 0,140 M'+(RX+9)+',1760 q6,70 0,140 M'+(RX-9)+',2180 q-6,60 0,120 M'+(RX+9)+',2680 q6,60 0,120" stroke="rgba(255,255,255,.4)" stroke-width="4" fill="none" stroke-linecap="round"/>';
+    w+='<g class="flow"><path class="shimmer" d="M'+(RX-9)+',140 q-6,70 0,140 M'+(RX+9)+',640 q6,70 0,140 M'+(RX-9)+',1180 q-6,70 0,140 M'+(RX+9)+',1760 q6,70 0,140 M'+(RX-9)+',2180 q-6,60 0,120 M'+(RX+9)+',2680 q6,60 0,120" stroke="rgba(255,255,255,.4)" stroke-width="4" fill="none" stroke-linecap="round"/></g>';
     var XR=[220,420,1337,2040,2280,2620], GH=36, FOOT=36;                  // road crossings (2620 = fairgrounds promenade bridge); FOOT = player origin→feet offset
     var edges=[-40]; XR.forEach(function(y){edges.push(y-GH,y+GH);}); edges.push(2820);
     // collision is shifted UP by FOOT so the walkable band lines up with the player's FEET (which render +34 below player.y):
@@ -4603,8 +4611,13 @@ function renderTown(){
 // GFX engine config (skill: never hardcode values)
 const GFX={daySeconds:140,speed:7.2,dtMin:1,dtMax:3,lightEvery:24,fxEvery:2,wander:true,wanderSpeed:0.55,wanderRange:44,
   reduceMotion:(typeof window!=='undefined'&&window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)||false,
+  camLerp:0.14, lookAhead:56, accel:0.9, friction:0.80, wind:true, windSpeed:0.0016, windAmp:0.06, ambientLife:true, lowPower:false,
   grade:['saturate(.55) contrast(.96) brightness(.95)','saturate(.92)','saturate(1.07) brightness(1.02)'],
   lampSpots:[[832,508],[985,500],[1192,660],[684,824]],fgTrees:[[560,640,1.15],[1140,920,1.35],[640,140,1.2]]};
+// decide "how alive" the world is; weak Chromebooks/phones fall back to the simpler behaviour
+try{ var _weak=(navigator.hardwareConcurrency||4)<=2||(navigator.deviceMemory||4)<=2||(IS_TOUCH&&Math.min(screen.width,screen.height)<=420);
+  if(_weak){ GFX.lowPower=true; GFX.camLerp=0; GFX.ambientLife=false; } }catch(e){}
+if(GFX.reduceMotion){ GFX.wind=false; GFX.ambientLife=false; GFX.camLerp=0; GFX.accel=1; GFX.friction=0; }
 let TC={}; // cached node refs (skill: cache, never query in the update loop)
 let lastTick=0,tickFrame=0;
 const FXNS='http://www.w3.org/2000/svg';
@@ -4661,23 +4674,30 @@ function townTick(){
   const dt=Math.max(GFX.dtMin,Math.min(GFX.dtMax,(now-lastTick)/16.666));
   lastTick=now;tickFrame++;
   if(!overlaysOpen()){
-    let dx=0,dy=0;const sp=GFX.speed*dt;
-    if(keysDown.KeyW||keysDown.ArrowUp)dy-=sp;
-    if(keysDown.KeyS||keysDown.ArrowDown)dy+=sp;
-    if(keysDown.KeyA||keysDown.ArrowLeft){dx-=sp;player.dir=-1;}
-    if(keysDown.KeyD||keysDown.ArrowRight){dx+=sp;player.dir=1;}
-    if(touchVec.x||touchVec.y){ dx+=touchVec.x*sp; dy+=touchVec.y*sp; if(touchVec.x<-0.05)player.dir=-1; else if(touchVec.x>0.05)player.dir=1; }
-    if(dx&&dy){dx*=0.72;dy*=0.72;}
+    // input sets a target DIRECTION; velocity accelerates toward it, friction eases the stop (momentum)
+    let ix=0,iy=0;
+    if(keysDown.KeyW||keysDown.ArrowUp)iy-=1;
+    if(keysDown.KeyS||keysDown.ArrowDown)iy+=1;
+    if(keysDown.KeyA||keysDown.ArrowLeft){ix-=1;player.dir=-1;}
+    if(keysDown.KeyD||keysDown.ArrowRight){ix+=1;player.dir=1;}
+    if(touchVec.x||touchVec.y){ ix+=touchVec.x; iy+=touchVec.y; if(touchVec.x<-0.05)player.dir=-1; else if(touchVec.x>0.05)player.dir=1; }
+    const mag=Math.hypot(ix,iy); if(mag>1){ ix/=mag; iy/=mag; }   // unit target so diagonals aren't faster
+    const tvx=ix*GFX.speed, tvy=iy*GFX.speed;
+    if(mag>0.02){ player.vx+=(tvx-player.vx)*Math.min(1,GFX.accel*dt); player.vy+=(tvy-player.vy)*Math.min(1,GFX.accel*dt); }
+    else{ const f=Math.pow(GFX.friction,dt); player.vx*=f; player.vy*=f; if(Math.abs(player.vx)<0.03)player.vx=0; if(Math.abs(player.vy)<0.03)player.vy=0; }
+    const dx=player.vx*dt, dy=player.vy*dt;
     if(dx||dy){
       const nx=Math.max(20,Math.min(WORLD_W-20,player.x+dx));
       const ny=Math.max(28,Math.min(WORLD_H-12,player.y+dy));
-      if(!collides(nx,player.y))player.x=nx;
-      if(!collides(player.x,ny))player.y=ny;
-      player.step+=Math.abs(dx)+Math.abs(dy);
-      FX.distMoved+=Math.abs(dx)+Math.abs(dy);
+      if(!collides(nx,player.y)){player.x=nx;}else{player.vx=0;}
+      if(!collides(player.x,ny)){player.y=ny;}else{player.vy=0;}
+      const spd=Math.abs(dx)+Math.abs(dy);
+      player.step+=spd; FX.distMoved+=spd;
       if(FX.distMoved>26){FX.distMoved=0;fxSpawn(FX.dust,player.x-player.dir*8,player.y+28,-player.dir*0.4,-0.25,0.7);}
-      player.moving=true;
+      player.moving=spd>0.2;
     }else player.moving=false;
+    if(player.wasMoving&&!player.moving){ fxSpawn(FX.dust,player.x-4,player.y+28,-0.5,-0.2,0.6); fxSpawn(FX.dust,player.x+4,player.y+28,0.5,-0.2,0.6); }
+    player.wasMoving=player.moving;
   }
   if(TC.pg){TC.pg.setAttribute('transform','translate('+player.x+','+player.y+')');
     if(TC.inner)TC.inner.setAttribute('transform','scale('+player.dir+',1)');
@@ -4686,8 +4706,14 @@ function townTick(){
     if(TC.bob)TC.bob.setAttribute('transform','translate(0,'+(player.moving?(Math.sin(player.step/12)*1.4).toFixed(2):'0')+')');}
   if(TC.mmp){TC.mmp.style.left=(player.x*100/WORLD_W).toFixed(2)+'%';TC.mmp.style.top=(player.y*100/WORLD_H).toFixed(2)+'%';}
   if(TC.npcMarks&&tickFrame%15===0){for(let mi=0;mi<TC.npcMarks.length;mi++){const mk=TC.npcMarks[mi];if(!mk)continue;const done=S.answers.some(function(a){return a.qi===mi;});mk.style.display=done?'none':'';const np=npcState[mi];if(np&&!done){mk.style.left=(np.x*100/WORLD_W).toFixed(2)+'%';mk.style.top=(np.y*100/WORLD_H).toFixed(2)+'%';}}}
+  // inertial camera: lerp the center toward the player plus a look-ahead lead in the travel direction
+  var laX=0,laY=0;
+  if(GFX.lookAhead&&(player.vx||player.vy)){ var lsp=Math.hypot(player.vx,player.vy)||1; laX=player.vx/lsp*GFX.lookAhead; laY=player.vy/lsp*GFX.lookAhead; }
+  var desCX=player.x+laX, desCY=player.y+laY;
+  if(GFX.camLerp>0){ var _k=Math.min(1,GFX.camLerp*dt); camCX+=(desCX-camCX)*_k; camCY+=(desCY-camCY)*_k; } else { camCX=desCX; camCY=desCY; }
+  var vbx=Math.max(0,Math.min(WORLD_W-VIEW_W,camCX-VIEW_W/2)), vby=Math.max(0,Math.min(WORLD_H-VIEW_H,camCY-VIEW_H/2));
   var _sx=0,_sy=0; if(_shakeUntil>Date.now()){ _sx=(Math.random()-0.5)*_shakeAmp; _sy=(Math.random()-0.5)*_shakeAmp; }
-  TC.svg.setAttribute('viewBox',(camX()+_sx).toFixed(1)+' '+(camY()+_sy).toFixed(1)+' '+VIEW_W+' '+VIEW_H);
+  TC.svg.setAttribute('viewBox',(vbx+_sx).toFixed(1)+' '+(vby+_sy).toFixed(1)+' '+VIEW_W+' '+VIEW_H);
   if(PLACE){ updatePlaceGhost(); if(TC.pr)TC.pr.style.display='none'; if(IS_TOUCH){var _pab=document.getElementById('act-btn');if(_pab)_pab.classList.remove('show');} return; } // placement mode: ghost follows player, skip normal prompts
   // particles (pooled; stepped at half rate; camera-culled)
   if(tickFrame%GFX.fxEvery===0){
@@ -4696,6 +4722,7 @@ function townTick(){
       fxSpawn(FX.drop,(895+CORE_DX)+Math.random()*10,(576+CORE_DY),(Math.random()-0.5)*1.6,-1.4-Math.random(),0.9);
     const na=nightAmount();
     if(na>0.45&&tickFrame%14===0)fxSpawn(FX.fly,camX()+Math.random()*VIEW_W,camY()+120+Math.random()*(VIEW_H-200),(Math.random()-0.5)*0.6,(Math.random()-0.5)*0.4,1.4);
+    if(GFX.ambientLife&&na<0.4&&tickFrame%22===0)fxSpawn(FX.fly,camX()+40+Math.random()*(VIEW_W-80),camY()+90+Math.random()*(VIEW_H-170),(Math.random()-0.5)*0.5,-0.2-Math.random()*0.3,1.2); // daytime butterflies drifting up
     fxStep(FX.dust,0.05,0);fxStep(FX.leaf,0.01,0.012);fxStep(FX.drop,0.05,0.12);fxStep(FX.fly,0.012,0);fxStep(FX.coin,0.035,0.1);
   }
   // lighting pass (low frequency)
@@ -4760,6 +4787,7 @@ function townTick(){
 }
 function ensureTownLoop(){
   if(townLoopOn)return;townLoopOn=true;
+  var st=document.getElementById('screen-town'); if(st)st.classList.toggle('no-wind',!GFX.wind);
   (function loop(){townTick();requestAnimationFrame(loop);})();
 }
 // Trigger whatever the player is standing next to (used by SPACE and the mobile tap button).
@@ -7372,7 +7400,7 @@ function continueTerm(){
   buildDots();updateScoreHUD();updateBackBtn();
   renderTown();showScreen('town');sfx('good');
 }
-function startGame(){Q=dealTerm(null);S=freshState();shuffleMap=[];pendingNext=false;stateHistory=[];eventQueue=[];player.x=900+CORE_DX;player.y=700+CORE_DY;player.step=0;keysDown={};dlgOpen=false;GFX.day0=Date.now();buildDots();updateHUD(false);renderAvatar();updateScoreHUD();renderTown();showScreen('town');updateBackBtn();}
+function startGame(){Q=dealTerm(null);S=freshState();shuffleMap=[];pendingNext=false;stateHistory=[];eventQueue=[];player.x=900+CORE_DX;player.y=700+CORE_DY;player.step=0;player.vx=0;player.vy=0;player.wasMoving=false;camCX=player.x;camCY=player.y;keysDown={};dlgOpen=false;GFX.day0=Date.now();buildDots();updateHUD(false);renderAvatar();updateScoreHUD();renderTown();showScreen('town');updateBackBtn();}
 function restartGame(){const wrap=document.getElementById('creator-wrap'),slot=document.getElementById('creator-slot-title');if(wrap&&slot&&wrap.parentElement!==slot)slot.appendChild(wrap);showScreen('title');setTimeout(function(){renderAvatarPreview();renderAvCreator();},50);}
 
 // Init on page load

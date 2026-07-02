@@ -3983,12 +3983,24 @@ function treeDefs(){
   return '<defs><g id="treeD">'+sh(0,3,16,5)+'<rect x="-3" y="-14" width="6" height="16" rx="2" fill="#8A7355"/><g class="sway"><circle cx="3" cy="-30" r="19" fill="'+AP.tree2+'"/><circle cx="-3" cy="-34" r="19" fill="'+AP.tree+'"/><circle cx="-9" cy="-30" r="8" fill="rgba(255,255,255,.14)"/></g></g>'+
   '<g id="treeD2">'+sh(0,3,15,5)+'<rect x="-3" y="-13" width="6" height="15" rx="2" fill="#7E6A4E"/><g class="sway sway2"><circle cx="-3" cy="-28" r="17" fill="'+AP.tree2+'"/><circle cx="3" cy="-32" r="17" fill="'+AP.tree+'"/><circle cx="-6" cy="-36" r="7" fill="'+AP.tree+'" opacity=".8"/><circle cx="8" cy="-28" r="7" fill="rgba(255,255,255,.13)"/></g></g></defs>';
 }
+// shared, cheap gradients + patterns referenced by fill="url(#..)"; one def reused hundreds of times (no filters at scale)
+function worldDefs(){
+  return '<defs>'+
+  '<linearGradient id="wallV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".18"/><stop offset="0.14" stop-color="#ffffff" stop-opacity="0"/><stop offset="0.82" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity=".16"/></linearGradient>'+
+  '<linearGradient id="roofV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".22"/><stop offset="1" stop-color="#000000" stop-opacity=".22"/></linearGradient>'+
+  '<linearGradient id="glass" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#EAF6FE"/><stop offset="0.35" stop-color="#CFE7F6"/><stop offset="1" stop-color="#AFCBDF"/></linearGradient>'+
+  '<linearGradient id="glassLit" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF2C4"/><stop offset="1" stop-color="#F3D07A"/></linearGradient>'+
+  '<linearGradient id="fabric" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".28"/><stop offset="1" stop-color="#000000" stop-opacity=".14"/></linearGradient>'+
+  '<pattern id="shingle" width="14" height="7" patternUnits="userSpaceOnUse"><path d="M0,6.5 h14" stroke="#000000" stroke-opacity=".18" stroke-width="1"/><path d="M7,0 v6.5" stroke="#000000" stroke-opacity=".10" stroke-width="1"/><path d="M0,3.2 h14" stroke="#ffffff" stroke-opacity=".10" stroke-width="0.8"/></pattern>'+
+  '<pattern id="courses" width="20" height="10" patternUnits="userSpaceOnUse"><path d="M0,9.5 h20" stroke="#000000" stroke-opacity=".08" stroke-width="1"/><path d="M10,0 v9.5" stroke="#000000" stroke-opacity=".05" stroke-width="1"/></pattern>'+
+  '</defs>';
+}
 function ftree(x,y,s){reg(x-12*s,y-8*s,24*s,12*s);
   return '<use href="#treeD'+(((x*7+y)%3===0)?'2':'')+'" transform="translate('+x+','+y+') scale('+s+')"/>';}
 function fhedge(x,y,w){reg(x,y-12,w,18);return '<g>'+sh(x+w/2,y+8,w*0.55,5)+'<rect x="'+x+'" y="'+(y-12)+'" width="'+w+'" height="20" rx="10" fill="'+AP.tree+'"/><rect x="'+x+'" y="'+(y-12)+'" width="'+w+'" height="10" rx="5" fill="'+AP.tree2+'" opacity=".4"/></g>';}
-function fbush(x,y,s){return '<g transform="translate('+x+','+y+') scale('+s+')">'+sh(0,4,13,4)+'<circle cx="-6" cy="-3" r="8" fill="'+AP.tree2+'"/><circle cx="6" cy="-3" r="8" fill="'+AP.tree2+'"/><circle cx="0" cy="-8" r="9" fill="'+AP.tree+'"/></g>';}
+function fbush(x,y,s){return '<g transform="translate('+x+','+y+') scale('+s+')">'+sh(0,4,13,4)+'<circle cx="-6" cy="-3" r="8" fill="'+AP.tree2+'"/><circle cx="6" cy="-3" r="8" fill="'+AP.tree2+'"/><circle cx="0" cy="-8" r="9" fill="'+AP.tree+'"/><circle cx="-2" cy="-11" r="5" fill="#ffffff" opacity=".14"/></g>';}
 function frock(x,y,s){reg(x-10*s,y-8*s,20*s,11*s);return '<g transform="translate('+x+','+y+') scale('+s+')">'+sh(0,3,11,4)+'<path d="M-10,2 Q-12,-7 -3,-10 Q7,-12 11,-4 Q12,2 6,3 Z" fill="#9AA0A6"/><path d="M-5,-7 Q0,-9 4,-7" stroke="#B8BEC4" stroke-width="2" fill="none"/></g>';}
-function flamp(x,y){reg(x-4,y-6,8,7);return '<g transform="translate('+x+','+y+')">'+sh(0,2,6,2)+'<rect x="-2" y="-38" width="4" height="40" fill="#4E5660"/><rect x="-7" y="-44" width="14" height="8" rx="4" fill="'+(AP.haze?'#5E6670':'#F4D06F')+'"/></g>';}
+function flamp(x,y){reg(x-4,y-6,8,7);return '<g transform="translate('+x+','+y+')">'+sh(0,2,6,2)+(AP.haze?'':'<circle cx="0" cy="-40" r="8" fill="#FFE08A" opacity=".22"/>')+'<rect x="-2" y="-38" width="4" height="40" fill="#4E5660"/><path d="M-7,-44 h14 l-2,-4 h-10 Z" fill="#3E4650"/><rect x="-7" y="-44" width="14" height="8" rx="4" fill="'+(AP.haze?'#5E6670':'#F4D06F')+'"/></g>';}
 function fbench(x,y){reg(x-15,y-10,30,12);return '<g transform="translate('+x+','+y+')">'+sh(0,3,15,3)+'<rect x="-14" y="-7" width="28" height="5" rx="2" fill="#A8794F"/><rect x="-14" y="-13" width="28" height="4" rx="2" fill="#B5865C"/><rect x="-12" y="-2" width="3" height="6" fill="#6E5436"/><rect x="9" y="-2" width="3" height="6" fill="#6E5436"/></g>';}
 function fperson(x,y,shirt,skin,extra){return '<g transform="translate('+x+','+y+')">'+sh(0,2,7,2.5)+'<rect x="-5" y="-14" width="10" height="11" rx="4" fill="'+shirt+'"/><circle cx="0" cy="-18" r="5" fill="'+skin+'"/>'+(extra||'')+'</g>';}
 function fkid(x,y,shirt,skin,d){return '<g transform="translate('+x+','+y+')"><g class="kid-bob" style="animation-delay:'+d+'s">'+sh(0,2,6,2)+'<rect x="-4" y="-11" width="8" height="9" rx="3.5" fill="'+shirt+'"/><circle cx="0" cy="-14.5" r="4" fill="'+skin+'"/></g></g>';}
@@ -4020,8 +4032,9 @@ function winGrid(x0,y0,floors,cols,winCol,tier,dz){
     const lit=tier===2&&((f*cols+c)%4===0);
     const gx=x0+c*19, gy=y0+f*24, fill=(tier===0?'#42554F':(lit?'#F8E2A0':winCol)), fo=(tier===0?.45:.92);
     if(dz&&f===floors-1&&(gx+13.5)>dz[0]&&(gx-1.5)<dz[1])continue; // skip ground-floor windows where the door is (no door/window overlap)
+    var gfill=(tier===0?fill:(lit?'url(#glassLit)':'url(#glass)'));
     s+='<rect x="'+(gx-1.5)+'" y="'+(gy-1.5)+'" width="15" height="18" rx="1.5" fill="#FBF7EC" opacity="'+fo+'"/>'+   // frame
-       '<rect x="'+gx+'" y="'+gy+'" width="12" height="15" rx="1" fill="'+fill+'"/>'+                                   // glass
+       '<rect x="'+gx+'" y="'+gy+'" width="12" height="15" rx="1" fill="'+gfill+'"/>'+                                 // glass (gradient on developed tiers)
        '<rect x="'+gx+'" y="'+gy+'" width="12" height="5" rx="1" fill="rgba(255,255,255,.16)"/>'+                       // top highlight
        '<rect x="'+(gx+5)+'" y="'+gy+'" width="1.4" height="15" fill="#FBF7EC" opacity="'+fo+'"/>'+                     // muntin V
        '<rect x="'+gx+'" y="'+(gy+6.8)+'" width="12" height="1.4" fill="#FBF7EC" opacity="'+fo+'"/>';}                  // muntin H
@@ -4034,9 +4047,12 @@ function urban(x,y,w,floors,cols,t,bodies,winCol,extra){
   let s='<g transform="translate('+x+','+(y-h)+')">';
   s+=sh(w/2,h+5,w*0.55,8).replace('translate','');
   s+='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="'+body+'"/>';
-  s+='<rect x="0" y="0" width="'+w+'" height="8" fill="rgba(255,255,255,.10)"/>';
-  s+='<rect x="'+(w-10)+'" y="0" width="10" height="'+h+'" fill="rgba(0,0,0,.13)"/>';
-  s+='<rect x="-4" y="-8" width="'+(w+8)+'" height="12" rx="3" fill="'+(t===0?'#4E6260':'rgba(0,0,0,.18)')+'"/>';
+  s+='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="url(#wallV)"/>';                          // body gradient
+  if(t>0)s+='<rect x="0" y="10" width="'+w+'" height="'+(h-10)+'" fill="url(#courses)"/>';           // masonry courses (developed tiers)
+  s+='<rect x="'+(w-10)+'" y="0" width="10" height="'+h+'" fill="rgba(0,0,0,.11)"/>';                // right shade
+  s+='<rect x="-4" y="-8" width="'+(w+8)+'" height="12" rx="3" fill="'+(t===0?'#4E6260':'rgba(0,0,0,.18)')+'"/>';   // parapet
+  s+='<rect x="-4" y="-8" width="'+(w+8)+'" height="3" rx="2" fill="rgba(255,255,255,.16)"/>';       // sunlit cornice top
+  s+='<rect x="-4" y="2" width="'+(w+8)+'" height="2" fill="rgba(0,0,0,.18)"/>';                     // cornice shadow onto wall
   s+=winGrid(12,14,floors,cols,t===2?'#F4F0E4':'#C9C2B2',t,[w/2-15,w/2+15]);
   // ground floor door,framed, with a sill step (skipped windows above keep it clear)
   s+='<rect x="'+(w/2-14)+'" y="'+(h-32)+'" width="28" height="32" rx="3" fill="rgba(0,0,0,.22)"/>';
@@ -4228,7 +4244,7 @@ function playerSVG(){
 function buildWorld(tiers){
   colliders=[];
   AP=blendAmb(tiers.avgVal!==undefined?tiers.avgVal:[35,55,85][tiers.avg]);
-  let w=treeDefs();
+  let w=treeDefs()+worldDefs();
   w+='<rect width="'+WORLD_W+'" height="'+WORLD_H+'" fill="'+AP.grass+'"/>';
   for(let i=0;i<260;i++){const gx=(i*457)%WORLD_W,gy=(i*331)%WORLD_H;w+='<ellipse cx="'+gx+'" cy="'+gy+'" rx="'+(46+(i%4)*20)+'" ry="'+(20+(i%3)*8)+'" fill="'+AP.grass2+'"/>';}
   REG_DX=CORE_DX;REG_DY=CORE_DY;w+='<g transform="translate('+CORE_DX+','+CORE_DY+')">';  // ↓ downtown core, shifted to map center
@@ -4317,14 +4333,16 @@ var EXP_ROOFS=['#9A5A3C','#6E4E8A','#3E6E8A','#8A4E4E','#5E7F4E','#7A5A3C','#B06
 var EXP_OFFICE=['#7E96AC','#8B98A8','#9FB4C9','#6E8298','#7C8AA0'];
 var EXP_DOORS=['#6E4E2E','#7A3B2E','#3E5E7A','#5E4E8A','#3E6E4E','#8A4E3E','#5E4636','#6E5A8A'];
 var EXP_BR=[]; // building rects, for prop keep-out
-function expWin(wx,wy){ // a framed window with glass, muntins & a sill
+function expWin(wx,wy,box){ // a framed window with gradient glass, muntins, a sill, optional planter
   return '<g transform="translate('+wx+','+wy+')">'+
     '<rect x="-1.5" y="-1.5" width="17" height="17" rx="1.5" fill="#FFFDF4"/>'+    // outer frame
-    '<rect x="1" y="1" width="12" height="12" rx="1" fill="#BFE3F4"/>'+            // glass
-    '<rect x="1" y="1" width="12" height="4" rx="1" fill="#D6EFFB"/>'+             // sky highlight
+    '<rect x="1" y="1" width="12" height="12" rx="1" fill="url(#glass)"/>'+        // gradient glass
+    '<path d="M2,2 l4,0 l-5,11 l-4,0 Z" fill="#FFFFFF" opacity=".18"/>'+           // reflection streak
     '<rect x="6.2" y="1" width="1.6" height="12" fill="#FFFDF4"/>'+                // muntin V
     '<rect x="1" y="6.2" width="12" height="1.6" fill="#FFFDF4"/>'+                // muntin H
-    '<rect x="-3" y="13.5" width="20" height="3" rx="1.2" fill="#E2D6BE"/></g>';  // sill
+    '<rect x="-3" y="13.5" width="20" height="3" rx="1.2" fill="#E2D6BE"/>'+       // sill
+    (box?'<rect x="-2" y="12" width="18" height="4" rx="1.5" fill="#7E5A3A"/><circle cx="1" cy="12" r="2" fill="#FF8FAB"/><circle cx="6" cy="11.5" r="2" fill="#FFC93C"/><circle cx="11" cy="12" r="2" fill="#A78BFA"/>':'')+
+    '</g>';
 }
 // HOUSE,pitched roof sits flush on the wall (eave board hides the seam); door centered low,
 // two windows flank it in the upper wall → door and windows never overlap.
@@ -4335,20 +4353,29 @@ function expHouse(x,y,i){
   var wt=roofH, gnd=H;
   var g='<g transform="translate('+x+','+(y-H)+')">'+sh(w/2,gnd+3,w*0.5,6);
   g+='<rect x="3" y="'+wt+'" width="'+(w-6)+'" height="'+wall+'" rx="2.5" fill="'+c+'"/>';            // wall
-  g+='<rect x="'+(w-12)+'" y="'+wt+'" width="9" height="'+wall+'" fill="rgba(0,0,0,.12)"/>';          // right shade
+  g+='<rect x="3" y="'+wt+'" width="'+(w-6)+'" height="'+wall+'" rx="2.5" fill="url(#wallV)"/>';      // wall sheen
+  g+='<g stroke="rgba(0,0,0,.08)" stroke-width="1"><line x1="3" y1="'+(wt+12)+'" x2="'+(w-3)+'" y2="'+(wt+12)+'"/><line x1="3" y1="'+(wt+22)+'" x2="'+(w-3)+'" y2="'+(wt+22)+'"/><line x1="3" y1="'+(wt+32)+'" x2="'+(w-3)+'" y2="'+(wt+32)+'"/></g>'; // clapboard
+  g+='<rect x="'+(w-12)+'" y="'+wt+'" width="9" height="'+wall+'" fill="rgba(0,0,0,.10)"/>';          // right shade
   g+='<rect x="3" y="'+(gnd-5)+'" width="'+(w-6)+'" height="5" fill="rgba(0,0,0,.18)"/>';             // foundation
-  g+='<polygon points="-5,'+(wt+2)+' '+(w/2)+',0 '+(w+5)+','+(wt+2)+'" fill="'+rf+'"/>';               // roof (base overlaps wall top → flush)
+  g+='<polygon points="-5,'+(wt+2)+' '+(w/2)+',0 '+(w+5)+','+(wt+2)+'" fill="'+rf+'"/>';               // roof
+  g+='<polygon points="-5,'+(wt+2)+' '+(w/2)+',0 '+(w+5)+','+(wt+2)+'" fill="url(#shingle)"/>';        // shingle texture
+  g+='<polygon points="-5,'+(wt+2)+' '+(w/2)+',0 '+(w+5)+','+(wt+2)+'" fill="url(#roofV)"/>';          // roof sheen
   g+='<polygon points="'+(w/2)+',0 '+(w+5)+','+(wt+2)+' '+(w/2)+','+(wt+2)+'" fill="rgba(0,0,0,.13)"/>'; // shaded right slope
-  g+='<rect x="-5" y="'+(wt-1)+'" width="'+(w+10)+'" height="4" rx="2" fill="'+rf+'"/>';               // eave board over the seam
-  g+='<rect x="'+(w/2-1)+'" y="1" width="2" height="'+wt+'" fill="rgba(0,0,0,.12)"/>';                 // ridge line
-  g+='<rect x="'+(w-26)+'" y="4" width="8" height="'+(wt-2)+'" fill="'+rf+'"/><rect x="'+(w-27)+'" y="4" width="10" height="3" fill="rgba(0,0,0,.22)"/>'; // chimney on roof
-  g+=expWin(9,wt+6)+expWin(w-24,wt+6);                                                                 // flanking windows
-  var dw=18,dh=22,dx=(w-dw)/2,dt=gnd-dh;                                                               // door (centered, lower)
+  g+='<rect x="-5" y="'+(wt-1)+'" width="'+(w+10)+'" height="4" rx="2" fill="'+rf+'"/>';               // eave board
+  g+='<line x1="'+(w/2)+'" y1="1" x2="'+(w/2)+'" y2="'+(wt+1)+'" stroke="#FFFFFF" stroke-opacity=".22" stroke-width="1.5"/>'; // ridge highlight
+  g+='<rect x="'+(w-26)+'" y="4" width="8" height="'+(wt-2)+'" fill="'+rf+'"/><rect x="'+(w-27)+'" y="4" width="10" height="3" fill="rgba(0,0,0,.22)"/>'; // chimney
+  if(i%4===0)g+='<circle cx="'+(w-22)+'" cy="-2" r="3.2" fill="rgba(238,238,236,.55)"/><circle cx="'+(w-18)+'" cy="-9" r="4.2" fill="rgba(238,238,236,.4)"/>'; // chimney smoke
+  if(i%3===1)g+='<polygon points="'+(w/2-8)+','+(wt-2)+' '+(w/2)+','+(wt-13)+' '+(w/2+8)+','+(wt-2)+'" fill="'+rf+'"/>'+expWin(w/2-6,wt-11); // dormer
+  g+=expWin(9,wt+6,i%2===0)+expWin(w-24,wt+6);                                                        // flanking windows (left gets a planter on even i)
+  var dw=18,dh=22,dx=(w-dw)/2,dt=gnd-dh;                                                               // door
   g+='<rect x="'+(dx-2)+'" y="'+(dt-2)+'" width="'+(dw+4)+'" height="'+(dh+2)+'" rx="2" fill="rgba(0,0,0,.16)"/>'+
      '<rect x="'+dx+'" y="'+dt+'" width="'+dw+'" height="'+dh+'" rx="2" fill="'+dc+'"/>'+
-     '<rect x="'+(dx+2)+'" y="'+(dt+3)+'" width="'+(dw-4)+'" height="6" rx="1" fill="rgba(255,255,255,.10)"/>'+
+     '<rect x="'+(dx+3)+'" y="'+(dt+4)+'" width="'+(dw-6)+'" height="6" rx="1" fill="rgba(0,0,0,.14)"/>'+     // recessed panel
+     '<rect x="'+(dx+3)+'" y="'+(dt+12)+'" width="'+(dw-6)+'" height="6" rx="1" fill="rgba(0,0,0,.14)"/>'+    // recessed panel
      '<circle cx="'+(dx+dw-4)+'" cy="'+(dt+dh/2)+'" r="1.4" fill="#FFD43B"/>'+
-     '<rect x="'+(dx-4)+'" y="'+(gnd-2)+'" width="'+(dw+8)+'" height="3" rx="1.5" fill="rgba(0,0,0,.2)"/>';
+     '<rect x="'+(dx-5)+'" y="'+(gnd-1)+'" width="'+(dw+10)+'" height="4" rx="1.5" fill="#C9BFA8"/>'+          // stone step
+     '<rect x="'+(dx-5)+'" y="'+(gnd+1)+'" width="'+(dw+10)+'" height="2" fill="rgba(0,0,0,.2)"/>';
+  if(i%2)g+='<circle cx="'+(dx-4)+'" cy="'+(dt+4)+'" r="2.4" fill="#FFE08A"/><rect x="'+(dx-5)+'" y="'+(dt+1)+'" width="2" height="7" fill="#5E5048"/>'; // porch lamp
   return g+'</g>';
 }
 // OFFICE,flat roof with parapet + rooftop unit (no floating), framed window grid; the two
@@ -4358,21 +4385,28 @@ function expOffice(x,y,floors,i){
   reg(x,y-H,w,H); EXP_BR.push({x:x,y:y-H,w:w,h:H});
   var g='<g transform="translate('+x+','+(y-H)+')">'+sh(w/2,H+3,w*0.5,6);
   g+='<rect x="0" y="0" width="'+w+'" height="'+H+'" rx="3" fill="'+c+'"/>';
+  g+='<rect x="0" y="0" width="'+w+'" height="'+H+'" rx="3" fill="url(#wallV)"/>';                     // body gradient
+  g+='<rect x="30" y="9" width="3" height="'+(H-14)+'" fill="rgba(255,255,255,.10)"/><rect x="75" y="9" width="3" height="'+(H-14)+'" fill="rgba(255,255,255,.10)"/>'; // pilasters
   g+='<rect x="'+(w-12)+'" y="0" width="12" height="'+H+'" fill="rgba(0,0,0,.14)"/>';                  // side shade
   g+='<rect x="-2" y="0" width="'+(w+4)+'" height="9" rx="3" fill="rgba(0,0,0,.2)"/>';                 // parapet
-  g+='<rect x="'+(w/2-12)+'" y="-8" width="24" height="9" rx="2" fill="'+c+'"/><rect x="'+(w/2-12)+'" y="-8" width="24" height="3" fill="rgba(0,0,0,.18)"/>'; // rooftop unit (sits on roof)
+  g+='<rect x="'+(w/2-12)+'" y="-8" width="24" height="9" rx="2" fill="'+c+'"/><rect x="'+(w/2-12)+'" y="-8" width="24" height="3" fill="rgba(0,0,0,.18)"/>'; // rooftop unit
+  g+='<rect x="14" y="-6" width="14" height="7" rx="1.5" fill="'+c+'"/><rect x="14" y="-6" width="14" height="2" fill="rgba(0,0,0,.2)"/>';                    // 2nd AC unit
+  g+='<rect x="'+(w-22)+'" y="-9" width="3" height="9" fill="#6E7680"/>';                              // vent pipe
+  if(i%2)g+='<rect x="'+(w-42)+'" y="-14" width="16" height="14" rx="3" fill="#9AA0A6"/><ellipse cx="'+(w-34)+'" cy="-14" rx="8" ry="2.5" fill="#B8BEC4"/>'; // water tank
   var cols=[12,35,58,81];
-  for(var f=0;f<floors;f++){var bottom=(f===floors-1);for(var ci=0;ci<4;ci++){if(bottom&&(ci===1||ci===2))continue;
+  for(var f=0;f<floors;f++){var bottom=(f===floors-1);
+    if(f<floors-1)g+='<rect x="8" y="'+(14+f*fh+20)+'" width="'+(w-16)+'" height="'+(fh-20)+'" fill="rgba(0,0,0,.08)"/>'; // spandrel band
+    for(var ci=0;ci<4;ci++){if(bottom&&(ci===1||ci===2))continue;
     var gx=cols[ci],gy=14+f*fh,lit=((f*4+ci)%5===0);
     g+='<rect x="'+(gx-1)+'" y="'+(gy-1)+'" width="18" height="20" rx="1.5" fill="#FBF7EC"/>'+
-       '<rect x="'+gx+'" y="'+gy+'" width="16" height="18" rx="1" fill="'+(lit?'#F8E2A0':'#CFE0EC')+'"/>'+
-       '<rect x="'+gx+'" y="'+gy+'" width="16" height="6" rx="1" fill="rgba(255,255,255,.18)"/>'+
+       '<rect x="'+gx+'" y="'+gy+'" width="16" height="18" rx="1" fill="'+(lit?'url(#glassLit)':'url(#glass)')+'"/>'+
        '<rect x="'+(gx+7)+'" y="'+gy+'" width="1.4" height="18" fill="#FBF7EC"/>';
   }}
-  var dt=H-22;                                                                                          // entrance (centered, ground)
-  g+='<rect x="'+(w/2-16)+'" y="'+(dt-4)+'" width="32" height="5" rx="2" fill="rgba(0,0,0,.26)"/>'+     // canopy
+  var dt=H-22;                                                                                          // entrance
+  g+='<rect x="'+(w/2-15)+'" y="'+(dt+2)+'" width="30" height="20" rx="2" fill="url(#glassLit)" opacity=".5"/>'+ // lobby glow behind doors
+     '<rect x="'+(w/2-16)+'" y="'+(dt-4)+'" width="32" height="5" rx="2" fill="rgba(0,0,0,.26)"/>'+     // canopy
      '<rect x="'+(w/2-13)+'" y="'+dt+'" width="26" height="22" rx="2" fill="#3E4654"/>'+
-     '<rect x="'+(w/2-1)+'" y="'+dt+'" width="2" height="22" fill="rgba(255,255,255,.18)"/>'+           // double-door split
+     '<rect x="'+(w/2-1)+'" y="'+dt+'" width="2" height="22" fill="rgba(255,255,255,.18)"/>'+           // door split
      '<rect x="'+(w/2-17)+'" y="'+(H-3)+'" width="34" height="3" rx="1.5" fill="rgba(0,0,0,.2)"/>';     // step
   return g+'</g>';
 }
@@ -4384,19 +4418,25 @@ function expShop(x,y,kind){
   reg(x,y-H,w,H); EXP_BR.push({x:x,y:y-H,w:w,h:H});
   var g='<g transform="translate('+x+','+(y-H)+')">'+sh(w/2,H+3,w*0.5,6);
   g+='<rect x="2" y="15" width="'+(w-4)+'" height="45" rx="2.5" fill="'+k.b+'"/>';                     // wall
-  g+='<rect x="'+(w-12)+'" y="15" width="10" height="45" fill="rgba(0,0,0,.12)"/>';                    // right shade
+  g+='<rect x="2" y="15" width="'+(w-4)+'" height="45" rx="2.5" fill="url(#wallV)"/>';                 // wall sheen
+  g+='<rect x="'+(w-12)+'" y="15" width="10" height="45" fill="rgba(0,0,0,.10)"/>';                    // right shade
+  g+='<rect x="2" y="52" width="'+(w-4)+'" height="8" fill="url(#courses)"/>';                         // brick course band near base
   g+='<rect x="2" y="55" width="'+(w-4)+'" height="5" fill="rgba(0,0,0,.18)"/>';                       // foundation
+  g+='<rect x="-3" y="20" width="'+(w+6)+'" height="4" fill="rgba(0,0,0,.12)"/>';                      // awning cast shadow
   g+='<rect x="-3" y="1" width="'+(w+6)+'" height="15" rx="3" fill="'+k.a+'"/><rect x="-3" y="12" width="'+(w+6)+'" height="4" fill="rgba(0,0,0,.18)"/>'; // sign board
   g+='<text x="'+(w/2)+'" y="12.5" text-anchor="middle" font-size="9" font-weight="900" fill="#FFFDF4" font-family="Verdana">'+k.n+'</text>';
   for(var i=0;i<7;i++)g+='<path d="M'+(3+i*14.7)+',16 h14.7 v5 a7,5 0 0 1 -14.7,0 Z" fill="'+((i%2)?'#FAF3E0':k.a)+'"/>'; // scalloped awning
+  g+='<rect x="-3" y="16" width="'+(w+6)+'" height="6" fill="url(#fabric)"/>';                         // awning fabric sheen
   g+='<rect x="7" y="27" width="62" height="26" rx="2" fill="#FFFDF4"/>'+                              // display window (left)
-     '<rect x="10" y="30" width="56" height="20" rx="1.5" fill="#CFEAF6"/>'+
-     '<rect x="10" y="30" width="56" height="7" rx="1.5" fill="#E2F3FB"/>'+
+     '<rect x="10" y="30" width="56" height="20" rx="1.5" fill="url(#glass)"/>'+
+     '<rect x="12" y="44" width="52" height="5" fill="url(#glassLit)" opacity=".45"/>'+                // interior counter glow
      '<text x="38" y="46" text-anchor="middle" font-size="14">'+k.e+'</text>';
+  g+='<rect x="52" y="27" width="15" height="6" rx="1" fill="#3E8A4E"/><text x="59.5" y="31.9" text-anchor="middle" font-size="4.2" fill="#fff" font-family="Verdana" font-weight="900">OPEN</text>'; // OPEN sign
   g+='<rect x="74" y="32" width="26" height="28" rx="2" fill="rgba(0,0,0,.16)"/>'+                     // door (right)
      '<rect x="76" y="34" width="22" height="26" rx="2" fill="#5E4636"/>'+
      '<rect x="79" y="37" width="16" height="7" rx="1" fill="rgba(255,255,255,.10)"/>'+
      '<circle cx="94" cy="48" r="1.4" fill="#FFD43B"/>';
+  g+='<rect x="98" y="18" width="3" height="10" fill="#5E5048"/><rect x="94" y="26" width="12" height="12" rx="2" fill="'+k.a+'"/><text x="100" y="36" text-anchor="middle" font-size="8">'+k.e+'</text>'; // projecting blade sign
   return g+'</g>';
 }
 // ── ATTRACTIONS art: a detailed themed complex (expVenue) or a "for sale" plot sign (venuePlot) ──
@@ -4449,15 +4489,19 @@ function venueArt(a){                                    // draw only, no side e
   var x=a.x,y=a.y,w=150,H=104,col=a.col||'#C0563B';
   var g='<g transform="translate('+x+','+(y-H)+')">'+sh(w/2,H+4,w*0.55,9);
   g+='<rect x="4" y="30" width="'+(w-8)+'" height="'+(H-30)+'" rx="4" fill="'+col+'"/>';               // body
-  g+='<rect x="'+(w-16)+'" y="30" width="12" height="'+(H-30)+'" fill="rgba(0,0,0,.12)"/>';            // side shade
-  g+='<rect x="4" y="'+(H-6)+'" width="'+(w-8)+'" height="6" fill="rgba(0,0,0,.2)"/>';                 // foundation
-  g+=venueSig(a.sig,w,H);                                                                              // signature (roof/wheel/etc.), drawn behind the sign board
+  g+='<rect x="4" y="30" width="'+(w-8)+'" height="'+(H-30)+'" rx="4" fill="url(#wallV)"/>';           // body gradient
+  g+='<rect x="'+(w-16)+'" y="30" width="12" height="'+(H-30)+'" fill="rgba(0,0,0,.10)"/>';            // side shade
+  g+='<rect x="0" y="'+(H-14)+'" width="'+w+'" height="14" rx="3" fill="rgba(0,0,0,.10)"/><rect x="0" y="'+(H-14)+'" width="'+w+'" height="4" fill="rgba(255,255,255,.12)"/>'; // stone plinth
+  g+=venueSig(a.sig,w,H);                                                                              // signature topper (drawn behind the sign board)
   g+='<rect x="-2" y="14" width="'+(w+4)+'" height="20" rx="5" fill="rgba(0,0,0,.3)"/>';               // marquee board
+  g+='<rect x="-2" y="14" width="'+(w+4)+'" height="20" rx="5" fill="none" stroke="#F4D06F" stroke-width="1.6"/>'; // gold marquee frame
+  for(var mb=0;mb<12;mb++)g+='<circle cx="'+(4+mb*13)+'" cy="16.5" r="1.3" fill="#FFE08A"/>';          // marquee bulbs
   g+='<text x="'+(w/2)+'" y="28" text-anchor="middle" font-size="'+(a.name.length>13?9:10)+'" font-weight="900" fill="#FFF7E0" font-family="Verdana">'+a.name.toUpperCase()+'</text>';
-  g+='<circle cx="'+(w/2)+'" cy="63" r="17" fill="rgba(255,255,255,.92)"/><text x="'+(w/2)+'" y="71" text-anchor="middle" font-size="22">'+a.icon+'</text>'; // facade emblem
+  g+='<circle cx="'+(w/2)+'" cy="63" r="17" fill="rgba(255,255,255,.92)"/><circle cx="'+(w/2)+'" cy="63" r="17" fill="url(#wallV)" opacity=".5"/><circle cx="'+(w/2)+'" cy="63" r="17" fill="none" stroke="#F4D06F" stroke-width="2.5"/><text x="'+(w/2)+'" y="71" text-anchor="middle" font-size="22">'+a.icon+'</text>'; // embossed gold-rim emblem
   g+='<rect x="'+(w/2-25)+'" y="'+(H-26)+'" width="50" height="26" rx="2" fill="rgba(0,0,0,.18)"/>'+   // entrance
      '<rect x="'+(w/2-22)+'" y="'+(H-24)+'" width="20" height="24" rx="2" fill="#3E4654"/><rect x="'+(w/2+2)+'" y="'+(H-24)+'" width="20" height="24" rx="2" fill="#3E4654"/>'+
-     '<rect x="'+(w/2-1)+'" y="'+(H-24)+'" width="2" height="24" fill="rgba(255,255,255,.15)"/>';
+     '<rect x="'+(w/2-1)+'" y="'+(H-24)+'" width="2" height="24" fill="rgba(255,255,255,.15)"/>'+
+     '<rect x="'+(w/2-24)+'" y="'+(H-4)+'" width="48" height="4" rx="1.5" fill="#B8433C"/>';           // red-carpet step
   return g+'</g>';
 }
 function venuePlot(a){

@@ -2861,10 +2861,10 @@ function doNextQ(){if(S.answers.length>=Q.length){buildResults();showScreen('res
 // ─────────────────────────────────────────────────────────────
 function ideologyResult(){
   const t=S.answers.length||1;const p={};Object.keys(S.counts).forEach(k=>p[k]=S.counts[k]/t);
-  if(p.cap>=0.6)return{label:'🟡 Libertarian Capitalist',desc:'You backed free markets, personal liberty, and a limited government. That is the mix behind the biggest rise in living standards in human history. Nicely played, leader.'};
-  if(p.soc>=0.5)return{label:'🔴 Social Democrat',desc:'You leaned on government to fix problems through regulation and redistribution. The goal is fairness, but the usual trade-off is slower growth and less personal freedom. Worth deciding which you value more.'};
-  if(p.com>=0.4)return{label:'🟣 Authoritarian Statist',desc:"You handed most power to the state over individual rights. From the Soviet Union to Venezuela, that path has a steep record of lost prosperity and lost freedom. A hard one to defend."};
-  if(p.mix>=0.5)return{label:'🔵 Pragmatic Centrist',desc:'You split the difference between markets and government. It is a safe instinct, though the track record says leaning harder on markets usually delivers more growth and choice. Try a bolder run and compare your bars.'};
+  if(p.cap>=0.6)return{label:'🟡 Libertarian Capitalist',desc:'You backed free markets, personal freedom, and a small government. That mix has lifted more people out of poverty than anything else in history. Nicely played, leader.'};
+  if(p.soc>=0.5)return{label:'🔴 Social Democrat',desc:'You leaned on the government to fix problems with more rules and by sharing wealth around. The goal is fairness, but it often means slower growth and less freedom. Which matters more to you?'};
+  if(p.com>=0.4)return{label:'🟣 Authoritarian Statist',desc:"You gave the government almost all the power over people's rights. Countries that tried this, like the old Soviet Union and Venezuela, ended up poorer and less free. A hard path to defend."};
+  if(p.mix>=0.5)return{label:'🔵 Pragmatic Centrist',desc:'You landed in the middle, part markets and part government. It is a safe pick, but leaning more on markets usually brings more growth and more choices. Try a bolder run and compare.'};
   const winner=Object.keys(S.counts).reduce((a,b)=>S.counts[a]>=S.counts[b]?a:b);
   const fb={cap:'🟡 Leaning Libertarian',mix:'🔵 Leaning Centrist',soc:'🔴 Leaning Socialist',com:'🟣 Leaning Authoritarian'};
   return{label:fb[winner],desc:'Your choices ranged widely, with a slight lean one way. Play a few more terms and watch which approach keeps all four bars highest.'};

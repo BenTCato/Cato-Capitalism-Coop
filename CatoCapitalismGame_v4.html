@@ -3120,7 +3120,7 @@ const SPECIAL_OUTFIT=[
 ];
 
 // ── Profiles ──
-function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0,lifetimeScore:0,lifetimeBest:0,lifetimeAnswered:0,terms:[],emotes:[],town:{districts:{},dev:{}},bank:{balance:0,last:0}};}
+function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0,lifetimeScore:0,lifetimeBest:0,lifetimeAnswered:0,terms:[],emotes:[],town:{districts:{},dev:{},attr:{}},bank:{balance:0,last:0}};}
 // ── TOWN BUILDING: buy land (districts), then developments (shops/homes) to grow your city ──
 // You start with just downtown; buying land + shops adds a steady bonus to the meters (a growing free economy).
 var TOWN_DISTRICTS={
@@ -3137,15 +3137,34 @@ var TOWN_DEVS={
   south_homes:  {dist:'south', name:'Family Homes',   icon:'🏠', cost:900,  bonus:{h:6,e:1}},
   north_offices:{dist:'north', name:'Offices & Jobs', icon:'🏢', cost:1600, bonus:{e:7,ed:2}}
 };
+// ── ATTRACTIONS: cool standalone complexes you buy individually (no land needed). They sit in the
+//    FAIRGROUNDS band at the bottom of the map. Recreation + tourism lifts Happiness + Economy
+//    (a few also teach, so they add Education). x,y = ground-left plot on the map. ──
+var TOWN_ATTRACTIONS={
+  arena:      {name:'Sports Arena',       icon:'🏟️', cost:2200, bonus:{h:4,e:3},      x:320,  y:2540, sig:'arena',   col:'#C0563B'},
+  amusement:  {name:'Amusement Park',     icon:'🎢', cost:3200, bonus:{h:6,e:2},      x:860,  y:2540, sig:'ferris',  col:'#E85D9A'},
+  zoo:        {name:'City Zoo',           icon:'🦁', cost:2600, bonus:{h:5,e:2},      x:1400, y:2540, sig:'zoo',     col:'#7FB069'},
+  aquarium:   {name:'Aquarium',           icon:'🐠', cost:2600, bonus:{h:4,e:3},      x:1950, y:2540, sig:'aqua',    col:'#3FA7C0'},
+  museum:     {name:'Museum',             icon:'🏛️', cost:2400, bonus:{h:2,e:2,ed:3}, x:2850, y:2540, sig:'columns', col:'#D9C8A0'},
+  planetarium:{name:'Planetarium',        icon:'🔭', cost:2600, bonus:{h:2,e:1,ed:3}, x:3300, y:2540, sig:'planet',  col:'#5E4E93'},
+  stadium:    {name:'Grand Stadium',      icon:'⚽', cost:2800, bonus:{h:4,e:3},      x:320,  y:2760, sig:'stadium', col:'#4E8A5E'},
+  waterpark:  {name:'Water Park',         icon:'🏊', cost:2800, bonus:{h:6,e:2},      x:860,  y:2760, sig:'water',   col:'#3FB0D0'},
+  marina:     {name:'Marina',             icon:'⛵', cost:2600, bonus:{h:3,e:4},      x:1400, y:2760, sig:'marina',  col:'#8AB4CC'},
+  garden:     {name:'Botanical Garden',   icon:'🌷', cost:2000, bonus:{h:4,e:1},      x:1950, y:2760, sig:'green',   col:'#88C070'},
+  spacecenter:{name:'Space Center',       icon:'🚀', cost:3800, bonus:{h:3,e:3,ed:3}, x:2850, y:2760, sig:'rocket',  col:'#B0B8C4'},
+  concert:    {name:'Grand Concert Hall', icon:'🎭', cost:3400, bonus:{h:5,e:3},      x:3300, y:2760, sig:'hall',    col:'#B5567A'}
+};
 var TOWN_BONUS_CAP=18; // per meter, so building never fully replaces good policy
-function ensureTown(){ if(P&&(!P.town||typeof P.town!=='object'))P.town={districts:{},dev:{}}; if(P&&P.town){ P.town.districts=P.town.districts||{}; P.town.dev=P.town.dev||{}; } }
+function ensureTown(){ if(P&&(!P.town||typeof P.town!=='object'))P.town={districts:{},dev:{},attr:{}}; if(P&&P.town){ P.town.districts=P.town.districts||{}; P.town.dev=P.town.dev||{}; P.town.attr=P.town.attr||{}; } }
 function ownsDistrict(k){ return !!(P&&P.town&&P.town.districts&&P.town.districts[k]); }
 function ownsDev(k){ return !!(P&&P.town&&P.town.dev&&P.town.dev[k]); }
+function ownsAttraction(k){ return !!(P&&P.town&&P.town.attr&&P.town.attr[k]); }
 function townBonus(){
   var b={h:0,e:0,ed:0,f:0};
   if(!P||!P.town)return b;
   Object.keys(TOWN_DISTRICTS).forEach(function(k){ if(ownsDistrict(k)){ var d=DISTRICT_BONUS[k]||{}; for(var s in d)b[s]=(b[s]||0)+d[s]; } });
   Object.keys(TOWN_DEVS).forEach(function(k){ if(ownsDev(k)){ var d=TOWN_DEVS[k].bonus||{}; for(var s in d)b[s]=(b[s]||0)+d[s]; } });
+  Object.keys(TOWN_ATTRACTIONS).forEach(function(k){ if(ownsAttraction(k)){ var d=TOWN_ATTRACTIONS[k].bonus||{}; for(var s in d)b[s]=(b[s]||0)+d[s]; } });
   ['h','e','ed','f'].forEach(function(s){ if(b[s]>TOWN_BONUS_CAP)b[s]=TOWN_BONUS_CAP; });
   return b;
 }
@@ -3190,6 +3209,17 @@ function renderBuild(){
     }
     html+='</div>';
   });
+  // ── Attractions: buy cool complexes individually (no land needed) ──
+  html+='<div style="margin:18px 0 8px;font-weight:900;color:var(--navy,#13234a);font-size:1rem;">🎡 Attractions <span style="font-weight:600;font-size:.76rem;color:#778;">cool complexes, no land needed, built in the Fairgrounds</span></div>';
+  Object.keys(TOWN_ATTRACTIONS).forEach(function(ak){
+    var A=TOWN_ATTRACTIONS[ak], ao=ownsAttraction(ak), ac=(P&&(P.stars||0)>=A.cost);
+    html+='<div style="display:flex;align-items:center;gap:10px;border:2px solid rgba(0,0,0,.08);border-radius:12px;padding:9px 12px;margin-bottom:8px;">'+
+      '<span style="font-size:1.4rem;">'+A.icon+'</span>'+
+      '<div style="flex:1;min-width:0;"><div style="font-weight:800;color:var(--navy,#13234a);">'+A.name+'</div><div style="font-size:.72rem;color:#2EB872;font-weight:700;">'+bonusChips(A.bonus)+'</div></div>'+
+      (ao?'<span style="color:#2EB872;font-weight:800;white-space:nowrap;">✓ Built</span>'
+         :'<button onclick="buyAttraction(\''+ak+'\')" '+(ac?'':'disabled')+' style="background:linear-gradient(180deg,#B98CE8,#7A4ED6);color:#fff;border:none;border-radius:10px;padding:8px 13px;font-family:inherit;font-weight:900;cursor:pointer;white-space:nowrap;'+(ac?'':'opacity:.45;cursor:not-allowed;')+'">Build ⭐'+A.cost.toLocaleString()+'</button>')+
+    '</div>';
+  });
   body.innerHTML=html;
 }
 function afterBuild(){
@@ -3202,6 +3232,7 @@ function afterBuild(){
 }
 function buyDistrict(k){ ensureTown(); var D=TOWN_DISTRICTS[k]; if(!D||ownsDistrict(k))return; if((P.stars||0)<D.cost){sfx('bad');return;} P.stars-=D.cost; P.town.districts[k]=true; afterBuild(); }
 function buyDev(k){ ensureTown(); var V=TOWN_DEVS[k]; if(!V||ownsDev(k))return; if(!ownsDistrict(V.dist)){sfx('bad');return;} if((P.stars||0)<V.cost){sfx('bad');return;} P.stars-=V.cost; P.town.dev[k]=true; afterBuild(); }
+function buyAttraction(k){ ensureTown(); var A=TOWN_ATTRACTIONS[k]; if(!A||ownsAttraction(k))return; if((P.stars||0)<A.cost){sfx('bad');return;} P.stars-=A.cost; P.town.attr[k]=true; afterBuild(); }
 
 /* ══ SAVINGS BANK: deposit stars, earn compound interest every 5 minutes ══ */
 var BANK_RATE=0.05, BANK_TICK_MS=5*60*1000, BANK_MAX_TICKS=6; /* 5% per 5 min, cap 6 ticks (30 min) per accrual so a long absence cannot mint infinite stars */
@@ -3629,7 +3660,7 @@ function randPart(part,base){
 // thriving = flat-vector park city · worn = muted brick streets ·
 // collapsed = gray silhouette skyline. Flat shapes, no outlines.
 // ─────────────────────────────────────────────────────────────
-const WORLD_W=3600,WORLD_H=2400,VIEW_W=900,VIEW_H=600;
+const WORLD_W=3600,WORLD_H=2820,VIEW_W=900,VIEW_H=600;
 // Downtown core is authored at top-left coords; CORE_DX/DY shift it to the map center.
 // reg() adds REG_DX/DY so collision boxes line up with the translated core render.
 const CORE_DX=900,CORE_DY=600;
@@ -4057,11 +4088,11 @@ function buildWorld(tiers){
   //    buildings are kept out of its corridor (see the river keep-clear in buildExpansion's row()). ──
   (function(){
     var RX=2560;                                                          // straight channel center: clear of the loop road (west) and the arterial (east)
-    w+='<rect x="'+(RX-50)+'" y="-40" width="100" height="2480" fill="'+AP.water2+'"/>';   // shore/bank
-    w+='<rect x="'+(RX-40)+'" y="-40" width="80" height="2480" fill="'+AP.water+'"/>';      // water
-    w+='<path class="shimmer" d="M'+(RX-9)+',140 q-6,70 0,140 M'+(RX+9)+',640 q6,70 0,140 M'+(RX-9)+',1180 q-6,70 0,140 M'+(RX+9)+',1760 q6,70 0,140 M'+(RX-9)+',2180 q-6,60 0,120" stroke="rgba(255,255,255,.4)" stroke-width="4" fill="none" stroke-linecap="round"/>';
-    var XR=[220,420,1337,2040,2280], GH=36, FOOT=36;                      // road crossings; FOOT = player origin→feet offset
-    var edges=[-40]; XR.forEach(function(y){edges.push(y-GH,y+GH);}); edges.push(2440);
+    w+='<rect x="'+(RX-50)+'" y="-40" width="100" height="2860" fill="'+AP.water2+'"/>';   // shore/bank (runs to the new fairgrounds bottom)
+    w+='<rect x="'+(RX-40)+'" y="-40" width="80" height="2860" fill="'+AP.water+'"/>';      // water
+    w+='<path class="shimmer" d="M'+(RX-9)+',140 q-6,70 0,140 M'+(RX+9)+',640 q6,70 0,140 M'+(RX-9)+',1180 q-6,70 0,140 M'+(RX+9)+',1760 q6,70 0,140 M'+(RX-9)+',2180 q-6,60 0,120 M'+(RX+9)+',2680 q6,60 0,120" stroke="rgba(255,255,255,.4)" stroke-width="4" fill="none" stroke-linecap="round"/>';
+    var XR=[220,420,1337,2040,2280,2620], GH=36, FOOT=36;                  // road crossings (2620 = fairgrounds promenade bridge); FOOT = player origin→feet offset
+    var edges=[-40]; XR.forEach(function(y){edges.push(y-GH,y+GH);}); edges.push(2820);
     // collision is shifted UP by FOOT so the walkable band lines up with the player's FEET (which render +34 below player.y):
     // the player crosses each bridge with feet on the road, and is blocked on the water on both banks
     for(var i=0;i<edges.length;i+=2){ if(edges[i+1]>edges[i]) reg(RX-50,edges[i]-FOOT,100,edges[i+1]-edges[i]); }
@@ -4163,6 +4194,72 @@ function expShop(x,y,kind){
      '<circle cx="94" cy="48" r="1.4" fill="#FFD43B"/>';
   return g+'</g>';
 }
+// ── ATTRACTIONS art: a detailed themed complex (expVenue) or a "for sale" plot sign (venuePlot) ──
+function vflag(x,y,c){return '<line x1="'+x+'" y1="'+y+'" x2="'+x+'" y2="'+(y+16)+'" stroke="#6E4E2E" stroke-width="2"/><path d="M'+x+','+y+' l13,4 l-13,4 Z" fill="'+c+'"/>';}
+function venueSig(sig,w,H){
+  var g='';
+  if(sig==='ferris'){ var cx=22,cy=-16,r=32;
+    g+='<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx-9)+'" y2="30" stroke="#8A6038" stroke-width="4"/><line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+9)+'" y2="30" stroke="#8A6038" stroke-width="4"/>';
+    g+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#C94F7C" stroke-width="3"/>';
+    for(var i=0;i<8;i++){var an=i*Math.PI/4,ex=(cx+Math.cos(an)*r).toFixed(1),ey=(cy+Math.sin(an)*r).toFixed(1);g+='<line x1="'+cx+'" y1="'+cy+'" x2="'+ex+'" y2="'+ey+'" stroke="#F2B23E" stroke-width="1.4"/><circle cx="'+ex+'" cy="'+ey+'" r="4.5" fill="'+['#E85D9A','#3FA7C0','#F2B23E','#7FB069'][i%4]+'"/>';}
+    g+='<circle cx="'+cx+'" cy="'+cy+'" r="4" fill="#fff"/>';
+  } else if(sig==='arena'||sig==='stadium'){
+    g+='<path d="M6,30 Q'+(w/2)+',-10 '+(w-6)+',30 Z" fill="rgba(255,255,255,.2)"/><path d="M6,30 Q'+(w/2)+',-10 '+(w-6)+',30" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2"/>';
+    g+=vflag(18,-8,'#FFD43B')+vflag(w-18,-8,'#4ECDC4')+vflag(w/2,-18,'#FF6B6B');
+    if(sig==='stadium')g+='<ellipse cx="'+(w/2)+'" cy="88" rx="34" ry="12" fill="#3E8A4E"/><line x1="'+(w/2)+'" y1="76" x2="'+(w/2)+'" y2="100" stroke="#fff" stroke-width="1.4"/><circle cx="'+(w/2)+'" cy="88" r="5" fill="none" stroke="#fff" stroke-width="1.4"/>';
+  } else if(sig==='zoo'){
+    g+='<rect x="-2" y="24" width="12" height="'+(H-24)+'" fill="#8A6038"/><rect x="'+(w-10)+'" y="24" width="12" height="'+(H-24)+'" fill="#8A6038"/>';
+    g+='<path d="M-2,26 Q'+(w/2)+',0 '+(w+2)+',26" fill="none" stroke="#8A6038" stroke-width="8"/>';
+  } else if(sig==='aqua'||sig==='planet'){
+    g+='<path d="M'+(w/2-42)+',30 A42,42 0 0 1 '+(w/2+42)+',30 Z" fill="'+(sig==='aqua'?'#63C6DE':'#7A6AB0')+'"/><path d="M'+(w/2-42)+',30 A42,42 0 0 1 '+(w/2+42)+',30" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2"/>';
+    g+='<circle cx="'+(w/2)+'" cy="-10" r="4" fill="#FFF7E0"/>';
+    if(sig==='planet')g+='<text x="'+(w/2+30)+'" y="4" font-size="12">✨</text>';
+  } else if(sig==='columns'){
+    g+='<polygon points="0,30 '+(w/2)+',0 '+w+',30" fill="rgba(255,255,255,.9)"/><polygon points="0,30 '+(w/2)+',0 '+w+',30" fill="none" stroke="rgba(0,0,0,.15)" stroke-width="1.5"/>';
+    for(var cxp=16;cxp<w-14;cxp+=25)g+='<rect x="'+cxp+'" y="46" width="10" height="'+(H-52)+'" rx="1" fill="rgba(255,255,255,.75)"/>';
+  } else if(sig==='water'){
+    g+='<path d="M'+(w-8)+',38 q42,10 22,42 q-16,26 -48,22" fill="none" stroke="#2E9BC0" stroke-width="10" stroke-linecap="round"/><path d="M'+(w-8)+',38 q42,10 22,42 q-16,26 -48,22" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="3" stroke-linecap="round"/>';
+    g+='<rect x="10" y="'+(H-9)+'" width="'+(w-20)+'" height="9" rx="3" fill="#63C6DE"/>';
+  } else if(sig==='marina'){
+    g+='<rect x="0" y="'+(H-15)+'" width="'+w+'" height="15" fill="#63C6DE"/><path d="M2,'+(H-15)+' q'+(w/4)+',6 '+(w/2)+',0 t'+(w/2)+',0" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2"/>';
+    g+='<rect x="'+(w/2-2)+'" y="'+(H-40)+'" width="3" height="26" fill="#8A6038"/><path d="M'+(w/2)+','+(H-40)+' l16,18 h-16 Z" fill="#E85D5D"/><path d="M'+(w/2-18)+','+(H-6)+' h36 l-7,9 h-22 Z" fill="#F5F0E6"/>';
+  } else if(sig==='green'){
+    g+='<polygon points="4,30 '+(w/2)+',-4 '+(w-4)+',30" fill="rgba(180,235,200,.65)"/><polygon points="4,30 '+(w/2)+',-4 '+(w-4)+',30" fill="none" stroke="#5EA050" stroke-width="2"/>';
+    g+='<line x1="'+(w/2)+'" y1="-4" x2="'+(w/2)+'" y2="30" stroke="#5EA050" stroke-width="1.4"/><line x1="'+(w/4+3)+'" y1="13" x2="'+(w*3/4-3)+'" y2="13" stroke="#5EA050" stroke-width="1.2"/>';
+  } else if(sig==='rocket'){ var rx=w-14;
+    g+='<rect x="'+(rx-5)+'" y="-34" width="10" height="74" rx="5" fill="#EDEDF2"/><polygon points="'+(rx-5)+',-34 '+rx+',-52 '+(rx+5)+',-34" fill="#E85D5D"/>';
+    g+='<polygon points="'+(rx-5)+',30 '+(rx-15)+',46 '+(rx-5)+',46" fill="#E85D5D"/><polygon points="'+(rx+5)+',30 '+(rx+15)+',46 '+(rx+5)+',46" fill="#E85D5D"/><circle cx="'+rx+'" cy="-14" r="3.5" fill="#3FA7C0"/>';
+  } else if(sig==='hall'){
+    for(var ax=14;ax<w-24;ax+=32)g+='<path d="M'+ax+','+(H-6)+' v-26 a11,11 0 0 1 22,0 v26 Z" fill="rgba(255,255,255,.22)"/>';
+    g+='<rect x="'+(w/2-24)+'" y="0" width="48" height="15" rx="3" fill="#8A3A5E"/><text x="'+(w/2)+'" y="12" text-anchor="middle" font-size="10">🎶</text>';
+  }
+  return g;
+}
+function expVenue(a){
+  var x=a.x,y=a.y,w=150,H=104,col=a.col||'#C0563B';
+  reg(x,y-H,w,H); EXP_BR.push({x:x,y:y-H,w:w,h:H});
+  var g='<g transform="translate('+x+','+(y-H)+')">'+sh(w/2,H+4,w*0.55,9);
+  g+='<rect x="4" y="30" width="'+(w-8)+'" height="'+(H-30)+'" rx="4" fill="'+col+'"/>';               // body
+  g+='<rect x="'+(w-16)+'" y="30" width="12" height="'+(H-30)+'" fill="rgba(0,0,0,.12)"/>';            // side shade
+  g+='<rect x="4" y="'+(H-6)+'" width="'+(w-8)+'" height="6" fill="rgba(0,0,0,.2)"/>';                 // foundation
+  g+=venueSig(a.sig,w,H);                                                                              // signature (roof/wheel/etc.), drawn behind the sign board
+  g+='<rect x="-2" y="14" width="'+(w+4)+'" height="20" rx="5" fill="rgba(0,0,0,.3)"/>';               // marquee board
+  g+='<text x="'+(w/2)+'" y="28" text-anchor="middle" font-size="'+(a.name.length>13?9:10)+'" font-weight="900" fill="#FFF7E0" font-family="Verdana">'+a.name.toUpperCase()+'</text>';
+  g+='<circle cx="'+(w/2)+'" cy="63" r="17" fill="rgba(255,255,255,.92)"/><text x="'+(w/2)+'" y="71" text-anchor="middle" font-size="22">'+a.icon+'</text>'; // facade emblem
+  g+='<rect x="'+(w/2-25)+'" y="'+(H-26)+'" width="50" height="26" rx="2" fill="rgba(0,0,0,.18)"/>'+   // entrance
+     '<rect x="'+(w/2-22)+'" y="'+(H-24)+'" width="20" height="24" rx="2" fill="#3E4654"/><rect x="'+(w/2+2)+'" y="'+(H-24)+'" width="20" height="24" rx="2" fill="#3E4654"/>'+
+     '<rect x="'+(w/2-1)+'" y="'+(H-24)+'" width="2" height="24" fill="rgba(255,255,255,.15)"/>';
+  return g+'</g>';
+}
+function venuePlot(a){
+  var cx=a.x+75,ty=a.y-6;
+  return '<g transform="translate('+cx+','+ty+')">'+sh(0,10,54,8)+
+    '<rect x="-4" y="-4" width="8" height="30" fill="#8A6038"/>'+
+    '<rect x="-82" y="-54" width="164" height="48" rx="9" fill="#FBF3DC" stroke="#C9912E" stroke-width="3"/>'+
+    '<text x="0" y="-36" text-anchor="middle" font-size="15">'+a.icon+'</text>'+
+    '<text x="0" y="-21" text-anchor="middle" font-size="10" font-weight="900" fill="#8A6020" font-family="Verdana">'+a.name.toUpperCase()+'</text>'+
+    '<text x="0" y="-9" text-anchor="middle" font-size="8" font-weight="700" fill="#B5651D" font-family="Verdana">🏗️ Build it in the Build menu</text></g>';
+}
 function fflower(x,y){return '<g transform="translate('+x+','+y+')">'+sh(0,2,7,2)+'<rect x="-5" y="-3" width="10" height="6" rx="1.5" fill="#7E6A4E"/><circle cx="-3" cy="-5" r="2.4" fill="#FF8FAB"/><circle cx="2" cy="-6" r="2.4" fill="#FFC93C"/><circle cx="4" cy="-3" r="2.2" fill="#A78BFA"/></g>';}
 function buildExpansion(tiers){
   var s=''; EXP_BR=[];
@@ -4179,6 +4276,7 @@ function buildExpansion(tiers){
   HR(220,100,3500);HR(420,100,3500);HR(2040,100,3500);HR(2280,100,3500);                  // top & bottom full-width streets (bottom moved to 2280 → matches spine ends, full-width block)
   var SIDE=[620,860,1100,1340,1580];                                                       // wider blocks (~240px apart)
   SIDE.forEach(function(y){HR(y,100,900);HR(y,2760,3500);});                               // side-margin streets (east starts at the river arterial)
+  HR(2620,120,3480);VR(1800,2320,2620);                                                    // FAIRGROUNDS: promenade across the bottom + a spine down from downtown
   s+=roadsSVG(R,'butt');                                                                    // grid roads get flat ends + crisp intersections (no round blobs)
   // ── buildings set just above each street, facing it (road in front of every building) ──
   // place a row of buildings along a street; off=-44 lines the NORTH side, off=+92 the SOUTH side (both sides → a full street)
@@ -4215,6 +4313,9 @@ function buildExpansion(tiers){
   if(!ownsDistrict('north')) s+=forSaleSign(1800,330);
   else if(ownsDev('north_offices')) [220,420].forEach(function(y){s+=row(y,300,3300,250,function(x,b){return expOffice(x,b,2+(bi%2),bi++);});});
   else s+=readySign(1800,330);
+  // ── FAIRGROUNDS (bottom band): buy cool attractions individually in the 🏗️ Build menu ──
+  s+='<text x="1160" y="2455" text-anchor="middle" font-size="30" font-weight="900" fill="#7A5AA8" opacity=".45" font-family="Verdana">🎡 FAIRGROUNDS 🎢</text>';
+  Object.keys(TOWN_ATTRACTIONS).forEach(function(ak){ s+= ownsAttraction(ak) ? expVenue(TOWN_ATTRACTIONS[ak]) : venuePlot(TOWN_ATTRACTIONS[ak]); });
   // ── props: trees / lamps / benches scattered on GRASS only (keep-out from roads, buildings, core) ──
   function nearRoad(px,py,m){for(var i=0;i<SEG.length;i++){var g=SEG[i];if(g.h){if(px>=g.a-m&&px<=g.b+m&&Math.abs(py-g.y)<m)return true;}else{if(py>=g.a-m&&py<=g.b+m&&Math.abs(px-g.x)<m)return true;}}return false;}
   function onBldg(px,py,m){for(var i=0;i<EXP_BR.length;i++){var b=EXP_BR[i];if(px>b.x-m&&px<b.x+b.w+m&&py>b.y-m&&py<b.y+b.h+m)return true;}return false;}
@@ -4244,7 +4345,8 @@ const MM_MARKERS=[
   {x:1325+CORE_DX,y:322+CORE_DY,ic:'🏫'},{x:240+CORE_DX,y:918+CORE_DY,ic:'🏠'},{x:1370+CORE_DX,y:880+CORE_DY,ic:'📰'},{x:900+CORE_DX,y:600+CORE_DY,ic:'⛲'},
   // outer districts (final map coords)
   {x:430,y:1230,ic:'🏘️'},{x:1500,y:2120,ic:'🏘️'},{x:3160,y:1120,ic:'🛍️'},{x:1800,y:250,ic:'🏢'},
-  {x:3180,y:1950,ic:'🏘️'},{x:560,y:560,ic:'🌳'},{x:3120,y:430,ic:'🌳'}
+  {x:3180,y:1950,ic:'🏘️'},{x:560,y:560,ic:'🌳'},{x:3120,y:430,ic:'🌳'},
+  {x:900,y:2650,ic:'🎡'},{x:2100,y:2650,ic:'🎢'},{x:3300,y:2650,ic:'🎭'}
 ];
 function buildMinimap(){
   const mm=document.getElementById('minimap'); if(!mm)return;

@@ -697,7 +697,7 @@
         <button class="btn btn-gold" onclick="cloudSignIn()" style="white-space:nowrap;">Sign in →</button>
       </div>
       <div id="signin-msg" style="margin-top:6px;font-weight:700;font-size:.9rem;min-height:1.1em;"></div>
-      <div style="margin-top:2px;color:#667;font-size:.82rem;">New? Pick a name and a PIN, then build your leader below. Progress saves automatically and loads on any device.</div>
+      <div style="margin-top:2px;color:#667;font-size:.82rem;">New? Pick a name and a PIN, then build your leader below. Progress saves automatically and loads on any device. <a id="signout-link" href="#" onclick="signOut();return false;" style="display:none;color:#2D6FD6;font-weight:800;">Sign out on this device</a></div>
     </div>
     <div class="nb-col-label" style="margin-bottom:10px;">👥 Your Leaders</div>
     <div class="profile-row" id="profile-row"></div>
@@ -3589,6 +3589,7 @@ function signInWithCode(){
 var ACCOUNT=null;
 function loadAccount(){ try{ACCOUNT=JSON.parse(localStorage.getItem('catoAccount')||'null');}catch(e){ACCOUNT=null;} if(ACCOUNT&&(!ACCOUNT.name||!ACCOUNT.pin))ACCOUNT=null; }
 function setAccount(n,pin){ ACCOUNT={name:n,pin:pin}; try{localStorage.setItem('catoAccount',JSON.stringify(ACCOUNT));}catch(e){} }
+function signOut(){ try{localStorage.removeItem('catoAccount');}catch(e){} ACCOUNT=null; var ni=document.getElementById('acct-name'),pi=document.getElementById('acct-pin'); if(ni)ni.value=''; if(pi)pi.value=''; var so=document.getElementById('signout-link'); if(so)so.style.display='none'; if(typeof signinMsg==='function')signinMsg('Signed out on this device. Your progress is safe in the cloud, sign back in anytime.',false); if(typeof sfx==='function')sfx('click'); }
 function accountSaveData(){ if(!P)return null; return {v:2,name:P.name,avatar:P.avatar,stars:P.stars||0,owned:P.owned||[],house:P.house||0,best:P.best||0,runs:P.runs||0,lifetimeScore:P.lifetimeScore||0,lifetimeBest:P.lifetimeBest||0,lifetimeAnswered:P.lifetimeAnswered||0,terms:P.terms||[],emotes:P.emotes||[],town:P.town||{districts:{},dev:{},attr:{},pos:{}},bank:P.bank||{balance:0,last:0}}; }
 var _cloudT=null;
 function scheduleCloudSave(){ if(!ACCOUNT)return; clearTimeout(_cloudT); _cloudT=setTimeout(cloudSave,3500); }
@@ -3615,7 +3616,7 @@ function cloudSignIn(){
     })
     .catch(function(){ signinMsg('Could not reach the server. Check your connection, or use a Save Code below.',true); sfx('bad'); });
 }
-function prefillAccount(){ loadAccount(); if(!ACCOUNT)return; var ni=document.getElementById('acct-name'),pi=document.getElementById('acct-pin'); if(ni)ni.value=ACCOUNT.name; if(pi)pi.value=ACCOUNT.pin; signinMsg('Welcome back, '+ACCOUNT.name+'! Tap Sign in to load your saved progress.',false); }
+function prefillAccount(){ loadAccount(); if(!ACCOUNT)return; var ni=document.getElementById('acct-name'),pi=document.getElementById('acct-pin'); if(ni)ni.value=ACCOUNT.name; if(pi)pi.value=ACCOUNT.pin; var so=document.getElementById('signout-link'); if(so)so.style.display='inline'; signinMsg('Welcome back, '+ACCOUNT.name+'! Tap Sign in to load your saved progress.',false); }
 window.addEventListener('beforeunload',function(){ if(ACCOUNT&&navigator.sendBeacon){ try{ navigator.sendBeacon('/__coop/account/save', new Blob([JSON.stringify({name:ACCOUNT.name,pin:ACCOUNT.pin,data:accountSaveData()})],{type:'application/json'})); }catch(e){} } });
 function renderProfiles(){
   const box=document.getElementById('profile-row');if(!box)return;
@@ -4663,7 +4664,7 @@ const GFX={daySeconds:140,speed:7.2,dtMin:1,dtMax:3,lightEvery:24,fxEvery:2,wand
   lampSpots:[[832,508],[985,500],[1192,660],[684,824]],fgTrees:[[560,640,1.15],[1140,920,1.35],[640,140,1.2]]};
 // decide "how alive" the world is; weak Chromebooks/phones fall back to the simpler behaviour
 try{ var _weak=(navigator.hardwareConcurrency||4)<=2||(navigator.deviceMemory||4)<=2||(IS_TOUCH&&Math.min(screen.width,screen.height)<=420);
-  if(_weak){ GFX.lowPower=true; GFX.camLerp=0; GFX.ambientLife=false; } }catch(e){}
+  if(_weak){ GFX.lowPower=true; GFX.camLerp=0; GFX.ambientLife=false; GFX.wind=false; } }catch(e){}
 if(GFX.reduceMotion){ GFX.wind=false; GFX.ambientLife=false; GFX.camLerp=0; GFX.accel=1; GFX.friction=0; }
 let TC={}; // cached node refs (skill: cache, never query in the update loop)
 let lastTick=0,tickFrame=0;
@@ -4764,12 +4765,14 @@ function townTick(){
   if(PLACE){ updatePlaceGhost(); if(TC.pr)TC.pr.style.display='none'; if(IS_TOUCH){var _pab=document.getElementById('act-btn');if(_pab)_pab.classList.remove('show');} return; } // placement mode: ghost follows player, skip normal prompts
   // particles (pooled; stepped at half rate; camera-culled)
   if(tickFrame%GFX.fxEvery===0){
-    if(tickFrame%26===0)fxSpawn(FX.leaf,camX()+Math.random()*VIEW_W,camY()-20,0.4+Math.random()*0.5,0.7+Math.random()*0.5,1.6);
-    if(TC.fountainTier===2&&tickFrame%8===0&&Math.abs((900+CORE_DX)-player.x)<VIEW_W&&Math.abs((600+CORE_DY)-player.y)<VIEW_H)
-      fxSpawn(FX.drop,(895+CORE_DX)+Math.random()*10,(576+CORE_DY),(Math.random()-0.5)*1.6,-1.4-Math.random(),0.9);
-    const na=nightAmount();
-    if(na>0.45&&tickFrame%14===0)fxSpawn(FX.fly,camX()+Math.random()*VIEW_W,camY()+120+Math.random()*(VIEW_H-200),(Math.random()-0.5)*0.6,(Math.random()-0.5)*0.4,1.4);
-    if(GFX.ambientLife&&na<0.4&&tickFrame%22===0)fxSpawn(FX.fly,camX()+40+Math.random()*(VIEW_W-80),camY()+90+Math.random()*(VIEW_H-170),(Math.random()-0.5)*0.5,-0.2-Math.random()*0.3,1.2); // daytime butterflies drifting up
+    if(!GFX.lowPower){                                                    // skip ambient spawns on weak devices; dust + coin still fire from their own call sites
+      if(tickFrame%26===0)fxSpawn(FX.leaf,camX()+Math.random()*VIEW_W,camY()-20,0.4+Math.random()*0.5,0.7+Math.random()*0.5,1.6);
+      if(TC.fountainTier===2&&tickFrame%8===0&&Math.abs((900+CORE_DX)-player.x)<VIEW_W&&Math.abs((600+CORE_DY)-player.y)<VIEW_H)
+        fxSpawn(FX.drop,(895+CORE_DX)+Math.random()*10,(576+CORE_DY),(Math.random()-0.5)*1.6,-1.4-Math.random(),0.9);
+      const na=nightAmount();
+      if(na>0.45&&tickFrame%14===0)fxSpawn(FX.fly,camX()+Math.random()*VIEW_W,camY()+120+Math.random()*(VIEW_H-200),(Math.random()-0.5)*0.6,(Math.random()-0.5)*0.4,1.4);
+      if(GFX.ambientLife&&na<0.4&&tickFrame%22===0)fxSpawn(FX.fly,camX()+40+Math.random()*(VIEW_W-80),camY()+90+Math.random()*(VIEW_H-170),(Math.random()-0.5)*0.5,-0.2-Math.random()*0.3,1.2); // daytime butterflies drifting up
+    }
     fxStep(FX.dust,0.05,0);fxStep(FX.leaf,0.01,0.012);fxStep(FX.drop,0.05,0.12);fxStep(FX.fly,0.012,0);fxStep(FX.coin,0.035,0.1);
   }
   // lighting pass (low frequency)
@@ -4864,7 +4867,7 @@ function initTownControls(){
 // On-screen joystick (movement) + tap button (interaction) for phones/tablets.
 function setupTouchControls(){
   var btn=document.getElementById('act-btn');
-  if(btn){ var act=function(e){ if(e)e.preventDefault(); interactNearby(); };
+  if(btn){ var lastAct=0; var act=function(e){ if(e)e.preventDefault(); var now=Date.now(); if(now-lastAct<400)return; lastAct=now; interactNearby(); }; // 400ms guard: stops touchstart + synthesized click from double-firing
            btn.addEventListener('click',act); btn.addEventListener('touchstart',act,{passive:false}); }
   var joy=document.getElementById('joystick'), knob=joy?joy.querySelector('.jknob'):null;
   if(!joy||!knob)return;
@@ -4873,7 +4876,7 @@ function setupTouchControls(){
   function move(px,py){ if(!active)return; var dx=px-cx, dy=py-cy; var d=Math.sqrt(dx*dx+dy*dy)||1; var cl=Math.min(d,R);
     var nx=dx/d, ny=dy/d; knob.style.transform='translate('+(nx*cl).toFixed(1)+'px,'+(ny*cl).toFixed(1)+'px)';
     touchVec.x=nx*(cl/R); touchVec.y=ny*(cl/R); }
-  function end(){ active=false; touchVec.x=0; touchVec.y=0; knob.style.transform='translate(0,0)'; }
+  function end(){ active=false; touchVec.x=0; touchVec.y=0; knob.style.transform='translate(0,0)'; if(typeof player!=='undefined'){player.vx=0;player.vy=0;} } // snap-stop on release so the joystick does not feel like ice
   joy.addEventListener('touchstart',function(e){e.preventDefault();var t=e.changedTouches[0];start(t.clientX,t.clientY);},{passive:false});
   joy.addEventListener('touchmove',function(e){e.preventDefault();var t=e.changedTouches[0];move(t.clientX,t.clientY);},{passive:false});
   joy.addEventListener('touchend',function(e){e.preventDefault();end();},{passive:false});

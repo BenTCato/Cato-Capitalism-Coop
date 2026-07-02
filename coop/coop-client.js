@@ -296,7 +296,7 @@
   var badge = document.createElement('div');
   badge.id = 'coop-badge';
   badge.style.cssText =
-    'position:fixed;left:12px;bottom:12px;z-index:9999;font-family:Verdana,sans-serif;' +
+    'position:fixed;left:12px;bottom:132px;z-index:9999;font-family:Verdana,sans-serif;' +
     'font-size:12px;font-weight:700;color:#fff;background:rgba(16,22,40,.82);' +
     'padding:7px 12px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);' +
     'display:flex;align-items:center;gap:7px;pointer-events:none;';
@@ -328,7 +328,7 @@
     if (document.getElementById('coop-join-btn') || !document.body) return;
     joinBtn = document.createElement('button');
     joinBtn.id = 'coop-join-btn';
-    joinBtn.style.cssText = 'position:fixed;left:12px;bottom:52px;z-index:9999;font-family:Verdana,sans-serif;font-size:12px;font-weight:800;color:#13234a;background:#FFD166;border:none;cursor:pointer;padding:8px 13px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);';
+    joinBtn.style.cssText = 'position:fixed;left:12px;bottom:172px;z-index:9999;font-family:Verdana,sans-serif;font-size:12px;font-weight:800;color:#13234a;background:#FFD166;border:none;cursor:pointer;padding:8px 13px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);';
     joinBtn.onclick = openJoin;
     document.body.appendChild(joinBtn);
 
@@ -552,6 +552,7 @@
     var won = !res.tie && res.winnerId === ID;
     var lost = !res.tie && res.winnerId !== ID;
     var delta = res.tie ? 0 : (won ? res.wager : -res.wager);
+    if (res.delta && (ID in res.delta)) delta = res.delta[ID];   // prefer the server-authoritative star delta (prevents desync)
     var P = g('P');
     if (P) {
       if (delta !== 0) P.stars = Math.max(0, (P.stars || 0) + delta);

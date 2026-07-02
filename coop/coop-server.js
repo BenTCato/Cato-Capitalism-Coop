@@ -197,7 +197,11 @@ function scoreDuel(d) {
   if (fc > tc) winnerId = d.from.id;
   else if (tc > fc) winnerId = d.to.id;
   else tie = true;
-  d.result = { fromId: d.from.id, toId: d.to.id, fromCorrect: fc, toCorrect: tc, winnerId, tie, wager: d.wager };
+  // authoritative star delta per player, so the client never has to guess (prevents desync on disconnect)
+  const delta = {};
+  if (tie) { delta[d.from.id] = 0; delta[d.to.id] = 0; }
+  else { const loserId = (winnerId === d.from.id) ? d.to.id : d.from.id; delta[winnerId] = d.wager; delta[loserId] = -d.wager; }
+  d.result = { fromId: d.from.id, toId: d.to.id, fromCorrect: fc, toCorrect: tc, winnerId, tie, wager: d.wager, delta };
   d.status = 'done';
   d.touched = Date.now();
 }
@@ -362,6 +366,8 @@ const server = http.createServer(async (req, res) => {
     const room = normCode(d.room);
     if (duelForPlayer(room, d.from.id)) return send(res, 200, 'application/json', '{"ok":false,"error":"You are already in a duel."}');
     if (duelForPlayer(room, d.to.id))   return send(res, 200, 'application/json', '{"ok":false,"error":"That player is already in a duel."}');
+    const rChal = getRoom(room, false); const tgt = rChal && rChal.players.get(String(d.to.id));
+    if (!tgt || (Date.now() - (tgt.lastSeen || 0) > STALE_MS)) return send(res, 200, 'application/json', '{"ok":false,"error":"That player just left the town."}'); // do not strand the challenger on an absent opponent
     const qs = Array.isArray(d.questions) ? d.questions.filter(q => q && q.body && Array.isArray(q.choices) && q.best).slice(0, 5) : [];
     if (qs.length < 1) return send(res, 200, 'application/json', '{"ok":false,"error":"no questions"}');
     const wager = Math.max(0, Math.min(100000, Number(d.wager) || 0));

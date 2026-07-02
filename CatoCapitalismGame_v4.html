@@ -1020,7 +1020,7 @@
     <div class="box-card">
       <span class="box-emoji">🎁</span>
       <div class="box-title">Mystery Policy Box</div>
-      <div class="box-desc">One random collectible per box. Duplicates auto-refund stars by rarity. Collect all 16!</div>
+      <div class="box-desc">Get one random collectible per box. If you get one you already have, you get stars back instead. Collect all 16!</div>
       <div class="box-odds"><span style="color:#2EB872;">Uncommon 50%</span> · <span style="color:#3E8EF7;">Rare 30%</span> · <span style="color:#ED8B00;">Legendary 15%</span> · <span style="color:#C026D3;">Mythic 5%</span></div>
       <button class="btn btn-gold" id="buy-box-btn" onclick="buyBox()">Open Box, 2,500 ⭐</button>
     </div>
@@ -2662,11 +2662,11 @@ function renderCity(tier,panelId){
 
 function computeGrade(){
   const b=S.bestCount;
-  if(b>=9)return{letter:'S',medal:'\u{1F451}',note:'Legendary, you matched the best evidence on nearly every call.'};
-  if(b>=7)return{letter:'A',medal:'\u{1F947}',note:'Excellent judgment, your nation thrived on sound policy.'};
-  if(b>=5)return{letter:'B',medal:'\u{1F948}',note:'Solid leadership, with room to optimize. Check the review below.'};
-  if(b>=3)return{letter:'C',medal:'\u{1F949}',note:'You survived, study the evidence below and try for a higher grade.'};
-  return{letter:'D',medal:'\u{1F396}️',note:'Your nation made it, barely. The review below shows what the data says.'};
+  if(b>=9)return{letter:'S',medal:'\u{1F451}',note:'Amazing, you picked the best answer almost every time.'};
+  if(b>=7)return{letter:'A',medal:'\u{1F947}',note:'Great job, your town did really well.'};
+  if(b>=5)return{letter:'B',medal:'\u{1F948}',note:'Nice work. A few calls could have been better, see the review.'};
+  if(b>=3)return{letter:'C',medal:'\u{1F949}',note:'You made it through. Read the review to do better next time.'};
+  return{letter:'D',medal:'\u{1F396}️',note:'You just squeaked by. The review shows what to try next time.'};
 }
 // Lifetime grade = best-answer ratio across all completed terms + the current one.
 function lifetimeGrade(){
@@ -2853,7 +2853,8 @@ function nextQ(){
   if(!c||!c.headline){doNextQ();return;} // compact (quote-free) questions skip the newspaper beat
   pendingNext=true;openPaper(c,q);
 }
-function doNextQ(){if(S.answers.length>=Q.length){buildResults();showScreen('results');var _mv=((S.stats.h||0)+(S.stats.e||0)+(S.stats.ed||0)+(S.stats.f||0))/4;if(_mv>=THRESHOLD){launchConfetti();sfx('win');}else{sfx('lose');}}else{renderTown();showScreen('town');maybeWorldEvent();}}
+function termWon(){ if(!S||!S.stats)return true; var a=((S.stats.h||0)+(S.stats.e||0)+(S.stats.ed||0)+(S.stats.f||0))/4; return a>=THRESHOLD; } // single source of truth for the win/lose tone
+function doNextQ(){if(S.answers.length>=Q.length){buildResults();showScreen('results');if(termWon()){launchConfetti();sfx('win');}else{sfx('lose');}}else{renderTown();showScreen('town');maybeWorldEvent();}}
 
 // ─────────────────────────────────────────────────────────────
 // RESULTS
@@ -2870,8 +2871,7 @@ function ideologyResult(){
 }
 function buildResults(){
   // did the nation survive? tone the whole results screen off the real meter average, not a hard-coded true
-  var _mavg=((S.stats.h||0)+(S.stats.e||0)+(S.stats.ed||0)+(S.stats.f||0))/4;
-  var won=_mavg>=THRESHOLD;
+  var won=termWon();
   const hero=document.querySelector('#screen-results .end-hero');
   if(hero){ hero.classList.toggle('win',won); hero.classList.toggle('lose',!won); }
   const rh=document.querySelector('#screen-results .end-hero h1');
@@ -3746,7 +3746,7 @@ function submitSurvey(){
 function renderBankPanel(id,earned,won){
   const p=document.getElementById(id);if(!p||!P)return;
   p.innerHTML='<h3>🏦 Star Bank, '+escapeHtml(nationName)+'</h3>'+
-    '<div class="bank-line">+'+earned.toLocaleString()+' ⭐ '+(won?'banked':'salvaged, half rate after a collapse')+' · Total: <strong>⭐ '+(P.stars||0).toLocaleString()+'</strong></div>'+
+    '<div class="bank-line">+'+earned.toLocaleString()+' ⭐ '+(won?'banked this term':'earned, even though the town struggled')+' · Total: <strong>⭐ '+(P.stars||0).toLocaleString()+'</strong></div>'+
     '<div class="next-wrap" style="margin-top:10px;"><button class="btn btn-gold" onclick="openStore()">🎁 Spend in the Star Store</button></div>';
 }
 
@@ -7478,7 +7478,7 @@ const CHART_LINKS={
     if(q.chart && (!q.links||!q.links.length) && CHART_LINKS[q.chart.title]){ q.links=[CHART_LINKS[q.chart.title]]; }
     if(!q.figure){ for(var j=0;j<CATO_QUOTES.length;j++){ if(CATO_QUOTES[j].m(q)){ q.figure=CATO_QUOTES[j].fig; break; } } }
   }); }
-  try{ [6,7,8,9,10,11,12].forEach(function(g){apply(QG[g]);}); ['A','B','C'].forEach(function(b){apply(QGB[b]);}); }catch(e){}
+  try{ [7,8,9,10,11,12].forEach(function(g){apply(QG[g]);}); ['A','B','C'].forEach(function(b){apply(QGB[b]);}); }catch(e){} // skip QG[6]: grade 6 draws only from its own pool, keep the adult figure quotes and data charts off the youngest reading level
 })();
 function continueTerm(){
   if(P){
@@ -7495,11 +7495,14 @@ function continueTerm(){
   S.term=(S.term||1)+1;
   S.qIdx=0;S.answers=[];S.locked=false;S.score=0;S.streak=0;S.maxStreak=0;S.bestCount=0;S.starsThisTerm=0;
   S.counts={cap:0,mix:0,soc:0,com:0};
+  // a struggling nation stabilizes a little each new term, so a bad run is never a permanent dead end (still leaves plenty of room to rebuild)
+  var _wasLow=false; ['h','e','ed','f'].forEach(function(k){ if(S.stats[k]<12){ _wasLow=true; S.stats[k]=12; } });
   S.minStats={h:S.stats.h,e:S.stats.e,ed:S.stats.ed,f:S.stats.f};
   S.mini={};
   shuffleMap=[];pendingNext=false;stateHistory=[];
-  buildDots();updateScoreHUD();updateBackBtn();
+  buildDots();updateHUD(false);updateScoreHUD();updateBackBtn();
   renderTown();showScreen('town');sfx('good');
+  if(_wasLow)setTimeout(function(){ if(typeof toast==='function')toast('Your town steadied a little. Good answers this term will rebuild it.'); },400);
 }
 function startGame(){Q=dealTerm(null);S=freshState();shuffleMap=[];pendingNext=false;stateHistory=[];eventQueue=[];player.x=900+CORE_DX;player.y=700+CORE_DY;player.step=0;player.vx=0;player.vy=0;player.wasMoving=false;camCX=player.x;camCY=player.y;keysDown={};dlgOpen=false;GFX.day0=Date.now();buildDots();updateHUD(false);renderAvatar();updateScoreHUD();renderTown();showScreen('town');updateBackBtn();}
 function restartGame(){const wrap=document.getElementById('creator-wrap'),slot=document.getElementById('creator-slot-title');if(wrap&&slot&&wrap.parentElement!==slot)slot.appendChild(wrap);showScreen('title');setTimeout(function(){renderAvatarPreview();renderAvCreator();},50);}

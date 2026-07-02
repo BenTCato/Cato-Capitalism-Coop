@@ -530,7 +530,8 @@
     var opts = q.choices.map(function (c) { return '<button class="duel-opt" data-l="' + c.letter + '"><b>' + c.letter + '</b>' + esc(c.label) + '</button>'; }).join('');
     openOv(
       '<div class="duel-sub" style="margin-bottom:6px;">⚔️ Duel · question ' + (qIdx + 1) + ' of ' + d.n + ' · ' + d.wager.toLocaleString() + '⭐</div>' +
-      '<div class="duel-q">' + esc(q.body) + '</div>' + opts);
+      '<div class="duel-q">' + esc(q.body) + '</div>' + opts +
+      '<div class="duel-row" style="margin-top:8px;"><button class="duel-btn duel-ghost" id="duel-quit">Quit duel</button></div>');
     card.querySelectorAll('.duel-opt').forEach(function (b) {
       b.onclick = function () {
         myAnswers[qIdx] = b.getAttribute('data-l');
@@ -540,6 +541,7 @@
         trySfx('click');
       };
     });
+    var qb = card.querySelector('#duel-quit'); if (qb) qb.onclick = function () { cancelChallenge(); }; // let a player bail mid-question, voids the duel (no stars moved yet)
   }
   function renderWaitingOpp(d) {
     openOv('<div class="duel-h">✅ Answers in!</div><div class="duel-sub">Waiting for your opponent to finish…</div>' +
@@ -613,7 +615,7 @@
 
     if (target === 'none') { closeDuelOv(); }
     else if (target === 'ended') {
-      toast(duel.status === 'declined' ? (duel.youAre === 'from' ? esc(duel.to.name) + ' declined.' : 'Challenge declined.') : 'Challenge cancelled.');
+      toast(duel.status === 'declined' ? (duel.youAre === 'from' ? esc(duel.to.name) + ' declined.' : 'Challenge declined.') : (mySubmitted ? 'Duel ended, your opponent left. No stars lost.' : 'Duel ended.'));
       closeDuelOv();
     }
     else if (target === 'incoming') renderIncoming(duel);
@@ -702,6 +704,6 @@
   // graceful "leave" so others see you drop fast
   window.addEventListener('beforeunload', function () {
     try { navigator.sendBeacon('/__coop/kick', JSON.stringify({ id: ID })); } catch (e) {}
-    try { if (DUEL && DUEL.status === 'pending' && DUEL.youAre === 'from') navigator.sendBeacon('/__coop/duel/cancel', JSON.stringify({ duelId: DUEL.id, id: ID })); } catch (e) {}
+    try { if (DUEL && (DUEL.status === 'pending' || DUEL.status === 'active')) navigator.sendBeacon('/__coop/duel/cancel', JSON.stringify({ duelId: DUEL.id, id: ID })); } catch (e) {}
   });
 })();

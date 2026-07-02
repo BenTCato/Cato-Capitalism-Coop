@@ -777,19 +777,71 @@
   </div>
   <div class="town-hint">⌨️ <strong>W A S D</strong> to walk · <strong>SPACE</strong> to talk to citizens · the world changes with your choices · visit the <strong>MARKET</strong> to spend your ⭐</div>
   <div id="town-mobile-hint">🕹️ Drag to walk · tap the gold <strong>button</strong> to interact</div>
+  <div id="place-bar" style="display:none;position:fixed;top:150px;left:50%;transform:translateX(-50%);z-index:2500;background:rgba(19,35,74,.96);color:#fff;border-radius:14px;padding:9px 12px;align-items:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.45);font-family:inherit;flex-wrap:wrap;justify-content:center;max-width:94%;">
+    <span style="font-weight:800;white-space:nowrap;">📍 Placing <span id="place-name">Building</span></span>
+    <span style="font-size:.78rem;opacity:.85;white-space:nowrap;">Walk to a spot on your land, then build</span>
+    <button id="place-ok" onclick="confirmPlace()" style="background:#2EB872;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-family:inherit;font-weight:800;cursor:pointer;white-space:nowrap;">✅ Build here</button>
+    <button onclick="cancelPlace()" style="background:rgba(255,255,255,.18);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-family:inherit;font-weight:800;cursor:pointer;white-space:nowrap;">Cancel</button>
+  </div>
 </div>
 
 <!-- ══ BUILD YOUR CITY (buy land + shops with stars) ══ -->
-<div id="build-overlay" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(8,6,22,.82);overflow:auto;padding:30px 14px;">
-  <div style="max-width:720px;margin:0 auto;background:var(--card,#fff);border-radius:20px;padding:20px 22px;box-shadow:0 24px 70px rgba(0,0,0,.5);">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
-      <div style="font-size:1.25rem;font-weight:900;color:var(--navy,#13234a);">🏗️ Build Your City</div>
-      <span id="build-bal" style="background:#FFF4E0;border:2px solid #F2B23E;color:#9A6200;border-radius:30px;padding:5px 12px;font-weight:800;font-size:.9rem;">⭐ 0</span>
-      <button onclick="closeBuild()" style="margin-left:auto;background:rgba(0,0,0,.08);border:none;border-radius:10px;padding:8px 14px;font-family:inherit;font-weight:800;cursor:pointer;">✕ Close</button>
+<style>
+#build-overlay{--navy:#13234a;--navy2:#1c3266;--gold:#F2B23E;--gold2:#FFD060;}
+#build-overlay .bld-scrim{position:fixed;inset:0;z-index:3000;background:radial-gradient(120% 90% at 50% 0%,rgba(30,50,102,.55),rgba(6,8,20,.9));display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:26px 12px;}
+#build-overlay .bld-panel{width:100%;max-width:760px;background:linear-gradient(180deg,#f4f6fb,#e7ecf6);border-radius:20px;border:3px solid var(--gold);box-shadow:0 26px 80px rgba(0,0,0,.6),inset 0 2px 0 rgba(255,255,255,.7);overflow:hidden;font-family:inherit;}
+#build-overlay .bld-head{position:relative;background:linear-gradient(180deg,var(--navy2),var(--navy));padding:14px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:3px solid var(--gold);}
+#build-overlay .bld-title{color:#fff;font-weight:900;font-size:1.15rem;letter-spacing:.3px;text-shadow:0 2px 0 rgba(0,0,0,.35);display:flex;align-items:center;gap:8px;}
+#build-overlay .bld-coin{margin-left:auto;background:linear-gradient(180deg,var(--gold2),#E8951C);color:#3a2400;border-radius:999px;padding:7px 14px 7px 10px;font-weight:900;font-size:.98rem;box-shadow:inset 0 2px 0 rgba(255,255,255,.6),0 3px 6px rgba(0,0,0,.35);border:2px solid #C97E12;display:flex;align-items:center;gap:6px;}
+#build-overlay .bld-coin .dot{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFF0B0,#F2B23E 70%,#C97E12);display:flex;align-items:center;justify-content:center;font-size:.7rem;box-shadow:inset 0 -2px 2px rgba(0,0,0,.2);}
+#build-overlay .bld-x{width:34px;height:34px;border-radius:10px;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;font-weight:900;font-size:1rem;cursor:pointer;}
+#build-overlay .bld-x:active{transform:translateY(1px);}
+#build-overlay .bld-stat{display:flex;gap:8px;padding:10px 14px;background:linear-gradient(180deg,#eef2fa,#e3e9f5);flex-wrap:wrap;align-items:center;border-bottom:1px solid rgba(19,35,74,.12);}
+#build-overlay .bld-stat .lbl{font-size:.76rem;color:#5a6a8a;font-weight:800;}
+#build-overlay .bld-chip{background:#fff;border:1.5px solid rgba(19,35,74,.14);border-radius:999px;padding:3px 9px;font-weight:800;font-size:.8rem;color:#1F7A3D;box-shadow:0 1px 2px rgba(0,0,0,.08);}
+#build-overlay .bld-tabs{display:flex;gap:6px;padding:10px 12px 0;background:linear-gradient(180deg,#e3e9f5,#dde4f2);}
+#build-overlay .bld-tab{flex:1;border:none;border-radius:12px 12px 0 0;padding:11px 8px;font-family:inherit;font-weight:900;font-size:.92rem;cursor:pointer;background:rgba(19,35,74,.1);color:#41537a;display:flex;align-items:center;justify-content:center;gap:6px;}
+#build-overlay .bld-tab.on{background:linear-gradient(180deg,#fff,#f1f4fb);color:var(--navy);box-shadow:0 -2px 0 var(--gold) inset,0 -6px 12px rgba(0,0,0,.06);}
+#build-overlay .bld-body{padding:14px;max-height:64vh;overflow:auto;background:#fff;}
+#build-overlay .bld-card{display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#ffffff,#f3f6fc);border:1.5px solid rgba(19,35,74,.12);border-radius:16px;padding:10px;margin-bottom:10px;box-shadow:0 2px 5px rgba(19,35,74,.07);}
+#build-overlay .bld-thumb{width:74px;height:74px;flex:0 0 74px;border-radius:13px;background:linear-gradient(180deg,#bfe3ff 0%,#dff0d8 62%,#cfe6bd 100%);border:1.5px solid rgba(19,35,74,.15);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;box-shadow:inset 0 2px 4px rgba(255,255,255,.6),inset 0 -3px 6px rgba(0,0,0,.08);}
+#build-overlay .bld-thumb.icon{align-items:center;font-size:2.3rem;}
+#build-overlay .bld-thumb svg{width:100%;height:100%;}
+#build-overlay .bld-info{flex:1;min-width:0;}
+#build-overlay .bld-name{font-weight:900;color:var(--navy);font-size:1rem;line-height:1.1;}
+#build-overlay .bld-sub{font-size:.74rem;color:#77859e;margin-top:2px;}
+#build-overlay .bld-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
+#build-overlay .bld-badge{font-size:.72rem;font-weight:800;border-radius:7px;padding:2px 7px;background:#eef7f0;color:#1F7A3D;border:1px solid #c7e6ce;}
+#build-overlay .bld-act{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:0 0 auto;}
+#build-overlay .bld-btn{border:none;border-radius:12px;padding:9px 14px;font-family:inherit;font-weight:900;font-size:.9rem;cursor:pointer;color:#fff;white-space:nowrap;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 4px 0 rgba(0,0,0,.18);transition:transform .05s;}
+#build-overlay .bld-btn:active{transform:translateY(2px);box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 2px 0 rgba(0,0,0,.18);}
+#build-overlay .bld-btn.gold{background:linear-gradient(180deg,#FFD264,#E8951C);color:#3a2400;}
+#build-overlay .bld-btn.blue{background:linear-gradient(180deg,#5B9BEA,#2D6FD6);}
+#build-overlay .bld-btn.green{background:linear-gradient(180deg,#5AD08C,#1F9A5A);}
+#build-overlay .bld-btn.purple{background:linear-gradient(180deg,#B98CE8,#7A4ED6);}
+#build-overlay .bld-btn[disabled]{filter:grayscale(.6);opacity:.5;cursor:not-allowed;box-shadow:none;}
+#build-overlay .bld-btn.mini{padding:6px 10px;font-size:.78rem;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 2px 0 rgba(0,0,0,.18);}
+#build-overlay .bld-owned{background:linear-gradient(180deg,#38c172,#1F9A5A);color:#fff;font-weight:900;font-size:.8rem;border-radius:999px;padding:4px 11px;box-shadow:inset 0 1px 0 rgba(255,255,255,.4);white-space:nowrap;}
+#build-overlay .bld-cost{font-size:.72rem;color:#8a6a2a;font-weight:800;}
+#build-overlay .bld-group{font-weight:900;color:var(--navy);font-size:.92rem;margin:6px 2px 8px;display:flex;align-items:center;gap:7px;}
+#build-overlay .bld-sublist{margin:2px 0 6px 12px;padding-left:10px;border-left:2px dashed rgba(19,35,74,.15);}
+#build-overlay .bld-locked{opacity:.72;}
+</style>
+<div id="build-overlay" style="display:none;">
+  <div class="bld-scrim">
+    <div class="bld-panel">
+      <div class="bld-head">
+        <div class="bld-title">🏗️ City Builder</div>
+        <span class="bld-coin"><span class="dot">⭐</span><span id="build-bal">0</span></span>
+        <button class="bld-x" onclick="closeBuild()" title="Close">✕</button>
+      </div>
+      <div class="bld-stat"><span class="lbl">TOWN BONUS</span><span id="build-bonus"></span></div>
+      <div class="bld-tabs">
+        <button class="bld-tab" id="bld-tab-land" onclick="setBuildTab('land')">🏙️ Land &amp; Shops</button>
+        <button class="bld-tab" id="bld-tab-fun" onclick="setBuildTab('fun')">🎡 Attractions</button>
+      </div>
+      <div class="bld-body" id="build-body"></div>
     </div>
-    <div style="font-size:.84rem;color:#667;margin-bottom:6px;">Answer citizens to earn ⭐, then buy land and shops. A growing free economy lifts your meters (Education and Freedom still depend most on your policies).</div>
-    <div id="build-bonus" style="font-size:.85rem;color:#1F7A3D;font-weight:800;margin-bottom:12px;"></div>
-    <div id="build-body"></div>
   </div>
 </div>
 
@@ -3120,7 +3172,7 @@ const SPECIAL_OUTFIT=[
 ];
 
 // ── Profiles ──
-function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0,lifetimeScore:0,lifetimeBest:0,lifetimeAnswered:0,terms:[],emotes:[],town:{districts:{},dev:{},attr:{}},bank:{balance:0,last:0}};}
+function defaultProfile(){return{name:'Freedomtopia',avatar:{skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},stars:0,owned:[],runs:0,best:0,house:0,lifetimeScore:0,lifetimeBest:0,lifetimeAnswered:0,terms:[],emotes:[],town:{districts:{},dev:{},attr:{},pos:{}},bank:{balance:0,last:0}};}
 // ── TOWN BUILDING: buy land (districts), then developments (shops/homes) to grow your city ──
 // You start with just downtown; buying land + shops adds a steady bonus to the meters (a growing free economy).
 var TOWN_DISTRICTS={
@@ -3155,7 +3207,7 @@ var TOWN_ATTRACTIONS={
   concert:    {name:'Grand Concert Hall', icon:'🎭', cost:3400, bonus:{h:5,e:3},      x:3300, y:2760, sig:'hall',    col:'#B5567A'}
 };
 var TOWN_BONUS_CAP=18; // per meter, so building never fully replaces good policy
-function ensureTown(){ if(P&&(!P.town||typeof P.town!=='object'))P.town={districts:{},dev:{},attr:{}}; if(P&&P.town){ P.town.districts=P.town.districts||{}; P.town.dev=P.town.dev||{}; P.town.attr=P.town.attr||{}; } }
+function ensureTown(){ if(P&&(!P.town||typeof P.town!=='object'))P.town={districts:{},dev:{},attr:{},pos:{}}; if(P&&P.town){ P.town.districts=P.town.districts||{}; P.town.dev=P.town.dev||{}; P.town.attr=P.town.attr||{}; P.town.pos=P.town.pos||{}; } }
 function ownsDistrict(k){ return !!(P&&P.town&&P.town.districts&&P.town.districts[k]); }
 function ownsDev(k){ return !!(P&&P.town&&P.town.dev&&P.town.dev[k]); }
 function ownsAttraction(k){ return !!(P&&P.town&&P.town.attr&&P.town.attr[k]); }
@@ -3175,51 +3227,56 @@ function dispStats(){
 }
 // ── Build menu: buy land (districts) + developments; each adds a bonus + fills the map ──
 function bonusChips(b){ var p=[]; if(b.h)p.push('+'+b.h+'😊'); if(b.e)p.push('+'+b.e+'💰'); if(b.ed)p.push('+'+b.ed+'📚'); if(b.f)p.push('+'+b.f+'🗽'); return p.join(' '); }
-function openBuild(){ ensureTown(); renderBuild(); var o=document.getElementById('build-overlay'); if(o)o.style.display='block'; if(typeof sfx==='function')sfx('click'); }
+var buildTab='land';
+function openBuild(){ ensureTown(); if(!buildTab)buildTab='land'; renderBuild(); var o=document.getElementById('build-overlay'); if(o)o.style.display='block'; if(typeof sfx==='function')sfx('click'); }
 function closeBuild(){ var o=document.getElementById('build-overlay'); if(o)o.style.display='none'; }
+function setBuildTab(t){ buildTab=t; renderBuild(); if(typeof sfx==='function')sfx('click'); }
+function badgeRow(b){ var p=''; if(b.h)p+='<span class="bld-badge">+'+b.h+' 😊</span>'; if(b.e)p+='<span class="bld-badge">+'+b.e+' 💰</span>'; if(b.ed)p+='<span class="bld-badge">+'+b.ed+' 📚</span>'; if(b.f)p+='<span class="bld-badge">+'+b.f+' 🗽</span>'; return p; }
+function attractionThumb(a){ return '<svg viewBox="-18 -56 186 172" preserveAspectRatio="xMidYMax meet">'+venueArt(Object.assign({},a,{x:0,y:104}))+'</svg>'; }
 function renderBuild(){
   ensureTown();
-  var bal=document.getElementById('build-bal'); if(bal)bal.textContent='⭐ '+(P?(P.stars||0).toLocaleString():'0');
-  var bt=document.getElementById('build-bonus'); if(bt){ var tb=townBonus(); var t=bonusChips(tb); bt.textContent=t?('Your growing town adds '+t+' to your meters'):'Buy land and shops to boost your meters as your economy grows.'; }
+  var bal=document.getElementById('build-bal'); if(bal)bal.textContent=(P?(P.stars||0).toLocaleString():'0');
+  var bt=document.getElementById('build-bonus'); if(bt){ var t=badgeRow(townBonus()); bt.innerHTML=t?t:'<span class="lbl" style="color:#8a94a8;font-weight:700;">none yet, build to boost your meters</span>'; }
+  var tl=document.getElementById('bld-tab-land'), tf=document.getElementById('bld-tab-fun');
+  if(tl)tl.className='bld-tab'+(buildTab==='land'?' on':''); if(tf)tf.className='bld-tab'+(buildTab==='fun'?' on':'');
   var body=document.getElementById('build-body'); if(!body)return;
   var html='';
-  Object.keys(TOWN_DISTRICTS).forEach(function(dk){
-    var D=TOWN_DISTRICTS[dk], owned=ownsDistrict(dk), canBuy=(P&&(P.stars||0)>=D.cost);
-    html+='<div style="border:2px solid rgba(0,0,0,.1);border-radius:14px;padding:12px 14px;margin-bottom:12px;">'+
-      '<div style="display:flex;align-items:center;gap:10px;">'+
-        '<span style="font-size:1.4rem;">'+D.icon+'</span>'+
-        '<div style="flex:1;min-width:0;"><div style="font-weight:800;color:var(--navy,#13234a);">'+D.name+'</div>'+
-          '<div style="font-size:.76rem;color:#778;">'+(owned?'Land owned':'Buy the land, then build shops and homes here')+'</div></div>'+
-        (owned?'<span style="color:#2EB872;font-weight:800;white-space:nowrap;">✓ Owned</span>'
-              :'<button onclick="buyDistrict(\''+dk+'\')" '+(canBuy?'':'disabled')+' style="background:linear-gradient(180deg,#FFD43B,#ED8B00);color:#3a2a00;border:none;border-radius:10px;padding:9px 14px;font-family:inherit;font-weight:900;cursor:pointer;white-space:nowrap;'+(canBuy?'':'opacity:.45;cursor:not-allowed;')+'">Buy land ⭐'+D.cost.toLocaleString()+'</button>')+
+  if(buildTab==='land'){
+    Object.keys(TOWN_DISTRICTS).forEach(function(dk){
+      var D=TOWN_DISTRICTS[dk], owned=ownsDistrict(dk), canBuy=(P&&(P.stars||0)>=D.cost);
+      html+='<div class="bld-card'+(owned?'':' bld-locked')+'">'+
+        '<div class="bld-thumb icon">'+D.icon+'</div>'+
+        '<div class="bld-info"><div class="bld-name">'+D.name+'</div>'+
+          '<div class="bld-sub">'+(owned?'Land owned, build here':'Buy this land, then build on it')+'</div></div>'+
+        '<div class="bld-act">'+(owned?'<span class="bld-owned">✓ Owned</span>'
+              :'<button class="bld-btn gold" onclick="buyDistrict(\''+dk+'\')" '+(canBuy?'':'disabled')+'>Buy ⭐'+D.cost.toLocaleString()+'</button>')+'</div>'+
       '</div>';
-    if(owned){
-      html+='<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">';
-      Object.keys(TOWN_DEVS).forEach(function(vk){
-        var V=TOWN_DEVS[vk]; if(V.dist!==dk)return;
-        var vo=ownsDev(vk), vc=(P&&(P.stars||0)>=V.cost);
-        html+='<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.045);border-radius:10px;padding:8px 10px;">'+
-          '<span style="font-size:1.1rem;">'+V.icon+'</span>'+
-          '<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.9rem;color:var(--navy,#13234a);">'+V.name+'</div><div style="font-size:.72rem;color:#2EB872;font-weight:700;">'+bonusChips(V.bonus)+'</div></div>'+
-          (vo?'<span style="color:#2EB872;font-weight:800;font-size:.85rem;white-space:nowrap;">✓ Built</span>'
-             :'<button onclick="buyDev(\''+vk+'\')" '+(vc?'':'disabled')+' style="background:#2D6FD6;color:#fff;border:none;border-radius:9px;padding:7px 12px;font-family:inherit;font-weight:800;cursor:pointer;white-space:nowrap;'+(vc?'':'opacity:.45;cursor:not-allowed;')+'">Build ⭐'+V.cost.toLocaleString()+'</button>')+
+      if(owned){
+        var subs='';
+        Object.keys(TOWN_DEVS).forEach(function(vk){ var V=TOWN_DEVS[vk]; if(V.dist!==dk)return;
+          var vo=ownsDev(vk), vc=(P&&(P.stars||0)>=V.cost);
+          subs+='<div class="bld-card"><div class="bld-thumb icon" style="font-size:1.8rem;width:58px;height:58px;flex-basis:58px;">'+V.icon+'</div>'+
+            '<div class="bld-info"><div class="bld-name" style="font-size:.92rem;">'+V.name+'</div><div class="bld-badges">'+badgeRow(V.bonus)+'</div></div>'+
+            '<div class="bld-act">'+(vo?'<span class="bld-owned">✓ Built</span>'
+               :'<button class="bld-btn blue" onclick="buyDev(\''+vk+'\')" '+(vc?'':'disabled')+'>Build ⭐'+V.cost.toLocaleString()+'</button>')+'</div>'+
           '</div>';
-      });
-      html+='</div>';
-    }
-    html+='</div>';
-  });
-  // ── Attractions: buy cool complexes individually (no land needed) ──
-  html+='<div style="margin:18px 0 8px;font-weight:900;color:var(--navy,#13234a);font-size:1rem;">🎡 Attractions <span style="font-weight:600;font-size:.76rem;color:#778;">cool complexes, no land needed, built in the Fairgrounds</span></div>';
-  Object.keys(TOWN_ATTRACTIONS).forEach(function(ak){
-    var A=TOWN_ATTRACTIONS[ak], ao=ownsAttraction(ak), ac=(P&&(P.stars||0)>=A.cost);
-    html+='<div style="display:flex;align-items:center;gap:10px;border:2px solid rgba(0,0,0,.08);border-radius:12px;padding:9px 12px;margin-bottom:8px;">'+
-      '<span style="font-size:1.4rem;">'+A.icon+'</span>'+
-      '<div style="flex:1;min-width:0;"><div style="font-weight:800;color:var(--navy,#13234a);">'+A.name+'</div><div style="font-size:.72rem;color:#2EB872;font-weight:700;">'+bonusChips(A.bonus)+'</div></div>'+
-      (ao?'<span style="color:#2EB872;font-weight:800;white-space:nowrap;">✓ Built</span>'
-         :'<button onclick="buyAttraction(\''+ak+'\')" '+(ac?'':'disabled')+' style="background:linear-gradient(180deg,#B98CE8,#7A4ED6);color:#fff;border:none;border-radius:10px;padding:8px 13px;font-family:inherit;font-weight:900;cursor:pointer;white-space:nowrap;'+(ac?'':'opacity:.45;cursor:not-allowed;')+'">Build ⭐'+A.cost.toLocaleString()+'</button>')+
-    '</div>';
-  });
+        });
+        if(subs)html+='<div class="bld-sublist">'+subs+'</div>';
+      }
+    });
+  } else {
+    html+='<div class="bld-group">🎡 Cool Complexes <span style="font-weight:600;font-size:.74rem;color:#77859e;">buy one, then walk out and pick its spot</span></div>';
+    Object.keys(TOWN_ATTRACTIONS).forEach(function(ak){
+      var A=TOWN_ATTRACTIONS[ak], ao=ownsAttraction(ak), ac=(P&&(P.stars||0)>=A.cost), act;
+      if(ao){ act = isPlaced(ak)
+        ? '<span class="bld-owned">✓ Built</span><button class="bld-btn mini blue" onclick="closeBuild();startPlacing(\''+ak+'\')">📍 Move</button>'
+        : '<button class="bld-btn green" onclick="closeBuild();startPlacing(\''+ak+'\')">📍 Place it</button>'; }
+      else act='<button class="bld-btn purple" onclick="buyAttraction(\''+ak+'\')" '+(ac?'':'disabled')+'>Build ⭐'+A.cost.toLocaleString()+'</button>';
+      html+='<div class="bld-card"><div class="bld-thumb">'+attractionThumb(A)+'</div>'+
+        '<div class="bld-info"><div class="bld-name">'+A.name+'</div><div class="bld-badges">'+badgeRow(A.bonus)+'</div></div>'+
+        '<div class="bld-act">'+act+'</div></div>';
+    });
+  }
   body.innerHTML=html;
 }
 function afterBuild(){
@@ -3232,7 +3289,67 @@ function afterBuild(){
 }
 function buyDistrict(k){ ensureTown(); var D=TOWN_DISTRICTS[k]; if(!D||ownsDistrict(k))return; if((P.stars||0)<D.cost){sfx('bad');return;} P.stars-=D.cost; P.town.districts[k]=true; afterBuild(); }
 function buyDev(k){ ensureTown(); var V=TOWN_DEVS[k]; if(!V||ownsDev(k))return; if(!ownsDistrict(V.dist)){sfx('bad');return;} if((P.stars||0)<V.cost){sfx('bad');return;} P.stars-=V.cost; P.town.dev[k]=true; afterBuild(); }
-function buyAttraction(k){ ensureTown(); var A=TOWN_ATTRACTIONS[k]; if(!A||ownsAttraction(k))return; if((P.stars||0)<A.cost){sfx('bad');return;} P.stars-=A.cost; P.town.attr[k]=true; afterBuild(); }
+function buyAttraction(k){ ensureTown(); var A=TOWN_ATTRACTIONS[k]; if(!A||ownsAttraction(k))return; if((P.stars||0)<A.cost){sfx('bad');return;} P.stars-=A.cost; P.town.attr[k]=true; afterBuild(); closeBuild(); startPlacing(k); }
+function isPlaced(k){ return !!(P&&P.town&&P.town.pos&&P.town.pos[k]); }
+
+/* ══ WALK-AND-DROP PLACEMENT: pick where each attraction sits, on land you own ══ */
+var PLACE=null, ATTR_W=150, ATTR_H=104, ROAD_RECTS=[];
+// Placement zones = the Fairgrounds (open build land) + any district you have BOUGHT. You cannot
+// build on land that is still for sale. The downtown core is left alone (too dense).
+function placeZones(){
+  var z=[{x0:150,y0:2360,x1:3470,y1:2800}];                        // Fairgrounds, always buildable
+  if(ownsDistrict('west'))  z.push({x0:110, y0:520, x1:900,  y1:1700});
+  if(ownsDistrict('east'))  z.push({x0:2770,y0:520, x1:3500, y1:1700});
+  if(ownsDistrict('south')) z.push({x0:120, y0:1860,x1:3480, y1:2320});
+  if(ownsDistrict('north')) z.push({x0:280, y0:170, x1:3320, y1:470});
+  return z;
+}
+function inOwnedZone(x,y){ var z=placeZones(); for(var i=0;i<z.length;i++){ if(x>=z[i].x0&&x<=z[i].x1&&y>=z[i].y0&&y<=z[i].y1)return true; } return false; }
+function rectsHit(a,b,m){ return a.x0-m<b.x1 && a.x1+m>b.x0 && a.y0-m<b.y1 && a.y1+m>b.y0; }
+function placeGhostPos(){ return {cx:player.x, gy:player.y-20}; }         // building base sits just above the player, so the player stands at its door
+function placeRectAt(cx,gy){ return {x0:cx-ATTR_W/2, y0:gy-ATTR_H, x1:cx+ATTR_W/2, y1:gy}; }
+function canPlaceAt(cx,gy){
+  var r=placeRectAt(cx,gy);
+  if(r.x0<60||r.x1>WORLD_W-60||r.y0<140||r.y1>WORLD_H-16)return false;   // inside the map
+  if(!inOwnedZone(cx,gy)||!inOwnedZone(r.x0+10,gy)||!inOwnedZone(r.x1-10,gy))return false; // on land you own
+  for(var i=0;i<ROAD_RECTS.length;i++){ if(rectsHit(r,ROAD_RECTS[i],1))return false; }     // not on a road
+  for(var j=0;j<colliders.length;j++){ var c=colliders[j]; if(rectsHit(r,{x0:c.x,y0:c.y,x1:c.x+c.w,y1:c.y+c.h},4))return false; } // not on water or another building
+  return true;
+}
+function ensurePlaceGhost(){ var svg=document.getElementById('town-world'); if(!svg)return null; var g=document.getElementById('place-ghost'); if(!g){ g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('id','place-ghost'); g.setAttribute('opacity','0.72'); g.style.pointerEvents='none'; svg.appendChild(g); } return g; }
+function updatePlaceGhost(){
+  if(!PLACE)return; var g=ensurePlaceGhost(); if(!g)return;
+  var p=placeGhostPos(), ok=canPlaceAt(p.cx,p.gy), A=TOWN_ATTRACTIONS[PLACE.key];
+  var art=venueArt(Object.assign({},A,{x:p.cx-ATTR_W/2,y:p.gy}));
+  var box='<rect x="'+(p.cx-ATTR_W/2)+'" y="'+(p.gy-ATTR_H)+'" width="'+ATTR_W+'" height="'+ATTR_H+'" rx="6" fill="'+(ok?'rgba(46,184,114,.32)':'rgba(230,60,60,.4)')+'" stroke="'+(ok?'#2EB872':'#E63C3C')+'" stroke-width="3.5"/>';
+  g.innerHTML=box+art;
+  PLACE.valid=ok;
+  var btn=document.getElementById('place-ok'); if(btn){ btn.disabled=!ok; btn.style.opacity=ok?'1':'.45'; btn.style.cursor=ok?'pointer':'not-allowed'; btn.textContent=ok?'✅ Build here':'🚫 Move to your land'; }
+}
+function startPlacing(k){
+  if(!TOWN_ATTRACTIONS[k]||!ownsAttraction(k))return; ensureTown();
+  PLACE={key:k,valid:false};
+  if(P.town.pos&&P.town.pos[k])delete P.town.pos[k];   // moving: clear old spot so it stops colliding
+  if(typeof renderTown==='function')renderTown();       // re-render without this building, then attach the ghost
+  ensurePlaceGhost(); updatePlaceGhost();
+  var bar=document.getElementById('place-bar'); if(bar){ bar.style.display='flex'; var nm=document.getElementById('place-name'); if(nm)nm.textContent=TOWN_ATTRACTIONS[k].icon+' '+TOWN_ATTRACTIONS[k].name; }
+  if(typeof sfx==='function')sfx('click');
+}
+function confirmPlace(){
+  if(!PLACE)return; var p=placeGhostPos();
+  if(!canPlaceAt(p.cx,p.gy)){ if(typeof sfx==='function')sfx('bad'); return; }
+  ensureTown(); P.town.pos[PLACE.key]={x:Math.round(p.cx-ATTR_W/2),y:Math.round(p.gy)};
+  PLACE=null; var g=document.getElementById('place-ghost'); if(g)g.remove();
+  var bar=document.getElementById('place-bar'); if(bar)bar.style.display='none';
+  saveProfiles(); if(typeof cloudSave==='function')cloudSave();
+  if(typeof renderTown==='function')renderTown(); if(typeof updateHUD==='function')updateHUD(false);
+  if(typeof sfx==='function')sfx('win');
+}
+function cancelPlace(){
+  PLACE=null; var g=document.getElementById('place-ghost'); if(g)g.remove();
+  var bar=document.getElementById('place-bar'); if(bar)bar.style.display='none';
+  if(typeof renderTown==='function')renderTown();
+}
 
 /* ══ SAVINGS BANK: deposit stars, earn compound interest every 5 minutes ══ */
 var BANK_RATE=0.05, BANK_TICK_MS=5*60*1000, BANK_MAX_TICKS=6; /* 5% per 5 min, cap 6 ticks (30 min) per accrual so a long absence cannot mint infinite stars */
@@ -4235,9 +4352,13 @@ function venueSig(sig,w,H){
   }
   return g;
 }
-function expVenue(a){
-  var x=a.x,y=a.y,w=150,H=104,col=a.col||'#C0563B';
+function expVenue(a){                                    // register collision + draw (used on the real map)
+  var x=a.x,y=a.y,w=150,H=104;
   reg(x,y-H,w,H); EXP_BR.push({x:x,y:y-H,w:w,h:H});
+  return venueArt(a);
+}
+function venueArt(a){                                    // draw only, no side effects (used for the placement ghost too)
+  var x=a.x,y=a.y,w=150,H=104,col=a.col||'#C0563B';
   var g='<g transform="translate('+x+','+(y-H)+')">'+sh(w/2,H+4,w*0.55,9);
   g+='<rect x="4" y="30" width="'+(w-8)+'" height="'+(H-30)+'" rx="4" fill="'+col+'"/>';               // body
   g+='<rect x="'+(w-16)+'" y="30" width="12" height="'+(H-30)+'" fill="rgba(0,0,0,.12)"/>';            // side shade
@@ -4277,7 +4398,8 @@ function buildExpansion(tiers){
   var SIDE=[620,860,1100,1340,1580];                                                       // wider blocks (~240px apart)
   SIDE.forEach(function(y){HR(y,100,900);HR(y,2760,3500);});                               // side-margin streets (east starts at the river arterial)
   HR(2620,120,3480);VR(1800,2320,2620);                                                    // FAIRGROUNDS: promenade across the bottom + a spine down from downtown
-  s+=roadsSVG(R,'butt');                                                                    // grid roads get flat ends + crisp intersections (no round blobs)
+  s+=roadsSVG(R,'butt');
+  ROAD_RECTS=[]; SEG.forEach(function(g){ if(g.h)ROAD_RECTS.push({x0:Math.min(g.a,g.b),y0:g.y-20,x1:Math.max(g.a,g.b),y1:g.y+20}); else ROAD_RECTS.push({x0:g.x-20,y0:Math.min(g.a,g.b),x1:g.x+20,y1:Math.max(g.a,g.b)}); }); // road keep-out for building placement                                                                    // grid roads get flat ends + crisp intersections (no round blobs)
   // ── buildings set just above each street, facing it (road in front of every building) ──
   // place a row of buildings along a street; off=-44 lines the NORTH side, off=+92 the SOUTH side (both sides → a full street)
   function row(streetY,x0,x1,step,fn,off){off=(off===undefined?-44:off);var o='';for(var x=x0;x+104<=x1;x+=step){var cx=x+52,sk=false;for(var j=0;j<VL.length;j++){if(Math.abs(cx-VL[j])<92){sk=true;break;}}if(sk)continue;if(x+108>2440&&x<2680)continue;/* keep the river corridor (final x2440–2680) clear */o+=fn(x,streetY+off);}return o;}
@@ -4313,9 +4435,10 @@ function buildExpansion(tiers){
   if(!ownsDistrict('north')) s+=forSaleSign(1800,330);
   else if(ownsDev('north_offices')) [220,420].forEach(function(y){s+=row(y,300,3300,250,function(x,b){return expOffice(x,b,2+(bi%2),bi++);});});
   else s+=readySign(1800,330);
-  // ── FAIRGROUNDS (bottom band): buy cool attractions individually in the 🏗️ Build menu ──
-  s+='<text x="1160" y="2455" text-anchor="middle" font-size="30" font-weight="900" fill="#7A5AA8" opacity=".45" font-family="Verdana">🎡 FAIRGROUNDS 🎢</text>';
-  Object.keys(TOWN_ATTRACTIONS).forEach(function(ak){ s+= ownsAttraction(ak) ? expVenue(TOWN_ATTRACTIONS[ak]) : venuePlot(TOWN_ATTRACTIONS[ak]); });
+  // ── FAIRGROUNDS (bottom band): open build land. Attractions render wherever the player placed them. ──
+  s+='<text x="1160" y="2455" text-anchor="middle" font-size="30" font-weight="900" fill="#7A5AA8" opacity=".4" font-family="Verdana">🎡 FAIRGROUNDS 🎢</text>';
+  s+='<text x="1160" y="2495" text-anchor="middle" font-size="15" font-weight="700" fill="#7A5AA8" opacity=".5" font-family="Verdana">open build land</text>';
+  Object.keys(TOWN_ATTRACTIONS).forEach(function(ak){ if(ownsAttraction(ak)&&P&&P.town&&P.town.pos&&P.town.pos[ak]){ var pos=P.town.pos[ak]; s+=expVenue(Object.assign({},TOWN_ATTRACTIONS[ak],{x:pos.x,y:pos.y})); } });
   // ── props: trees / lamps / benches scattered on GRASS only (keep-out from roads, buildings, core) ──
   function nearRoad(px,py,m){for(var i=0;i<SEG.length;i++){var g=SEG[i];if(g.h){if(px>=g.a-m&&px<=g.b+m&&Math.abs(py-g.y)<m)return true;}else{if(py>=g.a-m&&py<=g.b+m&&Math.abs(px-g.x)<m)return true;}}return false;}
   function onBldg(px,py,m){for(var i=0;i<EXP_BR.length;i++){var b=EXP_BR[i];if(px>b.x-m&&px<b.x+b.w+m&&py>b.y-m&&py<b.y+b.h+m)return true;}return false;}
@@ -4482,6 +4605,7 @@ function townTick(){
   if(TC.mmp){TC.mmp.style.left=(player.x*100/WORLD_W).toFixed(2)+'%';TC.mmp.style.top=(player.y*100/WORLD_H).toFixed(2)+'%';}
   if(TC.npcMarks&&tickFrame%15===0){for(let mi=0;mi<TC.npcMarks.length;mi++){const mk=TC.npcMarks[mi];if(!mk)continue;const done=S.answers.some(function(a){return a.qi===mi;});mk.style.display=done?'none':'';const np=npcState[mi];if(np&&!done){mk.style.left=(np.x*100/WORLD_W).toFixed(2)+'%';mk.style.top=(np.y*100/WORLD_H).toFixed(2)+'%';}}}
   TC.svg.setAttribute('viewBox',camX()+' '+camY()+' '+VIEW_W+' '+VIEW_H);
+  if(PLACE){ updatePlaceGhost(); if(TC.pr)TC.pr.style.display='none'; if(IS_TOUCH){var _pab=document.getElementById('act-btn');if(_pab)_pab.classList.remove('show');} return; } // placement mode: ghost follows player, skip normal prompts
   // particles (pooled; stepped at half rate; camera-culled)
   if(tickFrame%GFX.fxEvery===0){
     if(tickFrame%26===0)fxSpawn(FX.leaf,camX()+Math.random()*VIEW_W,camY()-20,0.4+Math.random()*0.5,0.7+Math.random()*0.5,1.6);
@@ -4557,6 +4681,7 @@ function ensureTownLoop(){
 }
 // Trigger whatever the player is standing next to (used by SPACE and the mobile tap button).
 function interactNearby(){
+  if(PLACE){ confirmPlace(); return; }
   if(dlgOpen||overlaysOpen())return;
   if(nearNPC>=0)openDialog(nearNPC);
   else if(nearShop)openStore('town');
@@ -4570,6 +4695,7 @@ function initTownControls(){
     const town=document.getElementById('screen-town');
     if(!town||!town.classList.contains('active'))return;
     if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].indexOf(e.code)>=0)e.preventDefault();
+    if(PLACE){ if(e.code==='Space'){confirmPlace();return;} if(e.code==='Escape'){cancelPlace();return;} keysDown[e.code]=true; return; } // placement: SPACE builds, ESC cancels, WASD still walks
     if(e.code==='Escape'&&dlgOpen){closeDialog();return;}
     if(e.code==='Space'){interactNearby();return;}
     keysDown[e.code]=true;

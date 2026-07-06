@@ -3380,10 +3380,13 @@ function isPlaced(k){ return !!(P&&P.town&&P.town.pos&&P.town.pos[k]); }
 
 /* ══ WALK-AND-DROP PLACEMENT: pick where each attraction sits, on land you own ══ */
 var PLACE=null, ATTR_W=150, ATTR_H=104, ROAD_RECTS=[];
-// Placement zones = the Fairgrounds (open build land) + any district you have BOUGHT. You cannot
-// build on land that is still for sale. The downtown core is left alone (too dense).
+// Placement zones = the Fairgrounds + the downtown city center (both owned from the start) + any
+// district you have BOUGHT. You cannot build on land that is still for sale. Roads, water, and
+// existing buildings are always blocked separately, so in the dense core you can only drop a
+// building on the open plaza and in the gaps between the landmarks.
 function placeZones(){
-  var z=[{x0:150,y0:2360,x1:3470,y1:2800}];                        // Fairgrounds, always buildable
+  var z=[{x0:150,y0:2360,x1:3470,y1:2800},                         // Fairgrounds, always buildable
+         {x0:910,y0:480, x1:2760,y1:1850}];                        // downtown city center, always buildable
   if(ownsDistrict('west'))  z.push({x0:110, y0:520, x1:900,  y1:1700});
   if(ownsDistrict('east'))  z.push({x0:2770,y0:520, x1:3500, y1:1700});
   if(ownsDistrict('south')) z.push({x0:120, y0:1860,x1:3480, y1:2320});

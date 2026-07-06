@@ -4663,7 +4663,7 @@ function buildMinimap(){
 // ── clouds: a soft white puff drifting over the map with its own soft shadow cast down-right ──
 function cloudPuff(sc){
   var e=function(cx,cy,rx,ry,o){return '<ellipse cx="'+(cx*sc)+'" cy="'+(cy*sc)+'" rx="'+(rx*sc)+'" ry="'+(ry*sc)+'" fill="#FFFFFF" opacity="'+o+'"/>';};
-  return e(0,0,66,42,.42)+e(-54,12,44,30,.38)+e(52,14,48,32,.40)+e(6,-20,42,30,.44)+e(-12,-8,74,22,.26);   // multi-lobe body + a soft top light
+  return e(0,0,66,42,.26)+e(-54,12,44,30,.23)+e(52,14,48,32,.25)+e(6,-20,42,30,.28)+e(-12,-8,74,22,.15);   // multi-lobe body + a soft top light (dialed back so it reads as high, thin cloud)
 }
 function cloudShadow(sc){
   var e=function(cx,cy,rx,ry){return '<ellipse cx="'+(cx*sc)+'" cy="'+(cy*sc)+'" rx="'+(rx*sc)+'" ry="'+(ry*sc)+'" fill="url(#cloudShadG)"/>';};
@@ -4675,8 +4675,8 @@ function buildClouds(){
   var s='<g class="cloud-sh" style="pointer-events:none;">';
   defs.forEach(function(c){
     s+='<g class="'+c[2]+'"'+(c[3]?' style="'+c[3]+'"':'')+'><g transform="translate(0,'+c[0]+')">'+
-         '<g transform="translate('+(52*c[1])+','+(58*c[1])+')">'+cloudShadow(c[1])+'</g>'+
-         cloudPuff(c[1])+
+         cloudShadow(c[1])+                                                              // shadow stays on the ground
+         '<g transform="translate('+(-46*c[1])+','+(-116*c[1])+')">'+cloudPuff(c[1])+'</g>'+   // puff floats UP-and-left → cloud reads as high in the sky
        '</g></g>';
   });
   return s+'</g>';
@@ -4692,7 +4692,7 @@ function renderTown(){
   map.innerHTML='<svg class="town-svg" id="town-world" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" viewBox="'+camX()+' '+camY()+' '+VIEW_W+' '+VIEW_H+'">'+
     '<defs><radialGradient id="glowG"><stop offset="0%" stop-color="#FFE9A8" stop-opacity=".55"/><stop offset="100%" stop-color="#FFE9A8" stop-opacity="0"/></radialGradient>'+
     '<radialGradient id="shadG"><stop offset="0%" stop-color="#0E1826" stop-opacity=".34"/><stop offset="60%" stop-color="#0E1826" stop-opacity=".21"/><stop offset="100%" stop-color="#0E1826" stop-opacity="0"/></radialGradient>'+          // soft prop shadow
-    '<radialGradient id="cloudShadG"><stop offset="0%" stop-color="#0A1830" stop-opacity=".26"/><stop offset="68%" stop-color="#0A1830" stop-opacity=".12"/><stop offset="100%" stop-color="#0A1830" stop-opacity="0"/></radialGradient>'+   // soft cloud shadow
+    '<radialGradient id="cloudShadG"><stop offset="0%" stop-color="#0A1830" stop-opacity=".15"/><stop offset="68%" stop-color="#0A1830" stop-opacity=".07"/><stop offset="100%" stop-color="#0A1830" stop-opacity="0"/></radialGradient>'+   // soft, faint cloud shadow (high cloud)
     '<filter id="pShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="2" stdDeviation="1.6" flood-color="#13202E" flood-opacity="0.45"/></filter></defs>'+
     '<g id="world-static">'+buildWorld(tiers)+'</g>'+
     cloudStr+

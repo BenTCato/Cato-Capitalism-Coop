@@ -3995,7 +3995,10 @@ function blendAmb(avg){
   ['grass','grass2','road','dash','curb','water','water2','tree','tree2'].forEach(function(k){out[k]=lerpHex(lo[k],hi[k],t);});
   return out;
 }
-function sh(x,y,rx,ry){return '<ellipse cx="'+x+'" cy="'+y+'" rx="'+rx+'" ry="'+ry+'" fill="rgba(20,30,40,.13)"/>';}
+// Ground shadow: soft-edged (radial gradient, no per-object blur filter so it stays cheap) and
+// offset down-right for a single consistent light from the upper-left. Callers size rx/ry to the
+// object, so a tree casts a bigger, longer shadow than a flower.
+function sh(x,y,rx,ry){return '<ellipse cx="'+(x+ry*0.45)+'" cy="'+(y+ry*0.12)+'" rx="'+(rx*1.14)+'" ry="'+ry+'" fill="url(#shadG)"/>';}
 function treeDefs(){
   return '<defs><g id="treeD">'+sh(0,3,16,5)+'<rect x="-3" y="-14" width="6" height="16" rx="2" fill="#8A7355"/><g class="sway"><circle cx="3" cy="-30" r="19" fill="'+AP.tree2+'"/><circle cx="-3" cy="-34" r="19" fill="'+AP.tree+'"/><circle cx="-9" cy="-30" r="8" fill="rgba(255,255,255,.14)"/></g></g>'+
   '<g id="treeD2">'+sh(0,3,15,5)+'<rect x="-3" y="-13" width="6" height="15" rx="2" fill="#7E6A4E"/><g class="sway sway2"><circle cx="-3" cy="-28" r="17" fill="'+AP.tree2+'"/><circle cx="3" cy="-32" r="17" fill="'+AP.tree+'"/><circle cx="-6" cy="-36" r="7" fill="'+AP.tree+'" opacity=".8"/><circle cx="8" cy="-28" r="7" fill="rgba(255,255,255,.13)"/></g></g></defs>';
@@ -4587,23 +4590,51 @@ function buildExpansion(tiers){
   s+='<text x="1160" y="2455" text-anchor="middle" font-size="30" font-weight="900" fill="#7A5AA8" opacity=".4" font-family="Verdana">🎡 FAIRGROUNDS 🎢</text>';
   s+='<text x="1160" y="2495" text-anchor="middle" font-size="15" font-weight="700" fill="#7A5AA8" opacity=".5" font-family="Verdana">open build land</text>';
   Object.keys(TOWN_ATTRACTIONS).forEach(function(ak){ if(ownsAttraction(ak)&&P&&P.town&&P.town.pos&&P.town.pos[ak]){ var pos=P.town.pos[ak]; s+=expVenue(Object.assign({},TOWN_ATTRACTIONS[ak],{x:pos.x,y:pos.y})); } });
-  // ── props: trees / lamps / benches scattered on GRASS only (keep-out from roads, buildings, core) ──
+  // ── DESIGNED small features: lamps line the ROADS, benches live only in PARKS (with shade + flowers),
+  //    and open fields get natural greenery (trees/bushes/rocks/flowers) jittered off the grid so nothing
+  //    looks machine-placed. No more lone benches or streetlamps stranded in empty meadows. ──
   function nearRoad(px,py,m){for(var i=0;i<SEG.length;i++){var g=SEG[i];if(g.h){if(px>=g.a-m&&px<=g.b+m&&Math.abs(py-g.y)<m)return true;}else{if(py>=g.a-m&&py<=g.b+m&&Math.abs(px-g.x)<m)return true;}}return false;}
   function onBldg(px,py,m){for(var i=0;i<EXP_BR.length;i++){var b=EXP_BR[i];if(px>b.x-m&&px<b.x+b.w+m&&py>b.y-m&&py<b.y+b.h+m)return true;}return false;}
-  var props=[];
-  for(var py=160;py<2320;py+=96){for(var px=140;px<3540;px+=108){
-    if(px>900&&px<2700&&py>620&&py<1780)continue;                  // leave the downtown core alone
-    if(px>2450&&px<2670)continue;                                  // keep props out of the full-height river corridor
-    if(nearRoad(px,py,32)||onBldg(px,py,20))continue;             // never on a road or a building
-    var clash=false;for(var q=0;q<props.length;q++){if(Math.abs(props[q][0]-px)<102&&Math.abs(props[q][1]-py)<102){clash=true;break;}}
-    if(clash)continue;
-    props.push([px,py]);
+  function inCore(px,py){return px>860&&px<2740&&py>560&&py<1820;}   // downtown core is decorated separately
+  function inRiver(px,py){return px>2440&&px<2680;}
+  var placed=[], farEnough=function(px,py,m){for(var q=0;q<placed.length;q++){if(Math.abs(placed[q][0]-px)<m&&Math.abs(placed[q][1]-py)<m)return false;}return true;};
+
+  // 1) STREET LAMPS: walk each road segment and set lamps just off the curb, spaced out, alternating sides
+  var lampStr='';
+  SEG.forEach(function(g,gi){
+    var horiz=g.h, a=Math.min(g.a,g.b), b=Math.max(g.a,g.b);
+    for(var tpos=a+150; tpos<=b-150; tpos+=320){
+      var side=((((tpos/320)|0)+gi)%2)?42:-42;
+      var lx=horiz?tpos:(g.x+side), ly=horiz?(g.y+side):tpos;
+      if(lx<120||lx>3540||ly<150||ly>2300)continue;
+      if(inRiver(lx,ly)||inCore(lx,ly))continue;                    // river + downtown handled elsewhere
+      if(onBldg(lx,ly,16)||!farEnough(lx,ly,150))continue;
+      placed.push([lx,ly]); lampStr+=flamp(lx,ly);
+    }
+  });
+
+  // 2) PARKS: the ONLY benches out here, each a little rest spot (shade trees + bush + flowers) so a bench always has a reason
+  function park(x,y){return ftree(x-38,y-4,1.16)+ftree(x+42,y-8,0.92)+fbush(x-4,y+12,1)+fflower(x-44,y+16)+fflower(x+32,y+18)+fbench(x,y);}
+  var parkStr='';
+  [[430,1710],[3170,1710],[300,780],[3120,760],[380,1180],[2950,1180],[700,340],[2500,360]].forEach(function(p){
+    if(inCore(p[0],p[1])||inRiver(p[0],p[1])||nearRoad(p[0],p[1],48)||onBldg(p[0],p[1],44)||!farEnough(p[0],p[1],120))return;
+    placed.push(p); parkStr+=park(p[0],p[1]);
+  });
+
+  // 3) NATURAL FIELDS: greenery only (no stray benches/lamps), jittered off the grid → organic, not a grid
+  var fieldStr='';
+  for(var py=180;py<2320;py+=118){for(var px=170;px<3520;px+=130){
+    var jx=px+((px*13+py*7)%54)-27, jy=py+((px*5+py*11)%48)-24;     // deterministic jitter breaks up the rows
+    if(inCore(jx,jy)||inRiver(jx,jy))continue;
+    if(nearRoad(jx,jy,30)||onBldg(jx,jy,18)||!farEnough(jx,jy,94))continue;
+    var r=(jx*7+jy*3)%10;
+    if(r<5)fieldStr+=ftree(jx,jy,0.8+((jx+jy)%3)*0.14);
+    else if(r<7)fieldStr+=fbush(jx,jy,0.9+((px)%2)*0.2);
+    else if(r<8)fieldStr+=frock(jx,jy,0.85+((py)%2)*0.15);
+    else fieldStr+=fflower(jx,jy);
+    placed.push([jx,jy]);
   }}
-  for(var pi=0;pi<props.length;pi++){var pp=props[pi],t=(pp[0]*7+pp[1])%7;
-    s+= t<3?ftree(pp[0],pp[1],0.85+(t%2)*0.2) : (t<5?flamp(pp[0],pp[1]) : (t<6?fbench(pp[0],pp[1]):fflower(pp[0],pp[1])));
-  }
-  // a couple of green parks (clusters of trees in the open blocks south of downtown)
-  s+=fbush(420,1730,1.2)+fbush(470,1760,1)+fbush(3180,1730,1.1)+fbush(3230,1760,1);
+  s+=lampStr+parkStr+fieldStr;
   return s;
 }
 
@@ -4629,6 +4660,27 @@ function buildMinimap(){
   s+='<div id="minimap-player"></div>';
   mm.innerHTML=s;
 }
+// ── clouds: a soft white puff drifting over the map with its own soft shadow cast down-right ──
+function cloudPuff(sc){
+  var e=function(cx,cy,rx,ry,o){return '<ellipse cx="'+(cx*sc)+'" cy="'+(cy*sc)+'" rx="'+(rx*sc)+'" ry="'+(ry*sc)+'" fill="#FFFFFF" opacity="'+o+'"/>';};
+  return e(0,0,66,42,.42)+e(-54,12,44,30,.38)+e(52,14,48,32,.40)+e(6,-20,42,30,.44)+e(-12,-8,74,22,.26);   // multi-lobe body + a soft top light
+}
+function cloudShadow(sc){
+  var e=function(cx,cy,rx,ry){return '<ellipse cx="'+(cx*sc)+'" cy="'+(cy*sc)+'" rx="'+(rx*sc)+'" ry="'+(ry*sc)+'" fill="url(#cloudShadG)"/>';};
+  return e(0,0,120,42)+e(-66,10,76,30)+e(62,12,82,32)+e(10,-16,60,26);                                     // irregular, multi-lobe soft shadow
+}
+function buildClouds(){
+  // 4 clouds at varied heights/sizes/speeds; the ground shadow sits down-right of the puff (sun upper-left)
+  var defs=[[300,1.0,'cl',''],[760,1.28,'cl cl2',''],[1180,0.82,'cl cl3',''],[1640,1.06,'cl cl2','animation-delay:-30s;']];
+  var s='<g class="cloud-sh" style="pointer-events:none;">';
+  defs.forEach(function(c){
+    s+='<g class="'+c[2]+'"'+(c[3]?' style="'+c[3]+'"':'')+'><g transform="translate(0,'+c[0]+')">'+
+         '<g transform="translate('+(52*c[1])+','+(58*c[1])+')">'+cloudShadow(c[1])+'</g>'+
+         cloudPuff(c[1])+
+       '</g></g>';
+  });
+  return s+'</g>';
+}
 function renderTown(){
   const map=document.getElementById('town-map');if(!map)return;
   const st=(typeof dispStats==='function')?dispStats():(S.stats||{h:65,e:65,ed:65,f:65});   // policy stats + town growth bonus drive how thriving the town looks
@@ -4636,10 +4688,14 @@ function renderTown(){
   const tiers={h:tTier(st.h),e:tTier(st.e),ed:tTier(st.ed),f:tTier(st.f),avg:tTier(avgVal),avgVal:avgVal,hVal:st.h};
   const fgStr=GFX.fgTrees.map(function(t){return '<g transform="translate('+t[0]+','+t[1]+') scale('+t[2]+')"><circle cx="3" cy="-30" r="19" fill="'+AP.tree2+'"/><circle cx="-3" cy="-34" r="19" fill="'+AP.tree+'"/></g>';}).join('');
   const glowStr=GFX.lampSpots.map(function(p){return '<circle cx="'+p[0]+'" cy="'+(p[1]-44)+'" r="64" fill="url(#glowG)"/>';}).join('');
+  const cloudStr=(typeof GFX!=='undefined'&&GFX.lowPower)?'':buildClouds();   // skip drifting clouds on weak devices
   map.innerHTML='<svg class="town-svg" id="town-world" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" viewBox="'+camX()+' '+camY()+' '+VIEW_W+' '+VIEW_H+'">'+
-    '<defs><radialGradient id="glowG"><stop offset="0%" stop-color="#FFE9A8" stop-opacity=".55"/><stop offset="100%" stop-color="#FFE9A8" stop-opacity="0"/></radialGradient><filter id="pShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="2" stdDeviation="1.6" flood-color="#13202E" flood-opacity="0.45"/></filter></defs>'+
+    '<defs><radialGradient id="glowG"><stop offset="0%" stop-color="#FFE9A8" stop-opacity=".55"/><stop offset="100%" stop-color="#FFE9A8" stop-opacity="0"/></radialGradient>'+
+    '<radialGradient id="shadG"><stop offset="0%" stop-color="#0E1826" stop-opacity=".34"/><stop offset="60%" stop-color="#0E1826" stop-opacity=".21"/><stop offset="100%" stop-color="#0E1826" stop-opacity="0"/></radialGradient>'+          // soft prop shadow
+    '<radialGradient id="cloudShadG"><stop offset="0%" stop-color="#0A1830" stop-opacity=".26"/><stop offset="68%" stop-color="#0A1830" stop-opacity=".12"/><stop offset="100%" stop-color="#0A1830" stop-opacity="0"/></radialGradient>'+   // soft cloud shadow
+    '<filter id="pShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="2" stdDeviation="1.6" flood-color="#13202E" flood-opacity="0.45"/></filter></defs>'+
     '<g id="world-static">'+buildWorld(tiers)+'</g>'+
-    '<g class="cloud-sh"><ellipse class="cl cl1" cx="0" cy="260" rx="190" ry="70" fill="#0A1828" opacity=".07"/><ellipse class="cl cl2" cx="0" cy="700" rx="240" ry="86" fill="#0A1828" opacity=".06"/><ellipse class="cl cl3" cx="0" cy="1020" rx="170" ry="60" fill="#0A1828" opacity=".07"/></g>'+
+    cloudStr+
     '<g id="npc-layer">'+npcLayer()+'</g>'+
     '<g id="fx-layer"></g>'+
     playerSVG()+

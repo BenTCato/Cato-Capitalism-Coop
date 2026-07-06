@@ -3397,8 +3397,10 @@ function placeRectAt(cx,gy){ return {x0:cx-ATTR_W/2, y0:gy-ATTR_H, x1:cx+ATTR_W/
 function canPlaceAt(cx,gy){
   var r=placeRectAt(cx,gy);
   if(r.x0<60||r.x1>WORLD_W-60||r.y0<140||r.y1>WORLD_H-16)return false;   // inside the map
-  // Build anywhere that physically fits: any open ground on the map. Ownership is no longer required,
-  // so the only limits are the map edge and real obstacles (roads, water, and other buildings) below.
+  // Must be on land you OWN: the building's ground footprint (left, center, and right of the base)
+  // has to sit inside the Fairgrounds or a district you have bought. You cannot build on land that
+  // is still for sale. The roof may rise above the band; roads and water are blocked separately below.
+  if(!inOwnedZone(cx,gy)||!inOwnedZone(r.x0+10,gy)||!inOwnedZone(r.x1-10,gy))return false;
   for(var i=0;i<ROAD_RECTS.length;i++){ if(rectsHit(r,ROAD_RECTS[i],1))return false; }     // not on a road
   for(var j=0;j<colliders.length;j++){ var c=colliders[j]; if(rectsHit(r,{x0:c.x,y0:c.y,x1:c.x+c.w,y1:c.y+c.h},4))return false; } // not on water or another building
   return true;
@@ -3413,7 +3415,7 @@ function updatePlaceGhost(){
   var tf=(typeof tickFrame!=='undefined')?tickFrame:0;
   g.setAttribute('opacity', ok?(0.62+0.16*Math.sin(tf/6)).toFixed(2):(0.5+0.26*Math.sin(tf/3)).toFixed(2));  // pulse: ready vs blocked
   PLACE.valid=ok;
-  var btn=document.getElementById('place-ok'); if(btn){ btn.disabled=!ok; btn.style.opacity=ok?'1':'.45'; btn.style.cursor=ok?'pointer':'not-allowed'; btn.textContent=ok?'✅ Build here':'🚫 Find an open spot'; }
+  var btn=document.getElementById('place-ok'); if(btn){ btn.disabled=!ok; btn.style.opacity=ok?'1':'.45'; btn.style.cursor=ok?'pointer':'not-allowed'; btn.textContent=ok?'✅ Build here':'🚫 Move onto land you own'; }
 }
 // juice helpers: camera shake (viewBox offset, no reflow), coin burst, placement thunk
 var _shakeUntil=0,_shakeAmp=0;

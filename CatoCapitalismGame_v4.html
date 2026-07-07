@@ -4227,7 +4227,7 @@ function npcSVG(i,answered){
   const p=NPC_POS[i],cfg=NPC_CFG[i%NPC_CFG.length],skin=SKIN[cfg.skin].c,pant=SPRITE.pants[cfg.outfit]||'#3B4252';
   let s='<g class="cit'+(answered?' cit-done':'')+'" id="npc-'+i+'" transform="translate('+p[0]+','+p[1]+') scale(0.92)">';
   s+='<ellipse cx="0" cy="34" rx="13" ry="4" fill="rgba(20,30,40,.2)"/>';
-  s+='<g'+(answered?' opacity=".55"':'')+'>';
+  s+='<g id="npc-body-'+i+'"'+(answered?' opacity=".55"':'')+'>';
   s+='<rect x="-8" y="18" width="6.5" height="12" rx="3" fill="'+pant+'"/><rect x="1.5" y="18" width="6.5" height="12" rx="3" fill="'+pant+'"/>';
   s+='<rect x="-9" y="27" width="8.5" height="6" rx="3" fill="'+SPRITE.shoes+'"/><rect x="0.5" y="27" width="8.5" height="6" rx="3" fill="'+SPRITE.shoes+'"/>';
   s+=worldOutfit(cfg.outfit,skin);
@@ -4391,8 +4391,28 @@ function buildWorld(tiers){
       w+='<path d="M'+(RX-96)+','+(y+30)+' L'+(RX+96)+','+(y+30)+'" stroke="#8A6038" stroke-width="7" stroke-linecap="round"/>';
       for(var p=0;p<6;p++){var px=(RX-92)+p*37;w+='<rect x="'+px+'" y="'+(y-37)+'" width="6" height="13" rx="2" fill="#6E4E2E"/><rect x="'+px+'" y="'+(y+24)+'" width="6" height="13" rx="2" fill="#6E4E2E"/>';}
     });
+    // river life: everything floats DOWNSTREAM with the current; speed differs with draft (the low log
+    // rides faster water than the deep-hulled rowboat), and townTick adds a gentle eddy sway + wrap.
+    RIVER=[
+      {id:'river-log', x:RX-14,y:340, v:0.55,rot:1},
+      {id:'river-boat',x:RX+15,y:1500,v:0.30,rot:1},
+      {id:'river-duck-0',x:RX-22,y:900, v:0.42,rot:0},
+      {id:'river-duck-1',x:RX+24,y:2200,v:0.38,rot:0}
+    ];
+    w+='<g id="river-log" transform="translate('+(RX-14)+',340)"><rect x="-16" y="-5" width="32" height="10" rx="5" fill="#8A6038"/><circle cx="16" cy="0" r="5" fill="#A8794F"/><circle cx="16" cy="0" r="2.2" fill="#6E4E2E"/><path d="M-12,-1.5 h16 M-9,2 h12" stroke="#6E4E2E" stroke-width="1.2"/></g>';
+    w+='<g id="river-boat" transform="translate('+(RX+15)+',1500)"><path d="M-16,-4 Q0,12 16,-4 L11,-1 Q0,8 -11,-1 Z" fill="#A8794F" stroke="#6E4E2E" stroke-width="1.5"/><rect x="-7" y="-3" width="14" height="3" rx="1.5" fill="#C49A66"/><circle cx="0" cy="-8" r="4.5" fill="#E8B88A"/><rect x="-5" y="-6" width="10" height="7" rx="3" fill="#3E8EF7"/><path d="M-6,-3 L-20,4 M6,-3 L20,4" stroke="#8A6038" stroke-width="2" stroke-linecap="round"/></g>';
+    w+='<g id="river-duck-0" transform="translate('+(RX-22)+',900)">'+fduck(0,0)+'</g>';
+    w+='<g id="river-duck-1" transform="translate('+(RX+24)+',2200)">'+fduck(0,0,-13)+'</g>';
   })();
   w+=buildExpansion(tiers);
+  // puddles: pre-placed low spots along the streets; invisible until rain fills them (lighting pass
+  // fades the whole group with ground wetness, and they dry out slowly after the shower passes)
+  w+='<g id="puddle-g" opacity="0" style="pointer-events:none;">';
+  [[1050,1240],[1420,640],[2100,1795],[2380,1000],[1685,1350],[905,1500],[2050,635],[1560,1795],[600,2050],[2900,2050],[1500,430],[2700,430]].forEach(function(pp,pi){
+    w+='<ellipse cx="'+pp[0]+'" cy="'+pp[1]+'" rx="'+(16+(pi%3)*7)+'" ry="'+(5+(pi%2)*2)+'" fill="'+AP.water+'"/><ellipse cx="'+(pp[0]-4)+'" cy="'+(pp[1]-1)+'" rx="'+(5+(pi%3)*2)+'" ry="1.6" fill="rgba(255,255,255,.5)"/>';
+  });
+  w+='</g>';
+  w+=carsSVG();
   return w;}
 
 // ── world expansion: neighborhoods, shops & districts spread across the bigger map ──
@@ -4771,15 +4791,22 @@ function renderTown(){
   if(strip){strip.innerHTML=[['😊',st.h],['💰',st.e],['📚',st.ed],['🗽',st.f]].map(function(r){
       const cls=r[1]<=THRESHOLD?'critical':r[1]<=50?'bad':r[1]<=70?'ok':'great';
       return '<div class="tstat"><span>'+r[0]+'</span><div class="tstat-track"><div class="bar '+cls+'" style="width:'+r[1]+'%"></div></div><b>'+r[1]+'%</b></div>';}).join('');}
-  npcState=NPC_POS.map(function(p,i){return {x:p[0],y:p[1],hx:p[0],hy:p[1],tx:p[0],ty:p[1],wait:60+(i*37)%160,el:null};});
+  npcState=NPC_POS.map(function(p,i){return {x:p[0],y:p[1],hx:p[0],hy:p[1],tx:p[0],ty:p[1],wait:60+(i*37)%160,el:null,bel:null,face:1,step:0,greet:0};});
   TC={svg:document.getElementById('town-world'),pg:document.getElementById('player-g'),inner:document.getElementById('player-inner'),
       l1:document.getElementById('pleg1'),l2:document.getElementById('pleg2'),pr:document.getElementById('prompt-g'),
       ptxt:document.getElementById('prompt-txt'),fx:document.getElementById('fx-layer'),night:document.getElementById('night-rect'),bob:document.getElementById('player-bob'),
       glow:document.getElementById('glow-g'),shadow:document.getElementById('player-shadow')};
-  npcState.forEach(function(n,i){n.el=document.getElementById('npc-'+i);});
+  npcState.forEach(function(n,i){n.el=document.getElementById('npc-'+i);n.bel=document.getElementById('npc-body-'+i);});
   TC.baseGrade=GFX.grade[tiers.avg];                      // day/night lighting multiplies on top of this policy-driven grade
   if(TC.svg)TC.svg.style.filter=TC.baseGrade;
-  TC.cloudEls=null;                                        // re-cache cloud nodes after every rebuild
+  TC.cloudEls=null;TC.riverEls=null;TC.carEls=null;TC.heads=null;TC._stq=-1;TC._leafCol='';   // re-cache animated nodes after every rebuild
+  TC.puddleG=document.getElementById('puddle-g');
+  // windows: every glass pane gets its own light-up threshold, so at dusk the town lights up window by window
+  TC.winEls=TC.svg?Array.prototype.slice.call(TC.svg.querySelectorAll('rect[fill="url(#glass)"]')):[];
+  TC.winEls.forEach(function(el,i){el._th=0.42+((i*137)%97)/97*0.38;el._lit=false;});
+  // seasons: cache the canopy circles (and their summer green) so autumn can tint them without a rebuild
+  TC.treeCircs=[];
+  if(TC.svg){var _tds=TC.svg.querySelectorAll('#treeD circle, #treeD2 circle, #fg-layer circle');for(var _ti=0;_ti<_tds.length;_ti++){var _f=_tds[_ti].getAttribute('fill');if(_f&&_f.charAt(0)==='#'){_tds[_ti]._base=_f;TC.treeCircs.push(_tds[_ti]);}}}
   fxInit();
   TC.fountainTier=tiers.h;
   buildMinimap(); TC.mmp=document.getElementById('minimap-player');
@@ -4787,7 +4814,7 @@ function renderTown(){
   ensureTownLoop();
 }
 // GFX engine config (skill: never hardcode values)
-const GFX={daySeconds:140,speed:7.2,dtMin:1,dtMax:3,lightEvery:24,fxEvery:2,wander:true,wanderSpeed:0.55,wanderRange:44,
+const GFX={daySeconds:140,seasonSeconds:780,speed:7.2,dtMin:1,dtMax:3,lightEvery:24,fxEvery:2,wander:true,wanderSpeed:0.55,wanderRange:44,
   reduceMotion:(typeof window!=='undefined'&&window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)||false,
   camLerp:0.14, lookAhead:56, accel:0.9, friction:0.80, wind:true, windSpeed:0.0016, windAmp:0.06, ambientLife:true, lowPower:false,
   grade:['saturate(.55) contrast(.96) brightness(.95)','saturate(.92)','saturate(1.07) brightness(1.02)'],
@@ -4796,10 +4823,51 @@ const GFX={daySeconds:140,speed:7.2,dtMin:1,dtMax:3,lightEvery:24,fxEvery:2,wand
 try{ var _weak=(navigator.hardwareConcurrency||4)<=2||(navigator.deviceMemory||4)<=2||(IS_TOUCH&&Math.min(screen.width,screen.height)<=420);
   if(_weak){ GFX.lowPower=true; GFX.camLerp=0; GFX.ambientLife=false; GFX.wind=false; } }catch(e){}
 if(GFX.reduceMotion){ GFX.wind=false; GFX.ambientLife=false; GFX.camLerp=0; GFX.accel=1; GFX.friction=0; }
+// ── WEATHER: a simple front system. Clear skies give way to a rain shower every few minutes; storm
+//    ramps in over ~10s (fronts arrive gradually), ground wetness accumulates while it rains and
+//    puddles linger after the sky clears (evaporation is slower than rainfall).
+var WX={mode:'clear',until:0,next:Date.now()+90000+Math.random()*120000,storm:0,wet:0,aut:0};
+function wxTick(now,dt){
+  if(GFX.lowPower||GFX.reduceMotion){WX.storm=0;WX.wet=0;return;}
+  if(WX.mode==='clear'&&now>WX.next){WX.mode='rain';WX.until=now+26000+Math.random()*14000;}
+  if(WX.mode==='rain'&&now>WX.until){WX.mode='clear';WX.next=now+150000+Math.random()*180000;}
+  var tgt=(WX.mode==='rain')?1:0;
+  WX.storm+=(tgt-WX.storm)*Math.min(1,0.012*dt);
+  if(WX.mode==='rain')WX.wet=Math.min(1,WX.wet+0.0012*dt);else WX.wet=Math.max(0,WX.wet-0.00035*dt);
+}
+// ── RIVER LIFE: floating things ride the current downstream at slightly different speeds (drag
+//    depends on draft), sway a little with eddies, and re-enter upstream after leaving the map.
+var RIVER=[];
+// ── TRAFFIC: a few cars ply the long straight streets. They cruise at their own pace, brake
+//    smoothly for pedestrians ahead (never plow through the player), and switch on headlights at dusk.
+var CARS=[];
+function carsSVG(){
+  if(GFX.lowPower)return '';
+  CARS=[
+    {x:420, y:2048,dir:1, base:2.0,v:2.0,x0:150,x1:3450,col:'#D9534F'},
+    {x:2600,y:2032,dir:-1,base:1.7,v:1.7,x0:150,x1:3450,col:'#3E8EF7'},
+    {x:1200,y:428, dir:1, base:1.8,v:1.8,x0:150,x1:3450,col:'#F2B23E'},
+    {x:3000,y:412, dir:-1,base:2.2,v:2.2,x0:150,x1:3450,col:'#2EB872'}
+  ];
+  var s='<g id="car-g">';
+  CARS.forEach(function(c,i){
+    s+='<g id="car-'+i+'" transform="translate('+c.x+','+c.y+')"><g id="car-b-'+i+'" transform="scale('+c.dir+',1)">'+
+      sh(0,8,16,3.5)+
+      '<rect x="-16" y="-6" width="32" height="11" rx="4" fill="'+c.col+'"/>'+
+      '<rect x="-9" y="-12" width="15" height="8" rx="3" fill="'+c.col+'"/>'+
+      '<rect x="-7" y="-11" width="11" height="6" rx="2" fill="url(#glass)"/>'+
+      '<circle cx="-9" cy="6" r="3.4" fill="#2A3140"/><circle cx="9" cy="6" r="3.4" fill="#2A3140"/>'+
+      '<circle cx="-9" cy="6" r="1.3" fill="#9AA0A6"/><circle cx="9" cy="6" r="1.3" fill="#9AA0A6"/>'+
+      '<ellipse class="headlight" cx="24" cy="0" rx="10" ry="4" fill="#FFE9A8" opacity="0"/>'+
+      '<circle cx="16" cy="-1" r="1.6" fill="#FFF3BF"/>'+
+    '</g></g>';
+  });
+  return s+'</g>';
+}
 let TC={}; // cached node refs (skill: cache, never query in the update loop)
 let lastTick=0,tickFrame=0;
 const FXNS='http://www.w3.org/2000/svg';
-let FX={dust:[],leaf:[],drop:[],fly:[],coin:[],bird:[],distMoved:0};
+let FX={dust:[],leaf:[],drop:[],fly:[],coin:[],bird:[],rain:[],distMoved:0};
 let npcState=[];
 function fxPool(n,tag,attrs){
   const out=[];
@@ -4821,6 +4889,7 @@ function fxInit(){
   FX.fly=fxPool(12,'circle',{r:'2',fill:'#FFE9A8'});
   FX.coin=fxPool(12,'circle',{r:'3.4',fill:'#FFC93C',stroke:'#C97E12','stroke-width':'1'});
   FX.bird=fxPool(5,'path',{d:'M-5,0 Q-2.5,-3.5 0,-0.5 Q2.5,-3.5 5,0',stroke:'#3A4658','stroke-width':'1.6',fill:'none'});   // distant gliding birds
+  FX.rain=fxPool(30,'rect',{width:'1.5',height:'11',rx:'0.7',fill:'#A9CBE8'});   // rain streaks (slight sideways drift = wind-blown)
 }
 function fxSpawn(pool,x,y,vx,vy,life){
   for(let i=0;i<pool.length;i++){if(pool[i].life<=0){const p=pool[i];p.x=x;p.y=y;p.vx=vx;p.vy=vy;p.life=life;return;}}
@@ -4852,6 +4921,7 @@ function townTick(){
   const now=Date.now();
   const dt=Math.max(GFX.dtMin,Math.min(GFX.dtMax,(now-lastTick)/16.666));
   lastTick=now;tickFrame++;
+  wxTick(now,dt);   // weather fronts move in and out on their own clock
   if(!overlaysOpen()){
     // input sets a target DIRECTION; velocity accelerates toward it, friction eases the stop (momentum)
     let ix=0,iy=0;
@@ -4872,7 +4942,11 @@ function townTick(){
       if(!collides(player.x,ny)){player.y=ny;}else{player.vy=0;}
       const spd=Math.abs(dx)+Math.abs(dy);
       player.step+=spd; FX.distMoved+=spd;
-      if(FX.distMoved>26){FX.distMoved=0;fxSpawn(FX.dust,player.x-player.dir*8,player.y+28,-player.dir*0.4,-0.25,0.7);}
+      if(FX.distMoved>26){FX.distMoved=0;
+        // footsteps react to the ground: splashes on wet ground, kicked-up grass most of the time, dust otherwise
+        if(WX.wet>0.4)fxSpawn(FX.drop,player.x-player.dir*6,player.y+30,-player.dir*0.5,-0.9,0.5);
+        else if(Math.random()<0.3)fxSpawn(FX.leaf,player.x-player.dir*8,player.y+28,-player.dir*0.5,-0.5,0.5);
+        else fxSpawn(FX.dust,player.x-player.dir*8,player.y+28,-player.dir*0.4,-0.25,0.7);}
       player.moving=spd>0.2;
     }else player.moving=false;
     if(player.wasMoving&&!player.moving){ fxSpawn(FX.dust,player.x-4,player.y+28,-0.5,-0.2,0.6); fxSpawn(FX.dust,player.x+4,player.y+28,0.5,-0.2,0.6); }
@@ -4906,15 +4980,19 @@ function townTick(){
   // particles (pooled; stepped at half rate; camera-culled)
   if(tickFrame%GFX.fxEvery===0){
     if(!GFX.lowPower){                                                    // skip ambient spawns on weak devices; dust + coin still fire from their own call sites
-      if(tickFrame%26===0)fxSpawn(FX.leaf,camX()+Math.random()*VIEW_W,camY()-20,0.4+Math.random()*0.5,0.7+Math.random()*0.5,1.6);
+      if(tickFrame%(WX.aut>0.5?11:26)===0)fxSpawn(FX.leaf,camX()+Math.random()*VIEW_W,camY()-20,0.4+Math.random()*0.5,0.7+Math.random()*0.5,1.6);   // leaves fall roughly twice as often in autumn
       if(TC.fountainTier===2&&tickFrame%8===0&&Math.abs((900+CORE_DX)-player.x)<VIEW_W&&Math.abs((600+CORE_DY)-player.y)<VIEW_H)
         fxSpawn(FX.drop,(895+CORE_DX)+Math.random()*10,(576+CORE_DY),(Math.random()-0.5)*1.6,-1.4-Math.random(),0.9);
       const na=nightAmount();
       if(na>0.45&&tickFrame%14===0)fxSpawn(FX.fly,camX()+Math.random()*VIEW_W,camY()+120+Math.random()*(VIEW_H-200),(Math.random()-0.5)*0.6,(Math.random()-0.5)*0.4,1.4);
       if(GFX.ambientLife&&na<0.4&&tickFrame%22===0)fxSpawn(FX.fly,camX()+40+Math.random()*(VIEW_W-80),camY()+90+Math.random()*(VIEW_H-170),(Math.random()-0.5)*0.5,-0.2-Math.random()*0.3,1.2); // daytime butterflies drifting up
-      if(GFX.ambientLife&&na<0.35&&tickFrame%460===0){var _by=camY()+50+Math.random()*150;for(var _bi=0;_bi<3;_bi++)fxSpawn(FX.bird,camX()-24-_bi*30,_by+_bi*13,2.1+Math.random()*0.4,-0.04+Math.random()*0.08,2.2);}   // a small skein of birds glides across by day, loosely staggered like a real flock
+      if(GFX.ambientLife&&na<0.35&&WX.storm<0.3&&tickFrame%460===0){var _by=camY()+50+Math.random()*150;for(var _bi=0;_bi<3;_bi++)fxSpawn(FX.bird,camX()-24-_bi*30,_by+_bi*13,2.1+Math.random()*0.4,-0.04+Math.random()*0.08,2.2);}   // a small skein of birds glides across by day (they shelter in storms)
+      if(WX.storm>0.35){   // rain: streaks fall fast with a wind-blown slant; scattered splashes dot the ground
+        for(var _ri=0;_ri<3;_ri++)fxSpawn(FX.rain,camX()+Math.random()*VIEW_W,camY()-16,0.9,7.5+Math.random()*2,1);
+        if(tickFrame%6===0)fxSpawn(FX.drop,camX()+Math.random()*VIEW_W,camY()+80+Math.random()*(VIEW_H-120),(Math.random()-0.5)*0.6,-0.5,0.35);
+      }
     }
-    fxStep(FX.dust,0.05,0);fxStep(FX.leaf,0.01,0.012);fxStep(FX.drop,0.05,0.12);fxStep(FX.fly,0.012,0);fxStep(FX.coin,0.035,0.1);fxStep(FX.bird,0.004,0);
+    fxStep(FX.dust,0.05,0);fxStep(FX.leaf,0.01,0.012);fxStep(FX.drop,0.05,0.12);fxStep(FX.fly,0.012,0);fxStep(FX.coin,0.035,0.1);fxStep(FX.bird,0.004,0);fxStep(FX.rain,0.03,0.05);
   }
   // wind pass: advect clouds with a shared, gusting wind. Gusts are the sum of two slow sine waves
   // (a cheap stand-in for turbulence), so speed swells and lulls the way real wind does; higher
@@ -4930,33 +5008,90 @@ function townTick(){
       cel.setAttribute('transform','translate('+c.x.toFixed(1)+','+(c.y+cby).toFixed(1)+')');
     }
   }
+  // ambient motion pass: river drift + street traffic (every other frame, like the clouds)
+  if(!GFX.lowPower&&tickFrame%2===0){
+    if(RIVER.length){
+      if(!TC.riverEls)TC.riverEls=RIVER.map(function(r){return document.getElementById(r.id);});
+      for(var rvi=0;rvi<RIVER.length;rvi++){var it=RIVER[rvi],iel=TC.riverEls[rvi];if(!iel)continue;
+        it.y+=it.v*dt*2; if(it.y>2870)it.y=-50;                     // carried downstream; re-enter upstream
+        var sway=Math.sin(now*0.0005+rvi*1.9)*3;                    // small eddy sway across the channel
+        iel.setAttribute('transform','translate('+(it.x+sway).toFixed(1)+','+it.y.toFixed(1)+')'+(it.rot?' rotate('+(Math.sin(now*0.0007+rvi)*5).toFixed(1)+')':''));
+      }
+    }
+    if(CARS.length){
+      if(!TC.carEls)TC.carEls=CARS.map(function(_,i){return {g:document.getElementById('car-'+i),b:document.getElementById('car-b-'+i)};});
+      for(var cai=0;cai<CARS.length;cai++){var car=CARS[cai],ce=TC.carEls[cai];if(!ce||!ce.g)continue;
+        // drivers brake smoothly for a pedestrian in their lane ahead, then accelerate back to cruise
+        var ahead=(player.x-car.x)*car.dir;
+        var mustStop=Math.abs(player.y-car.y)<26&&ahead>0&&ahead<95;
+        car.v+=((mustStop?0:car.base)-car.v)*Math.min(1,0.09*dt*2);
+        car.x+=car.v*car.dir*dt*2;
+        if(car.x>car.x1){car.x=car.x1;car.dir=-1;if(ce.b)ce.b.setAttribute('transform','scale(-1,1)');}
+        if(car.x<car.x0){car.x=car.x0;car.dir=1;if(ce.b)ce.b.setAttribute('transform','scale(1,1)');}
+        ce.g.setAttribute('transform','translate('+car.x.toFixed(1)+','+car.y.toFixed(1)+')');
+      }
+    }
+  }
   // lighting pass (low frequency): a real day doesn't jump from blue sky to navy night. Near the
   // terminator (na≈0.5) the light passes through golden-hour and violet twilight (Rayleigh scattering
   // reddens low sun), lamps only reach full strength in true darkness, and the whole scene loses a
   // little brightness and color saturation at night (scotopic vision desaturates).
   if(tickFrame%GFX.lightEvery===0&&TC.night){
     const na=nightAmount();
+    const st=WX.storm;
     const tphase=(((Date.now()-(GFX.day0||0))/(GFX.daySeconds*1000))%1+1)%1;   // 0=noon, .25=dusk, .5=midnight, .75=dawn
     const tw=Math.max(0,1-Math.abs(na-0.5)/0.32);                              // twilight strength near sunset/sunrise
     const warm=(tphase<0.5)?'#FF8A3D':'#FF9FB8';                               // sunset amber vs. dawn pink
-    const tint=lerpHex(lerpHex('#16214E','#5A3D8F',tw*0.8),warm,tw*0.45);
+    let tint=lerpHex(lerpHex('#16214E','#5A3D8F',tw*0.8),warm,tw*0.45);
+    if(st>0.02)tint=lerpHex(tint,'#4A5670',st*0.65);                           // storm: overcast slate swallows the warm light
     TC.night.setAttribute('fill',tint);
-    TC.night.setAttribute('opacity',String((na*0.38+tw*0.08).toFixed(3)));
-    if(TC.glow)TC.glow.setAttribute('opacity',String(Math.pow(na,1.4).toFixed(2)));   // lamps fade in as darkness truly falls
-    if(TC.svg)TC.svg.style.filter=(TC.baseGrade||'')+' brightness('+(1-na*0.16).toFixed(3)+') saturate('+Math.max(0.6,1-na*0.22+tw*0.12).toFixed(3)+')';
+    TC.night.setAttribute('opacity',String((na*0.38+tw*0.08+st*0.16).toFixed(3)));
+    if(TC.glow)TC.glow.setAttribute('opacity',String(Math.pow(Math.max(na,st*0.5),1.4).toFixed(2)));   // lamps come on in true darkness and in heavy rain
+    if(TC.svg)TC.svg.style.filter=(TC.baseGrade||'')+' brightness('+(1-na*0.16-st*0.07).toFixed(3)+') saturate('+Math.max(0.55,1-na*0.22+tw*0.12-st*0.18).toFixed(3)+')';
+    // storm clouds: the same puffs darken as they fill with water
+    var stq=Math.round(st*20);
+    if(TC.cloudEls&&stq!==TC._stq){TC._stq=stq;for(var cdi=0;cdi<TC.cloudEls.length;cdi++){var cde=TC.cloudEls[cdi];if(cde)cde.style.filter=st>0.03?'brightness('+(1-st*0.42).toFixed(2)+')':'';}}
+    // windows light up one by one at dusk (each pane has its own threshold) and in dark storms
+    if(TC.winEls)for(var wi=0;wi<TC.winEls.length;wi++){var we=TC.winEls[wi];var lit=na>we._th||st>0.55;
+      if(lit!==we._lit){we._lit=lit;we.setAttribute('fill',lit?'url(#glassLit)':'url(#glass)');}}
+    // headlights: beams appear at dusk and in rain
+    if(!TC.heads&&TC.svg)TC.heads=TC.svg.querySelectorAll('.headlight');
+    if(TC.heads){var hop=Math.max(na,st*0.6);hop=hop>0.35?(0.5*hop).toFixed(2):'0';for(var hi=0;hi<TC.heads.length;hi++)TC.heads[hi].setAttribute('opacity',hop);}
+    // puddles fill while it rains and slowly dry afterwards
+    if(TC.puddleG)TC.puddleG.setAttribute('opacity',(WX.wet*0.75).toFixed(2));
+    // seasons: a slow year; canopies turn amber in autumn and falling leaves match
+    var ts=(((Date.now()-(GFX.day0||0))/((GFX.seasonSeconds||780)*1000))%1+1)%1;
+    WX.aut=(1-Math.cos(ts*Math.PI*2))/2;
+    if(TC.treeCircs)for(var ti=0;ti<TC.treeCircs.length;ti++){var tcc=TC.treeCircs[ti];tcc.setAttribute('fill',lerpHex(tcc._base,ti%2?'#D98E2B':'#C4652F',WX.aut*0.8));}
+    if(FX.leaf&&FX.leaf.length){var lc=lerpHex('#8FBF6E','#D9822B',WX.aut);if(TC._leafCol!==lc){TC._leafCol=lc;for(var lfi=0;lfi<FX.leaf.length;lfi++)if(FX.leaf[lfi].el)FX.leaf[lfi].el.setAttribute('fill',lc);}}
   }
   // NPC wander (idle life)
   if(GFX.wander&&!overlaysOpen()){
+    const naN=nightAmount();
+    // neighborly life: when two citizens pass close by day, both pause for a chat facing each other,
+    // then go their own way (with a long cooldown so the same pair doesn't loop)
+    if(tickFrame%30===0&&naN<0.55){
+      for(let gi=0;gi<npcState.length;gi++)for(let gj=gi+1;gj<npcState.length;gj++){
+        const A=npcState[gi],B=npcState[gj];if(!A.el||!B.el||A.greet>0||B.greet>0)continue;
+        const gdx=A.x-B.x,gdy=A.y-B.y;
+        if(gdx*gdx+gdy*gdy<46*46){A.wait=Math.max(A.wait,110);B.wait=Math.max(B.wait,110);A.greet=900;B.greet=900;A.face=(B.x>A.x)?1:-1;B.face=(A.x>B.x)?1:-1;}
+      }
+    }
     for(let i=0;i<npcState.length&&i<Q.length;i++){
       const n=npcState[i];if(!n.el)continue;
+      if(n.greet>0)n.greet-=dt;
       if(S.answers.some(function(a){return a.qi===i;}))continue;
-      if(n.wait>0){n.wait-=dt;}
+      let stepped=false;
+      if(naN>0.62){n.tx=n.hx;n.ty=n.hy;}                                        // night: head home and rest
+      if(n.wait>0){n.wait-=dt;if(WX.storm>0.5&&n.wait>36)n.wait=36;}            // rain: cut the dawdling short
       else{
         const ddx=n.tx-n.x,ddy=n.ty-n.y,dd=Math.sqrt(ddx*ddx+ddy*ddy);
-        if(dd<2){n.tx=n.hx+(Math.random()*2-1)*GFX.wanderRange;n.ty=n.hy+(Math.random()*2-1)*GFX.wanderRange*0.6;n.wait=90+Math.random()*200;}
-        else{const sp2=GFX.wanderSpeed*dt;const wx=n.x+ddx/dd*sp2,wy=n.y+ddy/dd*sp2;if(collides(wx,wy)){n.tx=n.hx;n.ty=n.hy;}else{n.x=wx;n.y=wy;}}
+        if(dd<2){if(naN>0.62){n.wait=400;}else{n.tx=n.hx+(Math.random()*2-1)*GFX.wanderRange;n.ty=n.hy+(Math.random()*2-1)*GFX.wanderRange*0.6;n.wait=90+Math.random()*200;}}
+        else{const sp2=GFX.wanderSpeed*(1+WX.storm*0.9)*dt;const wx=n.x+ddx/dd*sp2,wy=n.y+ddy/dd*sp2;if(collides(wx,wy)){n.tx=n.hx;n.ty=n.hy;}else{n.x=wx;n.y=wy;n.step+=sp2;stepped=true;if(Math.abs(ddx)>0.5)n.face=ddx>0?1:-1;}}
       }
       n.el.setAttribute('transform','translate('+n.x.toFixed(1)+','+n.y.toFixed(1)+') scale(0.92)');
+      // walk cycle: the body bobs with each stride and faces its travel direction (speech bubble stays unmirrored)
+      if(n.bel)n.bel.setAttribute('transform','translate(0,'+(stepped?(Math.sin(n.step/9)*1.3).toFixed(2):'0')+') scale('+(n.face||1)+',1)');
     }
   }
   // proximity (live positions)

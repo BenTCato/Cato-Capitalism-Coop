@@ -4310,6 +4310,50 @@ function playerSVG(){
     '</g></g></g>';
 }
 
+// ── unified road network ──
+var EXP_RG=null;   // shared street grid: built once per world build; buildExpansion reuses it for keep-outs
+function roadGrid(){
+  var R=[],SEG=[],VL=[240,520,900,1800,2400,2760,3080],SIDE=[620,860,1100,1340,1580];
+  function HR(y,x0,x1){R.push('M'+x0+','+y+' L'+x1+','+y);SEG.push({h:1,y:y,a:x0,b:x1});}
+  function VR(x,y0,y1){R.push('M'+x+','+y0+' L'+x+','+y1);SEG.push({h:0,x:x,a:y0,b:y1});}
+  HR(620,871,2429);HR(1780,871,2429);VR(900,620,1780);VR(2400,620,1780);                  // downtown loop (H segments extended ±29 past the corners so the butt caps fill the corner squares,no notches)
+  HR(1337,2400,2760);                                                                      // the bridge road,the only crossing over the river
+  R.push('M900,1200 L1180,1200');                                                          // short link from the loop toward downtown
+  VR(240,120,2280);VR(520,120,2280);VR(2760,120,2280);VR(3080,120,2280);                  // full-height spines
+  VR(1800,80,620);VR(1800,1780,2320);                                                      // top/bottom spine stubs
+  HR(220,100,3500);HR(420,100,3500);HR(2040,100,3500);HR(2280,100,3500);                  // top & bottom full-width streets
+  SIDE.forEach(function(y){HR(y,100,900);HR(y,2760,3500);});                               // side-margin streets
+  HR(2620,120,3480);VR(1800,2320,2620);                                                    // fairgrounds promenade + spine
+  return {R:R,SEG:SEG,VL:VL,SIDE:SIDE};
+}
+// downtown's six curvy roads, in FINAL map coords (core coords +900,+600)
+var CORE_ROADS=['M1800,1240 Q1780,1080 1760,1020 Q1740,930 1660,900',
+  'M1800,1240 Q1980,1160 2140,1020 Q2200,980 2230,960',
+  'M1800,1280 Q1812,1455 1800,1610',
+  'M1800,1260 Q2000,1300 2220,1320 Q2350,1330 2380,1338',
+  'M1780,1260 Q1520,1340 1320,1460 Q1230,1480 1140,1480',
+  'M1760,1220 Q1600,1140 1460,1050 Q1435,1025 1412,1010'];
+function roadsUnified(RG){
+  var s='',CX=1800,CY=1230;
+  var pass=function(color,width){
+    CORE_ROADS.forEach(function(d){s+='<path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="'+width+'" stroke-linecap="round" stroke-linejoin="round"/>';});
+    RG.R.forEach(function(d){s+='<path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="'+width+'" stroke-linecap="butt" stroke-linejoin="miter"/>';});
+  };
+  pass(AP.curb,58);
+  s+='<ellipse cx="'+CX+'" cy="'+CY+'" rx="154" ry="90" fill="'+AP.curb+'"/>';   // roundabout curb ring joins the curb pass
+  pass(AP.road,50);                                                              // one asphalt pass covers every curb crossing
+  CORE_ROADS.concat(RG.R).forEach(function(d){s+='<path d="'+d+'" fill="none" stroke="'+AP.dash+'" stroke-width="3" stroke-dasharray="20 18" stroke-linecap="butt"/>';});
+  // junction boxes: plain asphalt over every grid crossing, so centerlines stop at intersections
+  // instead of overlapping through them (real junction boxes carry no centerline)
+  for(var i=0;i<RG.SEG.length;i++)for(var j=0;j<RG.SEG.length;j++){
+    var H=RG.SEG[i],V=RG.SEG[j];
+    if(!H.h||V.h)continue;
+    if(V.x>=H.a-1&&V.x<=H.b+1&&H.y>=V.a-1&&H.y<=V.b+1)s+='<rect x="'+(V.x-25)+'" y="'+(H.y-25)+'" width="50" height="50" fill="'+AP.road+'"/>';
+  }
+  // roundabout surface + ring marking last: hides the radiating centerlines inside the circle
+  s+='<ellipse cx="'+CX+'" cy="'+CY+'" rx="150" ry="86" fill="'+AP.road+'"/><ellipse cx="'+CX+'" cy="'+CY+'" rx="150" ry="86" fill="none" stroke="'+AP.dash+'" stroke-width="2.5" stroke-dasharray="10 10" opacity=".6"/>';
+  return s;
+}
 // ── world assembly ──
 function buildWorld(tiers){
   colliders=[];
@@ -4330,14 +4374,16 @@ function buildWorld(tiers){
       if(wf%3===0)w+='<circle cx="'+(wx2+9)+'" cy="'+(wy2+5)+'" r="2.4" fill="'+WCOL[(wf+2)%5]+'"/>';
     }})();
   w+='</g>';
+  // ── UNIFIED ROAD NETWORK: every road on the map (downtown curves, the street grid, and the
+  //    roundabout) is painted here in shared passes — ALL curbs first, then ALL asphalt, then ALL
+  //    markings — so no road's curb line ever cuts across another road's surface. Junctions and the
+  //    roundabout blend into one continuous piece of pavement. Bridge decks are re-drawn over the
+  //    river later (the water must sit above this layer everywhere else).
+  EXP_RG=roadGrid();
+  ROAD_RECTS=[]; EXP_RG.SEG.forEach(function(g){ if(g.h)ROAD_RECTS.push({x0:Math.min(g.a,g.b),y0:g.y-20,x1:Math.max(g.a,g.b),y1:g.y+20}); else ROAD_RECTS.push({x0:g.x-20,y0:Math.min(g.a,g.b),x1:g.x+20,y1:Math.max(g.a,g.b)}); });
+  w+=roadsUnified(EXP_RG);
   REG_DX=CORE_DX;REG_DY=CORE_DY;w+='<g transform="translate('+CORE_DX+','+CORE_DY+')">';  // ↓ downtown core, shifted to map center
-  w+=roadsSVG(['M900,640 Q880,480 860,420 Q840,330 760,300',
-    'M900,640 Q1080,560 1240,420 Q1300,380 1330,360',
-    'M900,680 Q912,855 900,1010',                          // → market: runs down its EAST side, ends clear of the shopfront (was M900,680 Q900,860 860,1000, which ran into it)
-    'M900,660 Q1100,700 1320,720 Q1450,730 1480,738',
-    'M880,660 Q620,740 420,860 Q330,880 240,880',          // → home: hugs the corridor NORTH of the pond and arrives at the door (was Q400,950 350,960, which ran into the pond)
-    'M860,620 Q700,540 560,450 Q535,425 512,410']);        // → top-left neighborhood: stops just short of the first house (was Q440,340 420,330, which ran into it); the old pond-crossing spur M350,960 Q290,930 245,902 is removed
-  w+='<ellipse cx="900" cy="630" rx="150" ry="86" fill="'+AP.road+'"/><ellipse cx="900" cy="630" rx="150" ry="86" fill="none" stroke="'+AP.dash+'" stroke-width="2.5" stroke-dasharray="10 10" opacity=".6"/>';
+  // (downtown's six curvy roads + the roundabout are now part of the unified road layer above, in final coords)
   // (the river is now a full top-to-bottom waterway drawn in FINAL coords just before the expansion,see riverSVG below)
   // pond + dock
   // pond: still water reads as ripple rings spreading from disturbances (ducks, dripping dock) that fade
@@ -4418,6 +4464,14 @@ function buildWorld(tiers){
     w+='<g id="river-duck-0" transform="translate('+(RX-4)+',900)">'+fduck(0,0)+'</g>';   // channel-center start: swim arc + eddy + trailing wake all stay on the water
     w+='<g id="river-duck-1" transform="translate('+(RX+2)+',2200)">'+fduck(0,0,-13)+'</g>';
     var XR=[220,420,1337,2040,2280,2620], GH=36, FOOT=36;                  // road crossings (2620 = fairgrounds promenade bridge); FOOT = player origin→feet offset
+    // bridge decks: the unified road layer sits UNDER the river, so each crossing re-lays a short
+    // deck over the water (same curb+asphalt geometry as the street, so the seams at both banks are
+    // invisible). No centerline on the decks — real bridges drop the marking — and drifting river
+    // traffic passes beneath because the decks draw after the log/boat/ducks.
+    XR.forEach(function(y){
+      w+='<path d="M'+(RX-54)+','+y+' L'+(RX+54)+','+y+'" fill="none" stroke="'+AP.curb+'" stroke-width="58" stroke-linecap="butt"/>';
+      w+='<path d="M'+(RX-54)+','+y+' L'+(RX+54)+','+y+'" fill="none" stroke="'+AP.road+'" stroke-width="50" stroke-linecap="butt"/>';
+    });
     var edges=[-40]; XR.forEach(function(y){edges.push(y-GH,y+GH);}); edges.push(2820);
     // collision is shifted UP by FOOT so the walkable band lines up with the player's FEET (which render +34 below player.y):
     // the player crosses each bridge with feet on the road, and is blocked on the water on both banks
@@ -4629,22 +4683,10 @@ function venuePlot(a){
 function fflower(x,y){return '<g transform="translate('+x+','+y+')">'+sh(0,2,7,2)+'<rect x="-5" y="-3" width="10" height="6" rx="1.5" fill="#7E6A4E"/><circle cx="-3" cy="-5" r="2.4" fill="#FF8FAB"/><circle cx="2" cy="-6" r="2.4" fill="#FFC93C"/><circle cx="4" cy="-3" r="2.2" fill="#A78BFA"/></g>';}
 function buildExpansion(tiers){
   var s=''; EXP_BR=[];
-  // ── street grid: straight segments that all intersect → one connected network ──
-  var R=[],SEG=[],VL=[240,520,900,1800,2400,2760,3080];
-  function HR(y,x0,x1){R.push('M'+x0+','+y+' L'+x1+','+y);SEG.push({h:1,y:y,a:x0,b:x1});}
-  function VR(x,y0,y1){R.push('M'+x+','+y0+' L'+x+','+y1);SEG.push({h:0,x:x,a:y0,b:y1});}
-  HR(620,871,2429);HR(1780,871,2429);VR(900,620,1780);VR(2400,620,1780);                  // downtown loop (H segments extended ±29 past the corners so the butt caps fill the corner squares,no notches)
-  HR(1337,2400,2760);                                                                      // the bridge road,the only crossing over the river
-  // one short link from the loop toward downtown; the core's own curvy roads handle downtown (no clashing straight avenues)
-  R.push('M900,1200 L1180,1200');
-  VR(240,120,2280);VR(520,120,2280);VR(2760,120,2280);VR(3080,120,2280);                  // full-height spines (2760 = east-of-river arterial; wider blocks)
-  VR(1800,80,620);VR(1800,1780,2320);                                                      // top/bottom spine stubs
-  HR(220,100,3500);HR(420,100,3500);HR(2040,100,3500);HR(2280,100,3500);                  // top & bottom full-width streets (bottom moved to 2280 → matches spine ends, full-width block)
-  var SIDE=[620,860,1100,1340,1580];                                                       // wider blocks (~240px apart)
-  SIDE.forEach(function(y){HR(y,100,900);HR(y,2760,3500);});                               // side-margin streets (east starts at the river arterial)
-  HR(2620,120,3480);VR(1800,2320,2620);                                                    // FAIRGROUNDS: promenade across the bottom + a spine down from downtown
-  s+=roadsSVG(R,'butt');
-  ROAD_RECTS=[]; SEG.forEach(function(g){ if(g.h)ROAD_RECTS.push({x0:Math.min(g.a,g.b),y0:g.y-20,x1:Math.max(g.a,g.b),y1:g.y+20}); else ROAD_RECTS.push({x0:g.x-20,y0:Math.min(g.a,g.b),x1:g.x+20,y1:Math.max(g.a,g.b)}); }); // road keep-out for building placement                                                                    // grid roads get flat ends + crisp intersections (no round blobs)
+  // ── street grid: now drawn by the UNIFIED road layer in buildWorld() (shared curb/asphalt/marking
+  //    passes with downtown's curves, so junctions have no overlapping lines). This function reuses
+  //    the same grid geometry for building keep-outs; ROAD_RECTS was already set in buildWorld.
+  var RG=EXP_RG||roadGrid(), VL=RG.VL, SIDE=RG.SIDE, SEG=RG.SEG;   // SEG feeds nearRoad() and lamp placement below
   // ── buildings set just above each street, facing it (road in front of every building) ──
   // place a row of buildings along a street; off=-44 lines the NORTH side, off=+92 the SOUTH side (both sides → a full street)
   function row(streetY,x0,x1,step,fn,off){off=(off===undefined?-44:off);var o='';for(var x=x0;x+104<=x1;x+=step){var cx=x+52,sk=false;for(var j=0;j<VL.length;j++){if(Math.abs(cx-VL[j])<92){sk=true;break;}}if(sk)continue;if(x+108>2440&&x<2680)continue;/* keep the river corridor (final x2440–2680) clear */o+=fn(x,streetY+off);}return o;}

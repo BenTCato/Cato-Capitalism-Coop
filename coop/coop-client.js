@@ -295,10 +295,11 @@
   // ── tiny "connected" badge ────────────────────────────────────
   var badge = document.createElement('div');
   badge.id = 'coop-badge';
+  // lives in the empty middle of the top header band, clear of the map view
   badge.style.cssText =
-    'position:fixed;left:12px;bottom:132px;z-index:9999;font-family:Verdana,sans-serif;' +
-    'font-size:12px;font-weight:700;color:#fff;background:rgba(16,22,40,.82);' +
-    'padding:7px 12px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);' +
+    'position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:9999;font-family:Verdana,sans-serif;' +
+    'font-size:11px;font-weight:700;color:#fff;background:rgba(16,22,40,.82);' +
+    'padding:5px 11px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);' +
     'display:flex;align-items:center;gap:7px;pointer-events:none;';
   badge.innerHTML = '<span id="coop-dot" style="width:9px;height:9px;border-radius:50%;background:#9aa;"></span>' +
                     '<span id="coop-text">Connecting…</span>';
@@ -328,7 +329,7 @@
     if (document.getElementById('coop-join-btn') || !document.body) return;
     joinBtn = document.createElement('button');
     joinBtn.id = 'coop-join-btn';
-    joinBtn.style.cssText = 'position:fixed;left:12px;bottom:172px;z-index:9999;font-family:Verdana,sans-serif;font-size:12px;font-weight:800;color:#13234a;background:#FFD166;border:none;cursor:pointer;padding:8px 13px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);';
+    joinBtn.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;font-family:Verdana,sans-serif;font-size:12px;font-weight:800;color:#13234a;background:#FFD166;border:none;cursor:pointer;padding:7px 13px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);';   // sits in the top header band, clear of the map view
     joinBtn.onclick = openJoin;
     document.body.appendChild(joinBtn);
 

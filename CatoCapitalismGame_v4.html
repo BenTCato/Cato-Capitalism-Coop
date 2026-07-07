@@ -4847,9 +4847,10 @@ if(GFX.reduceMotion){ GFX.wind=false; GFX.ambientLife=false; GFX.camLerp=0; GFX.
 var WX={mode:'clear',until:0,next:Date.now()+90000+Math.random()*120000,storm:0,wet:0,snow:0,aut:0,sea:null};
 // ── SEASONS: a 10-minute year in four quarters (summer → autumn → winter → spring). Each season's
 //    strength is a triangle that peaks at its center and crossfades linearly into its neighbors, so
-//    weights always sum to 1 and nothing ever snaps. The year starts at mid-summer.
+//    weights always sum to 1 and nothing ever snaps. The year starts at mid-spring and runs
+//    spring → summer → autumn → winter, then repeats.
 function seasonNow(){
-  var ts=((((Date.now()-(GFX.day0||0))/((GFX.seasonSeconds||600)*1000))+0.375)%1+1)%1;
+  var ts=((((Date.now()-(GFX.day0||0))/((GFX.seasonSeconds||600)*1000))+0.125)%1+1)%1;
   function band(c){var d=Math.abs(ts-c);d=Math.min(d,1-d);return Math.max(0,1-d/0.25);}
   return {ts:ts,spr:band(0.125),sum:band(0.375),aut:band(0.625),win:band(0.875)};
 }

@@ -510,9 +510,9 @@
     .spray{transform-box:fill-box;transform-origin:50% 100%;animation:sprayPulse 1.9s ease-in-out infinite;}
     @keyframes sprayPulse{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.12) scaleX(.95)}}
     .no-wind .sway,.no-wind .cl,.no-wind .cl2,.no-wind .cl3,.no-wind .flow,.no-wind .smoke,.no-wind .riverflow,.no-wind .cloud-billow,.no-wind .ripple,.no-wind .duck,.no-wind .duck .duck-body,.no-wind .glint,.no-wind .lampglow,.no-wind .spray{animation:none!important;}
-    /* hard freeze: still water locks up, the fountain is winterized, ducks migrate, the rowboat is docked */
-    .frozen .ripple,.frozen .glint{animation:none!important;}
-    .frozen .spray,.frozen .duck,.frozen .boat{display:none;}
+    /* hard freeze: still water locks up, the fountain is winterized, ducks migrate, the rowboat is docked.
+       Ripples and glints hide entirely so no open-water motion shows through the translucent ice sheet. */
+    .frozen .ripple,.frozen .glint,.frozen .spray,.frozen .duck,.frozen .boat{display:none;}
     /* ice sheet: fades in over the pond and fountain basin as the freeze sets, thaws back out in spring */
     .pond-ice{opacity:0;transition:opacity 3s ease;pointer-events:none;}
     .frozen .pond-ice{opacity:.78;}
@@ -4410,13 +4410,13 @@ function buildWorld(tiers){
     RIVER=[
       {id:'river-log', x:RX-14,y:340, v:0.55,rot:1},
       {id:'river-boat',x:RX+15,y:1500,v:0.30,rot:1},
-      {id:'river-duck-0',x:RX-12,y:900, v:0.42,rot:0},
-      {id:'river-duck-1',x:RX+10,y:2200,v:0.38,rot:0}
+      {id:'river-duck-0',x:RX-4,y:900, v:0.42,rot:0},
+      {id:'river-duck-1',x:RX+2,y:2200,v:0.38,rot:0}
     ];
     w+='<g id="river-log" transform="translate('+(RX-14)+',340)"><rect x="-16" y="-5" width="32" height="10" rx="5" fill="#8A6038"/><circle cx="16" cy="0" r="5" fill="#A8794F"/><circle cx="16" cy="0" r="2.2" fill="#6E4E2E"/><path d="M-12,-1.5 h16 M-9,2 h12" stroke="#6E4E2E" stroke-width="1.2"/></g>';
     w+='<g id="river-boat" transform="translate('+(RX+15)+',1500)"><g class="boat"><path d="M-16,-4 Q0,12 16,-4 L11,-1 Q0,8 -11,-1 Z" fill="#A8794F" stroke="#6E4E2E" stroke-width="1.5"/><rect x="-7" y="-3" width="14" height="3" rx="1.5" fill="#C49A66"/><circle cx="0" cy="-8" r="4.5" fill="#E8B88A"/><rect x="-5" y="-6" width="10" height="7" rx="3" fill="#3E8EF7"/><path d="M-6,-3 L-20,4 M6,-3 L20,4" stroke="#8A6038" stroke-width="2" stroke-linecap="round"/></g></g>';
-    w+='<g id="river-duck-0" transform="translate('+(RX-12)+',900)">'+fduck(0,0)+'</g>';
-    w+='<g id="river-duck-1" transform="translate('+(RX+10)+',2200)">'+fduck(0,0,-13)+'</g>';
+    w+='<g id="river-duck-0" transform="translate('+(RX-4)+',900)">'+fduck(0,0)+'</g>';   // channel-center start: swim arc + eddy + trailing wake all stay on the water
+    w+='<g id="river-duck-1" transform="translate('+(RX+2)+',2200)">'+fduck(0,0,-13)+'</g>';
     var XR=[220,420,1337,2040,2280,2620], GH=36, FOOT=36;                  // road crossings (2620 = fairgrounds promenade bridge); FOOT = player origin→feet offset
     var edges=[-40]; XR.forEach(function(y){edges.push(y-GH,y+GH);}); edges.push(2820);
     // collision is shifted UP by FOOT so the walkable band lines up with the player's FEET (which render +34 below player.y):
@@ -5023,7 +5023,7 @@ function townTick(){
   var vbx=Math.max(0,Math.min(WORLD_W-VIEW_W,camCX-VIEW_W/2)), vby=Math.max(0,Math.min(WORLD_H-VIEW_H,camCY-VIEW_H/2));
   var _sx=0,_sy=0; if(_shakeUntil>Date.now()){ _sx=(Math.random()-0.5)*_shakeAmp; _sy=(Math.random()-0.5)*_shakeAmp; }
   TC.svg.setAttribute('viewBox',(vbx+_sx).toFixed(1)+' '+(vby+_sy).toFixed(1)+' '+VIEW_W+' '+VIEW_H);
-  if(PLACE){ updatePlaceGhost(); if(TC.pr)TC.pr.style.display='none'; if(IS_TOUCH){var _pab=document.getElementById('act-btn');if(_pab)_pab.classList.remove('show');} return; } // placement mode: ghost follows player, skip normal prompts
+  if(PLACE){ updatePlaceGhost(); if(TC.pr)TC.pr.style.display='none'; if(IS_TOUCH){var _pab=document.getElementById('act-btn');if(_pab)_pab.classList.remove('show');} } // placement mode: ghost follows player (ambient passes below keep running; interactive prompts are skipped after the lighting pass)
   // particles (pooled; stepped at half rate; camera-culled)
   if(tickFrame%GFX.fxEvery===0){
     if(!GFX.lowPower){                                                    // skip ambient spawns on weak devices; dust + coin still fire from their own call sites
@@ -5132,6 +5132,7 @@ function townTick(){
     // hard freeze: pond ripples and ducks lock in, the fountain is shut off for the season
     if(TC.svg)TC.svg.classList.toggle('frozen',sea.win>0.6||WX.snow>0.5);
   }
+  if(PLACE)return;   // placement mode: the living world above keeps ticking, but NPC wander and prompts pause here
   // NPC wander (idle life)
   if(GFX.wander&&!overlaysOpen()){
     const naN=nightAmount();
@@ -7867,7 +7868,7 @@ function continueTerm(){
   renderTown();showScreen('town');sfx('good');
   if(_wasLow)setTimeout(function(){ if(typeof toast==='function')toast('Your town steadied a little. Good answers this term will rebuild it.'); },400);
 }
-function startGame(){Q=dealTerm(null);S=freshState();shuffleMap=[];pendingNext=false;stateHistory=[];eventQueue=[];player.x=900+CORE_DX;player.y=700+CORE_DY;player.step=0;player.vx=0;player.vy=0;player.wasMoving=false;camCX=player.x;camCY=player.y;keysDown={};dlgOpen=false;GFX.day0=Date.now();buildDots();updateHUD(false);renderAvatar();updateScoreHUD();renderTown();showScreen('town');updateBackBtn();}
+function startGame(){Q=dealTerm(null);S=freshState();shuffleMap=[];pendingNext=false;stateHistory=[];eventQueue=[];player.x=900+CORE_DX;player.y=700+CORE_DY;player.step=0;player.vx=0;player.vy=0;player.wasMoving=false;camCX=player.x;camCY=player.y;keysDown={};dlgOpen=false;GFX.day0=Date.now();WX.mode='clear';WX.storm=0;WX.wet=0;WX.snow=0;WX.next=Date.now()+90000+Math.random()*120000;buildDots();updateHUD(false);renderAvatar();updateScoreHUD();renderTown();showScreen('town');updateBackBtn();}
 function restartGame(){const wrap=document.getElementById('creator-wrap'),slot=document.getElementById('creator-slot-title');if(wrap&&slot&&wrap.parentElement!==slot)slot.appendChild(wrap);showScreen('title');setTimeout(function(){renderAvatarPreview();renderAvCreator();},50);}
 
 // Init on page load

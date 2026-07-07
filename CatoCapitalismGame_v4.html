@@ -4723,9 +4723,14 @@ function buildExpansion(tiers){
   if(!ownsDistrict('north')) s+=forSaleSign(1800,330);
   else if(ownsDev('north_offices')) [220,420].forEach(function(y){s+=row(y,300,3300,250,function(x,b){return expOffice(x,b,2+(bi%2),bi++);});});
   else s+=readySign(1800,330);
-  // ── FAIRGROUNDS (bottom band): open build land. Attractions render wherever the player placed them. ──
-  s+='<text x="1160" y="2455" text-anchor="middle" font-size="30" font-weight="900" fill="#7A5AA8" opacity=".4" font-family="Verdana">🎡 FAIRGROUNDS 🎢</text>';
-  s+='<text x="1160" y="2495" text-anchor="middle" font-size="15" font-weight="700" fill="#7A5AA8" opacity=".5" font-family="Verdana">open build land</text>';
+  // ── FAIRGROUNDS (bottom band): open build land. Attractions render wherever the player placed them.
+  //    The FAIRGROUNDS signpost only shows while the land is still empty; once the player builds the
+  //    first attraction down here, the label disappears and the venues speak for themselves. ──
+  var fairBuilt=Object.keys(TOWN_ATTRACTIONS).some(function(ak){return ownsAttraction(ak)&&P&&P.town&&P.town.pos&&P.town.pos[ak];});
+  if(!fairBuilt){
+    s+='<text x="1160" y="2455" text-anchor="middle" font-size="30" font-weight="900" fill="#7A5AA8" opacity=".4" font-family="Verdana">🎡 FAIRGROUNDS 🎢</text>';
+    s+='<text x="1160" y="2495" text-anchor="middle" font-size="15" font-weight="700" fill="#7A5AA8" opacity=".5" font-family="Verdana">open build land</text>';
+  }
   Object.keys(TOWN_ATTRACTIONS).forEach(function(ak){ if(ownsAttraction(ak)&&P&&P.town&&P.town.pos&&P.town.pos[ak]){ var pos=P.town.pos[ak]; s+=expVenue(Object.assign({},TOWN_ATTRACTIONS[ak],{x:pos.x,y:pos.y})); } });
   // ── DESIGNED small features: lamps line the ROADS, benches live only in PARKS (with shade + flowers),
   //    and open fields get natural greenery (trees/bushes/rocks/flowers) jittered off the grid so nothing

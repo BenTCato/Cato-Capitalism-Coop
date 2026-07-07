@@ -4425,7 +4425,8 @@ function buildWorld(tiers){
   w+=ftree(150,180,1.1)+ftree(640,140,0.9)+ftree(1060,180,1.2)+ftree(120,760,1)+ftree(560,640,0.85)+ftree(1140,920,1.1)+ftree(240,700,0.95)+ftree(1240,1060,1)+ftree(80,440,0.85)+ftree(980,120,1)+ftree(1420,120,1.05)+ftree(40,950,0.9)+ftree(520,1120,1)+ftree(60,90,0.8);  // (removed 3 trees that sat in the river corridor: core x1660/1700/1760)
   w+=fbush(700,420,1)+fbush(1170,648,0.9)+fbush(480,760,1.1)+fbush(1480,560,0.9)+fbush(220,840,1);
   w+=frock(1080,820,1)+frock(1500,980,0.9)+frock(640,920,0.8)+frock(1380,180,1.1);
-  if(tiers.avg===2){const fcl=function(x,y,sc){return '<g transform="translate('+x+','+y+') scale('+sc+')" fill="rgba(255,255,255,.95)"><ellipse cx="0" cy="0" rx="32" ry="12"/><ellipse cx="-20" cy="-7" rx="19" ry="9"/><ellipse cx="15" cy="-8" rx="21" ry="10"/><ellipse cx="-2" cy="-12" rx="14" ry="8"/></g>';};w+=fcl(300,72,1)+fcl(1200,100,1.15)+fcl(800,52,0.85);}
+  // (the three static decorative clouds that used to float over the school/hall/houses at top tier are
+  //  removed — the real wind-driven cloud system handles the sky now)
   // every answer visibly changes the town: flowers track happiness, litter tracks decline
   const FLOWER_SPOTS=[[560,480],[1180,380],[760,760],[1040,480],[420,620],[980,840],[1240,560],[640,560],[860,900],[1380,460]];
   const flowerN=Math.round(((tiers.hVal||65)/100)*FLOWER_SPOTS.length);

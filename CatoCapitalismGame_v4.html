@@ -800,7 +800,7 @@
   <div class="town-statstrip" id="town-statstrip"></div>
   <div class="town-viewport"><div id="town-map"></div><div class="vignette"></div>
     <div id="dlg" class="dlg"><div class="dlg-card">
-      <div class="dlg-head"><span class="dlg-ico" id="dlg-icon">🏫</span><div style="flex:1;min-width:0;"><div class="dlg-name" id="dlg-name">Maya</div><div class="dlg-tagline" id="dlg-tag">Education Policy</div></div><button class="dlg-x" onclick="closeDialog()">✕</button></div>
+      <div class="dlg-head"><span class="dlg-ico" id="dlg-icon">🏫</span><div style="flex:1;min-width:0;"><div class="dlg-name" id="dlg-name">Ben</div><div class="dlg-tagline" id="dlg-tag">Education Policy</div></div><button class="dlg-x" onclick="closeDialog()">✕</button></div>
       <div class="dlg-line" id="dlg-line"></div>
       <div class="dlg-hint" id="dlg-hint" style="display:none;"></div>
       <div class="dlg-body" id="dlg-body"></div>
@@ -4212,19 +4212,20 @@ const NPC_LINES=[
 ["Hey! You're the leader, right? Cool!","I was just skateboarding by. But wait!","My mom says you make the big choices.","Whoa, it's really you! Okay, quick question.","Kids talk about this stuff too, you know!","When I grow up, I want your job. So teach me!","Nobody listens to kids. But you will, right?","This fountain is my favorite spot. Yours too?","I heard grown-ups arguing about this.","Race you to the fountain! After this question."]
 ];
 
-const CIT_NAMES=['Maya','Theo','Lena','Prof. Ruiz','Sam','Ana','Ivy','Mr. Okafor','June','Felix'];
+const CIT_NAMES=['Ben','Daire','Anna','Jessie','Tanisha','Sam','Valentina','Cortez','Teddy','Trenton'];   // fixed roster: each citizen keeps their name in every term
 // deterministic per-citizen identity (Blender skill: parametric variation)
 const NPC_CFG=[
-  {skin:1,hair:4,hairColor:2,beard:0,glasses:0,outfit:2,extra:4},
-  {skin:3,hair:0,hairColor:0,beard:2,glasses:2,outfit:0,extra:0},
-  {skin:0,hair:3,hairColor:4,beard:0,glasses:0,outfit:4,extra:0},
-  {skin:5,hair:6,hairColor:6,beard:3,glasses:1,outfit:3,extra:0},
-  {skin:2,hair:1,hairColor:1,beard:0,glasses:0,outfit:1,extra:1},
-  {skin:4,hair:2,hairColor:0,beard:0,glasses:0,outfit:5,extra:0},
-  {skin:0,hair:5,hairColor:5,beard:0,glasses:0,outfit:2,extra:3},
-  {skin:6,hair:0,hairColor:0,beard:1,glasses:2,outfit:0,extra:0},
-  {skin:2,hair:3,hairColor:3,beard:0,glasses:0,outfit:4,extra:0},
-  {skin:3,hair:7,hairColor:5,beard:0,glasses:0,outfit:1,extra:0}
+  // matched to CIT_NAMES: hair 0 Short/1 Swoop/2 Curly/3 Bun/4 Long/5 Ponytail/6 Buzz/7 Spiky; extras 1 Cap/4 Flower
+  {skin:1,hair:0,hairColor:2,beard:0,glasses:0,outfit:2,extra:1},   // Ben (m): short hair + cap
+  {skin:3,hair:0,hairColor:0,beard:2,glasses:2,outfit:0,extra:0},   // Daire (m): short hair + goatee
+  {skin:0,hair:3,hairColor:4,beard:0,glasses:0,outfit:4,extra:0},   // Anna (f): bun
+  {skin:5,hair:4,hairColor:6,beard:0,glasses:1,outfit:3,extra:0},   // Jessie (f): long hair + glasses (the professor)
+  {skin:2,hair:5,hairColor:1,beard:0,glasses:0,outfit:1,extra:4},   // Tanisha (f): ponytail + flower
+  {skin:4,hair:2,hairColor:0,beard:0,glasses:0,outfit:5,extra:0},   // Sam (m): curly
+  {skin:0,hair:5,hairColor:5,beard:0,glasses:0,outfit:2,extra:3},   // Valentina (f): ponytail + headphones
+  {skin:6,hair:0,hairColor:0,beard:1,glasses:2,outfit:0,extra:0},   // Cortez (m): short hair + mustache
+  {skin:2,hair:0,hairColor:3,beard:0,glasses:0,outfit:4,extra:0},   // Teddy (m): short hair
+  {skin:3,hair:7,hairColor:5,beard:0,glasses:0,outfit:1,extra:0}    // Trenton (m): spiky
 ];
 function npcSVG(i,answered){
   const p=NPC_POS[i],cfg=NPC_CFG[i%NPC_CFG.length],skin=SKIN[cfg.skin].c,pant=SPRITE.pants[cfg.outfit]||'#3B4252';

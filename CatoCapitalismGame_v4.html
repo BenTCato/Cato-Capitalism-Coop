@@ -510,9 +510,12 @@
     .spray{transform-box:fill-box;transform-origin:50% 100%;animation:sprayPulse 1.9s ease-in-out infinite;}
     @keyframes sprayPulse{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.12) scaleX(.95)}}
     .no-wind .sway,.no-wind .cl,.no-wind .cl2,.no-wind .cl3,.no-wind .flow,.no-wind .smoke,.no-wind .riverflow,.no-wind .cloud-billow,.no-wind .ripple,.no-wind .duck,.no-wind .duck .duck-body,.no-wind .glint,.no-wind .lampglow,.no-wind .spray{animation:none!important;}
-    /* hard freeze: still water locks up and the fountain is winterized */
-    .frozen .ripple,.frozen .duck,.frozen .duck .duck-body{animation:none!important;}
-    .frozen .spray{display:none;}
+    /* hard freeze: still water locks up, the fountain is winterized, ducks migrate, the rowboat is docked */
+    .frozen .ripple,.frozen .glint{animation:none!important;}
+    .frozen .spray,.frozen .duck,.frozen .boat{display:none;}
+    /* ice sheet: fades in over the pond and fountain basin as the freeze sets, thaws back out in spring */
+    .pond-ice{opacity:0;transition:opacity 3s ease;pointer-events:none;}
+    .frozen .pond-ice{opacity:.78;}
     @media (prefers-reduced-motion: reduce){.sway,.flow,.riverflow,.cloud-billow,.ripple,.duck,.duck .duck-body,.glint,.lampglow,.spray{animation:none!important;}}
     .dlg{display:none;position:absolute;left:0;right:0;bottom:0;z-index:20;padding:10px;}
     .dlg.open{display:block;animation:fadeUp .22s ease;}
@@ -4189,6 +4192,7 @@ function fountainB(x,y,t){reg(x-58,y-18,116,40);
   s+='<ellipse cx="0" cy="12" rx="58" ry="21" fill="'+(t===2?'#E8E4D8':'#9AA0A6')+'"/>';
   s+='<ellipse cx="0" cy="9" rx="47" ry="15" fill="'+(t===0?'#6E7B79':AP.water)+'"/>';
   if(t>0)s+='<ellipse cx="-13" cy="5" rx="13" ry="4" fill="rgba(255,255,255,.55)"/>';
+  s+='<ellipse class="pond-ice" cx="0" cy="9" rx="47" ry="15" fill="#DDE9F2"/>';   // fountain basin ices over in a hard freeze
   s+='<ellipse cx="0" cy="-2" rx="13" ry="5" fill="'+(t===2?'#E8E4D8':'#9AA0A6')+'"/>';
   if(t===2)s+='<g class="spray"><path d="M0,-4 Q-13,-26 -20,-12 M0,-6 Q0,-32 0,-14 M0,-4 Q13,-26 20,-12" stroke="#FFFFFF" stroke-width="4" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="-22" cy="-8" r="2" fill="#fff" opacity=".7"/><circle cx="22" cy="-8" r="2" fill="#fff" opacity=".7"/></g>';
   if(t===1)s+='<g class="spray"><path d="M0,-6 Q0,-18 0,-10" stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/></g>';
@@ -4340,7 +4344,8 @@ function buildWorld(tiers){
   // as their energy spreads over a growing circumference, plus sun glints that twinkle with the wavelets
   w+='<ellipse cx="350" cy="1010" rx="120" ry="64" fill="'+AP.water2+'"/><ellipse cx="350" cy="1006" rx="104" ry="52" fill="'+AP.water+'"/>'+
      '<g style="pointer-events:none;"><ellipse class="ripple" cx="350" cy="1006" rx="88" ry="42" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.6"/><ellipse class="ripple r2" cx="350" cy="1006" rx="88" ry="42" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.4"/><ellipse class="ripple r3" cx="350" cy="1006" rx="88" ry="42" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.2"/></g>'+
-     '<ellipse class="glint" cx="320" cy="990" rx="24" ry="8" fill="rgba(255,255,255,.4)"/><ellipse class="glint g2" cx="384" cy="1018" rx="13" ry="5" fill="rgba(255,255,255,.35)"/><ellipse class="glint g3" cx="336" cy="1032" rx="9" ry="3.5" fill="rgba(255,255,255,.3)"/>';
+     '<ellipse class="glint" cx="320" cy="990" rx="24" ry="8" fill="rgba(255,255,255,.4)"/><ellipse class="glint g2" cx="384" cy="1018" rx="13" ry="5" fill="rgba(255,255,255,.35)"/><ellipse class="glint g3" cx="336" cy="1032" rx="9" ry="3.5" fill="rgba(255,255,255,.3)"/>'+
+     '<g class="pond-ice"><ellipse cx="350" cy="1006" rx="104" ry="52" fill="#DDE9F2"/><path d="M308,994 l26,11 M352,1022 l22,-9 M330,1006 l-14,14" stroke="rgba(255,255,255,.7)" stroke-width="2" stroke-linecap="round"/></g>';   // winter ice sheet with surface cracks
   reg(232,942,238,132);
   w+='<rect x="404" y="978" width="64" height="16" rx="3" fill="#A8794F"/>'+fduck(312,1014)+fduck(352,1032,-9);
   // districts
@@ -4398,6 +4403,20 @@ function buildWorld(tiers){
     w+='<path class="riverflow" d="M'+(RX-11)+',-40 q-6,120 0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240" stroke="rgba(255,255,255,.34)" stroke-width="3.5" fill="none" stroke-linecap="round"/>';
     w+='<path class="riverflow" style="animation-duration:2.7s" d="M'+(RX+12)+',-140 q6,120 0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240" stroke="rgba(255,255,255,.26)" stroke-width="3" fill="none" stroke-linecap="round"/>';
     w+='<path class="shimmer" d="M'+(RX-2)+',420 q-4,50 0,100 M'+(RX+4)+',1420 q4,50 0,100 M'+(RX-3)+',2320 q-4,50 0,100" stroke="rgba(255,255,255,.4)" stroke-width="4" fill="none" stroke-linecap="round"/>';
+    // river life: everything floats DOWNSTREAM with the current; speed differs with draft (the low log
+    // rides faster water than the deep-hulled rowboat), and townTick adds a gentle eddy sway + wrap.
+    // Drawn BEFORE the bridges below, so drifting items pass UNDER the bridge decks, not over them.
+    // Ducks sit close to the channel center so their swim arc (±24px CSS + ±3px eddy) never leaves the water.
+    RIVER=[
+      {id:'river-log', x:RX-14,y:340, v:0.55,rot:1},
+      {id:'river-boat',x:RX+15,y:1500,v:0.30,rot:1},
+      {id:'river-duck-0',x:RX-12,y:900, v:0.42,rot:0},
+      {id:'river-duck-1',x:RX+10,y:2200,v:0.38,rot:0}
+    ];
+    w+='<g id="river-log" transform="translate('+(RX-14)+',340)"><rect x="-16" y="-5" width="32" height="10" rx="5" fill="#8A6038"/><circle cx="16" cy="0" r="5" fill="#A8794F"/><circle cx="16" cy="0" r="2.2" fill="#6E4E2E"/><path d="M-12,-1.5 h16 M-9,2 h12" stroke="#6E4E2E" stroke-width="1.2"/></g>';
+    w+='<g id="river-boat" transform="translate('+(RX+15)+',1500)"><g class="boat"><path d="M-16,-4 Q0,12 16,-4 L11,-1 Q0,8 -11,-1 Z" fill="#A8794F" stroke="#6E4E2E" stroke-width="1.5"/><rect x="-7" y="-3" width="14" height="3" rx="1.5" fill="#C49A66"/><circle cx="0" cy="-8" r="4.5" fill="#E8B88A"/><rect x="-5" y="-6" width="10" height="7" rx="3" fill="#3E8EF7"/><path d="M-6,-3 L-20,4 M6,-3 L20,4" stroke="#8A6038" stroke-width="2" stroke-linecap="round"/></g></g>';
+    w+='<g id="river-duck-0" transform="translate('+(RX-12)+',900)">'+fduck(0,0)+'</g>';
+    w+='<g id="river-duck-1" transform="translate('+(RX+10)+',2200)">'+fduck(0,0,-13)+'</g>';
     var XR=[220,420,1337,2040,2280,2620], GH=36, FOOT=36;                  // road crossings (2620 = fairgrounds promenade bridge); FOOT = player origin→feet offset
     var edges=[-40]; XR.forEach(function(y){edges.push(y-GH,y+GH);}); edges.push(2820);
     // collision is shifted UP by FOOT so the walkable band lines up with the player's FEET (which render +34 below player.y):
@@ -4408,18 +4427,6 @@ function buildWorld(tiers){
       w+='<path d="M'+(RX-96)+','+(y+30)+' L'+(RX+96)+','+(y+30)+'" stroke="#8A6038" stroke-width="7" stroke-linecap="round"/>';
       for(var p=0;p<6;p++){var px=(RX-92)+p*37;w+='<rect x="'+px+'" y="'+(y-37)+'" width="6" height="13" rx="2" fill="#6E4E2E"/><rect x="'+px+'" y="'+(y+24)+'" width="6" height="13" rx="2" fill="#6E4E2E"/>';}
     });
-    // river life: everything floats DOWNSTREAM with the current; speed differs with draft (the low log
-    // rides faster water than the deep-hulled rowboat), and townTick adds a gentle eddy sway + wrap.
-    RIVER=[
-      {id:'river-log', x:RX-14,y:340, v:0.55,rot:1},
-      {id:'river-boat',x:RX+15,y:1500,v:0.30,rot:1},
-      {id:'river-duck-0',x:RX-22,y:900, v:0.42,rot:0},
-      {id:'river-duck-1',x:RX+24,y:2200,v:0.38,rot:0}
-    ];
-    w+='<g id="river-log" transform="translate('+(RX-14)+',340)"><rect x="-16" y="-5" width="32" height="10" rx="5" fill="#8A6038"/><circle cx="16" cy="0" r="5" fill="#A8794F"/><circle cx="16" cy="0" r="2.2" fill="#6E4E2E"/><path d="M-12,-1.5 h16 M-9,2 h12" stroke="#6E4E2E" stroke-width="1.2"/></g>';
-    w+='<g id="river-boat" transform="translate('+(RX+15)+',1500)"><path d="M-16,-4 Q0,12 16,-4 L11,-1 Q0,8 -11,-1 Z" fill="#A8794F" stroke="#6E4E2E" stroke-width="1.5"/><rect x="-7" y="-3" width="14" height="3" rx="1.5" fill="#C49A66"/><circle cx="0" cy="-8" r="4.5" fill="#E8B88A"/><rect x="-5" y="-6" width="10" height="7" rx="3" fill="#3E8EF7"/><path d="M-6,-3 L-20,4 M6,-3 L20,4" stroke="#8A6038" stroke-width="2" stroke-linecap="round"/></g>';
-    w+='<g id="river-duck-0" transform="translate('+(RX-22)+',900)">'+fduck(0,0)+'</g>';
-    w+='<g id="river-duck-1" transform="translate('+(RX+24)+',2200)">'+fduck(0,0,-13)+'</g>';
   })();
   w+=buildExpansion(tiers);
   // puddles: pre-placed low spots along the streets; invisible until rain fills them (lighting pass
@@ -4808,7 +4815,7 @@ function renderTown(){
   if(strip){strip.innerHTML=[['😊',st.h],['💰',st.e],['📚',st.ed],['🗽',st.f]].map(function(r){
       const cls=r[1]<=THRESHOLD?'critical':r[1]<=50?'bad':r[1]<=70?'ok':'great';
       return '<div class="tstat"><span>'+r[0]+'</span><div class="tstat-track"><div class="bar '+cls+'" style="width:'+r[1]+'%"></div></div><b>'+r[1]+'%</b></div>';}).join('');}
-  npcState=NPC_POS.map(function(p,i){return {x:p[0],y:p[1],hx:p[0],hy:p[1],tx:p[0],ty:p[1],wait:60+(i*37)%160,el:null,bel:null,face:1,step:0,greet:0};});
+  npcState=NPC_POS.map(function(p,i){return {x:p[0],y:p[1],hx:p[0],hy:p[1],tx:p[0],ty:p[1],wait:60+(i*37)%160,el:null,bel:null,face:1,fs:1,step:0,greet:0};});   // fs = smoothed facing, so citizens pivot through turns like the player does
   TC={svg:document.getElementById('town-world'),pg:document.getElementById('player-g'),inner:document.getElementById('player-inner'),
       l1:document.getElementById('pleg1'),l2:document.getElementById('pleg2'),pr:document.getElementById('prompt-g'),
       ptxt:document.getElementById('prompt-txt'),fx:document.getElementById('fx-layer'),night:document.getElementById('night-rect'),bob:document.getElementById('player-bob'),
@@ -4816,7 +4823,7 @@ function renderTown(){
   npcState.forEach(function(n,i){n.el=document.getElementById('npc-'+i);n.bel=document.getElementById('npc-body-'+i);});
   TC.baseGrade=GFX.grade[tiers.avg];                      // day/night lighting multiplies on top of this policy-driven grade
   if(TC.svg)TC.svg.style.filter=TC.baseGrade;
-  TC.cloudEls=null;TC.riverEls=null;TC.carEls=null;TC.heads=null;TC._stq=-1;TC._leafCol='';   // re-cache animated nodes after every rebuild
+  TC.cloudEls=null;TC.riverEls=null;TC.carEls=null;TC.heads=null;TC._stq=-1;TC._leafCol='';TC._dustCol='';   // re-cache animated nodes after every rebuild
   TC.puddleG=document.getElementById('puddle-g');
   TC.snowRect=document.getElementById('snow-rect');
   TC.wildG=document.getElementById('wildflower-g');
@@ -4982,9 +4989,10 @@ function townTick(){
       const spd=Math.abs(dx)+Math.abs(dy);
       player.step+=spd; FX.distMoved+=spd;
       if(FX.distMoved>26){FX.distMoved=0;
-        // footsteps react to the ground: splashes on wet ground, kicked-up grass most of the time, dust otherwise
+        // footsteps react to the ground: splashes when wet, powder kicks on snowpack (dust turns white
+        // via the lighting pass), grass flecks on turf, plain dust otherwise
         if(WX.wet>0.4)fxSpawn(FX.drop,player.x-player.dir*6,player.y+30,-player.dir*0.5,-0.9,0.5);
-        else if(Math.random()<0.3)fxSpawn(FX.leaf,player.x-player.dir*8,player.y+28,-player.dir*0.5,-0.5,0.5);
+        else if(WX.snow<0.5&&Math.random()<0.3)fxSpawn(FX.leaf,player.x-player.dir*8,player.y+28,-player.dir*0.5,-0.5,0.5);
         else fxSpawn(FX.dust,player.x-player.dir*8,player.y+28,-player.dir*0.4,-0.25,0.7);}
       player.moving=spd>0.2;
     }else player.moving=false;
@@ -5023,9 +5031,10 @@ function townTick(){
       if(TC.fountainTier===2&&tickFrame%8===0&&Math.abs((900+CORE_DX)-player.x)<VIEW_W&&Math.abs((600+CORE_DY)-player.y)<VIEW_H)
         fxSpawn(FX.drop,(895+CORE_DX)+Math.random()*10,(576+CORE_DY),(Math.random()-0.5)*1.6,-1.4-Math.random(),0.9);
       const na=nightAmount();
-      if(na>0.45&&tickFrame%14===0)fxSpawn(FX.fly,camX()+Math.random()*VIEW_W,camY()+120+Math.random()*(VIEW_H-200),(Math.random()-0.5)*0.6,(Math.random()-0.5)*0.4,1.4);
-      if(GFX.ambientLife&&na<0.4&&tickFrame%22===0)fxSpawn(FX.fly,camX()+40+Math.random()*(VIEW_W-80),camY()+90+Math.random()*(VIEW_H-170),(Math.random()-0.5)*0.5,-0.2-Math.random()*0.3,1.2); // daytime butterflies drifting up
-      if(GFX.ambientLife&&na<0.35&&WX.storm<0.3&&tickFrame%460===0){var _by=camY()+50+Math.random()*150;for(var _bi=0;_bi<3;_bi++)fxSpawn(FX.bird,camX()-24-_bi*30,_by+_bi*13,2.1+Math.random()*0.4,-0.04+Math.random()*0.08,2.2);}   // a small skein of birds glides across by day (they shelter in storms)
+      var _win=WX.sea?WX.sea.win:0;   // cold-blooded and migratory life disappears for the winter
+      if(na>0.45&&_win<0.5&&WX.storm<0.5&&tickFrame%14===0)fxSpawn(FX.fly,camX()+Math.random()*VIEW_W,camY()+120+Math.random()*(VIEW_H-200),(Math.random()-0.5)*0.6,(Math.random()-0.5)*0.4,1.4);   // fireflies: warm clear nights only
+      if(GFX.ambientLife&&na<0.4&&_win<0.5&&WX.storm<0.3&&tickFrame%22===0)fxSpawn(FX.fly,camX()+40+Math.random()*(VIEW_W-80),camY()+90+Math.random()*(VIEW_H-170),(Math.random()-0.5)*0.5,-0.2-Math.random()*0.3,1.2); // butterflies: warm dry days only
+      if(GFX.ambientLife&&na<0.35&&_win<0.5&&WX.storm<0.3&&tickFrame%460===0){var _by=camY()+50+Math.random()*150;for(var _bi=0;_bi<3;_bi++)fxSpawn(FX.bird,camX()-24-_bi*30,_by+_bi*13,2.1+Math.random()*0.4,-0.04+Math.random()*0.08,2.2);}   // birds shelter in storms and migrate for winter
       if(WX.storm>0.35){
         if(WX.sea&&WX.sea.win>0.5){   // winter fronts: snowflakes drift down slowly, wandering with the air
           for(var _si=0;_si<2;_si++)fxSpawn(FX.snow,camX()+Math.random()*VIEW_W,camY()-12,(Math.random()-0.5)*0.5,0.8+Math.random()*0.6,1.3);
@@ -5114,6 +5123,9 @@ function townTick(){
     // falling bits match the season: green leaves, orange leaves, pink blossom petals
     if(FX.leaf&&FX.leaf.length){var lc=lerpHex(lerpHex('#8FBF6E','#D9822B',sea.aut),'#F5A8C6',sea.spr);
       if(TC._leafCol!==lc){TC._leafCol=lc;for(var lfi=0;lfi<FX.leaf.length;lfi++)if(FX.leaf[lfi].el)FX.leaf[lfi].el.setAttribute('fill',lc);}}
+    // footstep dust whitens with the snowpack (kicked powder instead of brown dirt)
+    if(FX.dust&&FX.dust.length){var dc=lerpHex('#C9BCA4','#F6FAFF',WX.snow);
+      if(TC._dustCol!==dc){TC._dustCol=dc;for(var dci=0;dci<FX.dust.length;dci++)if(FX.dust[dci].el)FX.dust[dci].el.setAttribute('fill',dc);}}
     // snowpack whitens the ground (roads stay plowed); wildflowers carpet the grass in spring
     if(TC.snowRect)TC.snowRect.setAttribute('opacity',(WX.snow*0.6).toFixed(2));
     if(TC.wildG)TC.wildG.setAttribute('opacity',(sea.spr*(1-WX.snow)).toFixed(2));
@@ -5145,8 +5157,11 @@ function townTick(){
         else{const sp2=GFX.wanderSpeed*(1+WX.storm*0.9)*dt;const wx=n.x+ddx/dd*sp2,wy=n.y+ddy/dd*sp2;if(collides(wx,wy)){n.tx=n.hx;n.ty=n.hy;}else{n.x=wx;n.y=wy;n.step+=sp2;stepped=true;if(Math.abs(ddx)>0.5)n.face=ddx>0?1:-1;}}
       }
       n.el.setAttribute('transform','translate('+n.x.toFixed(1)+','+n.y.toFixed(1)+') scale(0.92)');
-      // walk cycle: the body bobs with each stride and faces its travel direction (speech bubble stays unmirrored)
-      if(n.bel)n.bel.setAttribute('transform','translate(0,'+(stepped?(Math.sin(n.step/9)*1.3).toFixed(2):'0')+') scale('+(n.face||1)+',1)');
+      // walk cycle: the body bobs with each stride and faces its travel direction (speech bubble stays
+      // unmirrored). Facing is smoothed, so a citizen pivots through the turn instead of snap-flipping.
+      n.fs=(n.fs===undefined?(n.face||1):n.fs)+((n.face||1)-(n.fs===undefined?(n.face||1):n.fs))*Math.min(1,0.25*dt);
+      if(Math.abs(n.fs)<0.08)n.fs=0.08*(n.face||1);
+      if(n.bel)n.bel.setAttribute('transform','translate(0,'+(stepped?(Math.sin(n.step/9)*1.3).toFixed(2):'0')+') scale('+n.fs.toFixed(3)+',1)');
     }
   }
   // proximity (live positions)

@@ -510,6 +510,9 @@
     .spray{transform-box:fill-box;transform-origin:50% 100%;animation:sprayPulse 1.9s ease-in-out infinite;}
     @keyframes sprayPulse{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.12) scaleX(.95)}}
     .no-wind .sway,.no-wind .cl,.no-wind .cl2,.no-wind .cl3,.no-wind .flow,.no-wind .smoke,.no-wind .riverflow,.no-wind .cloud-billow,.no-wind .ripple,.no-wind .duck,.no-wind .duck .duck-body,.no-wind .glint,.no-wind .lampglow,.no-wind .spray{animation:none!important;}
+    /* hard freeze: still water locks up and the fountain is winterized */
+    .frozen .ripple,.frozen .duck,.frozen .duck .duck-body{animation:none!important;}
+    .frozen .spray{display:none;}
     @media (prefers-reduced-motion: reduce){.sway,.flow,.riverflow,.cloud-billow,.ripple,.duck,.duck .duck-body,.glint,.lampglow,.spray{animation:none!important;}}
     .dlg{display:none;position:absolute;left:0;right:0;bottom:0;z-index:20;padding:10px;}
     .dlg.open{display:block;animation:fadeUp .22s ease;}
@@ -4309,6 +4312,19 @@ function buildWorld(tiers){
   let w=treeDefs()+worldDefs();
   w+='<rect width="'+WORLD_W+'" height="'+WORLD_H+'" fill="'+AP.grass+'"/>';
   for(let i=0;i<260;i++){const gx=(i*457)%WORLD_W,gy=(i*331)%WORLD_H;w+='<ellipse cx="'+gx+'" cy="'+gy+'" rx="'+(46+(i%4)*20)+'" ry="'+(20+(i%3)*8)+'" fill="'+AP.grass2+'"/>';}
+  // winter snowpack: a ground-level white layer that the lighting pass fades in as snow accumulates.
+  // It sits UNDER roads and buildings, so streets stay plowed and rooftops stay clear while lawns whiten.
+  w+='<rect id="snow-rect" width="'+WORLD_W+'" height="'+WORLD_H+'" fill="#F4F8FC" opacity="0"/>';
+  // spring wildflowers: a deterministic scatter across the grass, invisible outside spring. Drawn under
+  // the roads/buildings layers, so blooms never sit on pavement.
+  w+='<g id="wildflower-g" opacity="0">';
+  (function(){var WCOL=['#FF8FAB','#FFC93C','#A78BFA','#FF6B6B','#7FD1AE'];
+    for(var wf=0;wf<90;wf++){var wx2=(wf*577+130)%3480+60,wy2=(wf*911+210)%2660+70;
+      if(wx2>2450&&wx2<2670)continue;   // keep out of the river corridor
+      w+='<circle cx="'+wx2+'" cy="'+wy2+'" r="3" fill="'+WCOL[wf%5]+'"/><circle cx="'+wx2+'" cy="'+wy2+'" r="1.2" fill="#FFF7D6"/>';
+      if(wf%3===0)w+='<circle cx="'+(wx2+9)+'" cy="'+(wy2+5)+'" r="2.4" fill="'+WCOL[(wf+2)%5]+'"/>';
+    }})();
+  w+='</g>';
   REG_DX=CORE_DX;REG_DY=CORE_DY;w+='<g transform="translate('+CORE_DX+','+CORE_DY+')">';  // ↓ downtown core, shifted to map center
   w+=roadsSVG(['M900,640 Q880,480 860,420 Q840,330 760,300',
     'M900,640 Q1080,560 1240,420 Q1300,380 1330,360',
@@ -4801,6 +4817,8 @@ function renderTown(){
   if(TC.svg)TC.svg.style.filter=TC.baseGrade;
   TC.cloudEls=null;TC.riverEls=null;TC.carEls=null;TC.heads=null;TC._stq=-1;TC._leafCol='';   // re-cache animated nodes after every rebuild
   TC.puddleG=document.getElementById('puddle-g');
+  TC.snowRect=document.getElementById('snow-rect');
+  TC.wildG=document.getElementById('wildflower-g');
   // windows: every glass pane gets its own light-up threshold, so at dusk the town lights up window by window
   TC.winEls=TC.svg?Array.prototype.slice.call(TC.svg.querySelectorAll('rect[fill="url(#glass)"]')):[];
   TC.winEls.forEach(function(el,i){el._th=0.42+((i*137)%97)/97*0.38;el._lit=false;});
@@ -4814,7 +4832,7 @@ function renderTown(){
   ensureTownLoop();
 }
 // GFX engine config (skill: never hardcode values)
-const GFX={daySeconds:140,seasonSeconds:780,speed:7.2,dtMin:1,dtMax:3,lightEvery:24,fxEvery:2,wander:true,wanderSpeed:0.55,wanderRange:44,
+const GFX={daySeconds:140,seasonSeconds:600,speed:7.2,dtMin:1,dtMax:3,lightEvery:24,fxEvery:2,wander:true,wanderSpeed:0.55,wanderRange:44,
   reduceMotion:(typeof window!=='undefined'&&window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)||false,
   camLerp:0.14, lookAhead:56, accel:0.9, friction:0.80, wind:true, windSpeed:0.0016, windAmp:0.06, ambientLife:true, lowPower:false,
   grade:['saturate(.55) contrast(.96) brightness(.95)','saturate(.92)','saturate(1.07) brightness(1.02)'],
@@ -4826,14 +4844,32 @@ if(GFX.reduceMotion){ GFX.wind=false; GFX.ambientLife=false; GFX.camLerp=0; GFX.
 // ── WEATHER: a simple front system. Clear skies give way to a rain shower every few minutes; storm
 //    ramps in over ~10s (fronts arrive gradually), ground wetness accumulates while it rains and
 //    puddles linger after the sky clears (evaporation is slower than rainfall).
-var WX={mode:'clear',until:0,next:Date.now()+90000+Math.random()*120000,storm:0,wet:0,aut:0};
+var WX={mode:'clear',until:0,next:Date.now()+90000+Math.random()*120000,storm:0,wet:0,snow:0,aut:0,sea:null};
+// ── SEASONS: a 10-minute year in four quarters (summer → autumn → winter → spring). Each season's
+//    strength is a triangle that peaks at its center and crossfades linearly into its neighbors, so
+//    weights always sum to 1 and nothing ever snaps. The year starts at mid-summer.
+function seasonNow(){
+  var ts=((((Date.now()-(GFX.day0||0))/((GFX.seasonSeconds||600)*1000))+0.375)%1+1)%1;
+  function band(c){var d=Math.abs(ts-c);d=Math.min(d,1-d);return Math.max(0,1-d/0.25);}
+  return {ts:ts,spr:band(0.125),sum:band(0.375),aut:band(0.625),win:band(0.875)};
+}
 function wxTick(now,dt){
-  if(GFX.lowPower||GFX.reduceMotion){WX.storm=0;WX.wet=0;return;}
+  WX.sea=seasonNow();
+  if(GFX.lowPower||GFX.reduceMotion){WX.storm=0;WX.wet=0;WX.snow=0;return;}
   if(WX.mode==='clear'&&now>WX.next){WX.mode='rain';WX.until=now+26000+Math.random()*14000;}
-  if(WX.mode==='rain'&&now>WX.until){WX.mode='clear';WX.next=now+150000+Math.random()*180000;}
+  if(WX.mode==='rain'&&now>WX.until){WX.mode='clear';
+    var gap=150000+Math.random()*180000;
+    WX.next=now+gap*(WX.sea.spr>0.5?0.35:1);                      // spring: showers come nearly 3x as often
+  }
   var tgt=(WX.mode==='rain')?1:0;
   WX.storm+=(tgt-WX.storm)*Math.min(1,0.012*dt);
-  if(WX.mode==='rain')WX.wet=Math.min(1,WX.wet+0.0012*dt);else WX.wet=Math.max(0,WX.wet-0.00035*dt);
+  // precipitation: winter fronts snow instead of rain; snow piles up on the ground while rain only wets it
+  if(WX.mode==='rain'){
+    if(WX.sea.win>0.5)WX.snow=Math.min(1,WX.snow+0.0009*dt);
+    else WX.wet=Math.min(1,WX.wet+0.0012*dt);
+  } else WX.wet=Math.max(0,WX.wet-0.00035*dt);
+  // snowpack persists through winter and melts once spring warmth arrives
+  if(WX.sea.win<0.4)WX.snow=Math.max(0,WX.snow-(0.00025+WX.sea.spr*0.0007)*dt);
 }
 // ── RIVER LIFE: floating things ride the current downstream at slightly different speeds (drag
 //    depends on draft), sway a little with eddies, and re-enter upstream after leaving the map.
@@ -4867,7 +4903,7 @@ function carsSVG(){
 let TC={}; // cached node refs (skill: cache, never query in the update loop)
 let lastTick=0,tickFrame=0;
 const FXNS='http://www.w3.org/2000/svg';
-let FX={dust:[],leaf:[],drop:[],fly:[],coin:[],bird:[],rain:[],distMoved:0};
+let FX={dust:[],leaf:[],drop:[],fly:[],coin:[],bird:[],rain:[],snow:[],distMoved:0};
 let npcState=[];
 function fxPool(n,tag,attrs){
   const out=[];
@@ -4890,6 +4926,7 @@ function fxInit(){
   FX.coin=fxPool(12,'circle',{r:'3.4',fill:'#FFC93C',stroke:'#C97E12','stroke-width':'1'});
   FX.bird=fxPool(5,'path',{d:'M-5,0 Q-2.5,-3.5 0,-0.5 Q2.5,-3.5 5,0',stroke:'#3A4658','stroke-width':'1.6',fill:'none'});   // distant gliding birds
   FX.rain=fxPool(30,'rect',{width:'1.5',height:'11',rx:'0.7',fill:'#A9CBE8'});   // rain streaks (slight sideways drift = wind-blown)
+  FX.snow=fxPool(34,'circle',{r:'2',fill:'#FFFFFF'});                            // snowflakes: light, slow, wandering fall
 }
 function fxSpawn(pool,x,y,vx,vy,life){
   for(let i=0;i<pool.length;i++){if(pool[i].life<=0){const p=pool[i];p.x=x;p.y=y;p.vx=vx;p.vy=vy;p.life=life;return;}}
@@ -4980,19 +5017,23 @@ function townTick(){
   // particles (pooled; stepped at half rate; camera-culled)
   if(tickFrame%GFX.fxEvery===0){
     if(!GFX.lowPower){                                                    // skip ambient spawns on weak devices; dust + coin still fire from their own call sites
-      if(tickFrame%(WX.aut>0.5?11:26)===0)fxSpawn(FX.leaf,camX()+Math.random()*VIEW_W,camY()-20,0.4+Math.random()*0.5,0.7+Math.random()*0.5,1.6);   // leaves fall roughly twice as often in autumn
+      if(!(WX.sea&&WX.sea.win>0.5)&&tickFrame%(WX.aut>0.5?11:(WX.sea&&WX.sea.spr>0.5?16:26))===0)fxSpawn(FX.leaf,camX()+Math.random()*VIEW_W,camY()-20,0.4+Math.random()*0.5,0.7+Math.random()*0.5,1.6);   // leaves double in autumn, blossom petals drift in spring, nothing falls from bare winter trees
       if(TC.fountainTier===2&&tickFrame%8===0&&Math.abs((900+CORE_DX)-player.x)<VIEW_W&&Math.abs((600+CORE_DY)-player.y)<VIEW_H)
         fxSpawn(FX.drop,(895+CORE_DX)+Math.random()*10,(576+CORE_DY),(Math.random()-0.5)*1.6,-1.4-Math.random(),0.9);
       const na=nightAmount();
       if(na>0.45&&tickFrame%14===0)fxSpawn(FX.fly,camX()+Math.random()*VIEW_W,camY()+120+Math.random()*(VIEW_H-200),(Math.random()-0.5)*0.6,(Math.random()-0.5)*0.4,1.4);
       if(GFX.ambientLife&&na<0.4&&tickFrame%22===0)fxSpawn(FX.fly,camX()+40+Math.random()*(VIEW_W-80),camY()+90+Math.random()*(VIEW_H-170),(Math.random()-0.5)*0.5,-0.2-Math.random()*0.3,1.2); // daytime butterflies drifting up
       if(GFX.ambientLife&&na<0.35&&WX.storm<0.3&&tickFrame%460===0){var _by=camY()+50+Math.random()*150;for(var _bi=0;_bi<3;_bi++)fxSpawn(FX.bird,camX()-24-_bi*30,_by+_bi*13,2.1+Math.random()*0.4,-0.04+Math.random()*0.08,2.2);}   // a small skein of birds glides across by day (they shelter in storms)
-      if(WX.storm>0.35){   // rain: streaks fall fast with a wind-blown slant; scattered splashes dot the ground
-        for(var _ri=0;_ri<3;_ri++)fxSpawn(FX.rain,camX()+Math.random()*VIEW_W,camY()-16,0.9,7.5+Math.random()*2,1);
-        if(tickFrame%6===0)fxSpawn(FX.drop,camX()+Math.random()*VIEW_W,camY()+80+Math.random()*(VIEW_H-120),(Math.random()-0.5)*0.6,-0.5,0.35);
+      if(WX.storm>0.35){
+        if(WX.sea&&WX.sea.win>0.5){   // winter fronts: snowflakes drift down slowly, wandering with the air
+          for(var _si=0;_si<2;_si++)fxSpawn(FX.snow,camX()+Math.random()*VIEW_W,camY()-12,(Math.random()-0.5)*0.5,0.8+Math.random()*0.6,1.3);
+        }else{                        // rain: streaks fall fast with a wind-blown slant; scattered splashes dot the ground
+          for(var _ri=0;_ri<3;_ri++)fxSpawn(FX.rain,camX()+Math.random()*VIEW_W,camY()-16,0.9,7.5+Math.random()*2,1);
+          if(tickFrame%6===0)fxSpawn(FX.drop,camX()+Math.random()*VIEW_W,camY()+80+Math.random()*(VIEW_H-120),(Math.random()-0.5)*0.6,-0.5,0.35);
+        }
       }
     }
-    fxStep(FX.dust,0.05,0);fxStep(FX.leaf,0.01,0.012);fxStep(FX.drop,0.05,0.12);fxStep(FX.fly,0.012,0);fxStep(FX.coin,0.035,0.1);fxStep(FX.bird,0.004,0);fxStep(FX.rain,0.03,0.05);
+    fxStep(FX.dust,0.05,0);fxStep(FX.leaf,0.01,0.012);fxStep(FX.drop,0.05,0.12);fxStep(FX.fly,0.012,0);fxStep(FX.coin,0.035,0.1);fxStep(FX.bird,0.004,0);fxStep(FX.rain,0.03,0.05);fxStep(FX.snow,0.008,0.001);
   }
   // wind pass: advect clouds with a shared, gusting wind. Gusts are the sum of two slow sine waves
   // (a cheap stand-in for turbulence), so speed swells and lulls the way real wind does; higher
@@ -5057,13 +5098,25 @@ function townTick(){
     // headlights: beams appear at dusk and in rain
     if(!TC.heads&&TC.svg)TC.heads=TC.svg.querySelectorAll('.headlight');
     if(TC.heads){var hop=Math.max(na,st*0.6);hop=hop>0.35?(0.5*hop).toFixed(2):'0';for(var hi=0;hi<TC.heads.length;hi++)TC.heads[hi].setAttribute('opacity',hop);}
-    // puddles fill while it rains and slowly dry afterwards
-    if(TC.puddleG)TC.puddleG.setAttribute('opacity',(WX.wet*0.75).toFixed(2));
-    // seasons: a slow year; canopies turn amber in autumn and falling leaves match
-    var ts=(((Date.now()-(GFX.day0||0))/((GFX.seasonSeconds||780)*1000))%1+1)%1;
-    WX.aut=(1-Math.cos(ts*Math.PI*2))/2;
-    if(TC.treeCircs)for(var ti=0;ti<TC.treeCircs.length;ti++){var tcc=TC.treeCircs[ti];tcc.setAttribute('fill',lerpHex(tcc._base,ti%2?'#D98E2B':'#C4652F',WX.aut*0.8));}
-    if(FX.leaf&&FX.leaf.length){var lc=lerpHex('#8FBF6E','#D9822B',WX.aut);if(TC._leafCol!==lc){TC._leafCol=lc;for(var lfi=0;lfi<FX.leaf.length;lfi++)if(FX.leaf[lfi].el)FX.leaf[lfi].el.setAttribute('fill',lc);}}
+    // puddles fill while it rains and slowly dry afterwards (buried once snow covers the ground)
+    if(TC.puddleG)TC.puddleG.setAttribute('opacity',(WX.wet*0.75*(1-WX.snow)).toFixed(2));
+    // ── seasons ──
+    var sea=WX.sea||seasonNow();
+    WX.aut=sea.aut;   // autumn strength also drives the leaf-fall rate above
+    // canopies: fresh light green in spring, deep green in summer, amber in autumn, snow-dusted in winter
+    if(TC.treeCircs)for(var ti=0;ti<TC.treeCircs.length;ti++){var tcc=TC.treeCircs[ti];
+      var cf=lerpHex(tcc._base,'#86CE62',sea.spr*0.45);
+      cf=lerpHex(cf,ti%2?'#D98E2B':'#C4652F',sea.aut*0.8);
+      cf=lerpHex(cf,'#E8EEF4',sea.win*0.85);
+      tcc.setAttribute('fill',cf);}
+    // falling bits match the season: green leaves, orange leaves, pink blossom petals
+    if(FX.leaf&&FX.leaf.length){var lc=lerpHex(lerpHex('#8FBF6E','#D9822B',sea.aut),'#F5A8C6',sea.spr);
+      if(TC._leafCol!==lc){TC._leafCol=lc;for(var lfi=0;lfi<FX.leaf.length;lfi++)if(FX.leaf[lfi].el)FX.leaf[lfi].el.setAttribute('fill',lc);}}
+    // snowpack whitens the ground (roads stay plowed); wildflowers carpet the grass in spring
+    if(TC.snowRect)TC.snowRect.setAttribute('opacity',(WX.snow*0.6).toFixed(2));
+    if(TC.wildG)TC.wildG.setAttribute('opacity',(sea.spr*(1-WX.snow)).toFixed(2));
+    // hard freeze: pond ripples and ducks lock in, the fountain is shut off for the season
+    if(TC.svg)TC.svg.classList.toggle('frozen',sea.win>0.6||WX.snow>0.5);
   }
   // NPC wander (idle life)
   if(GFX.wander&&!overlaysOpen()){

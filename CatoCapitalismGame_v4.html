@@ -765,7 +765,7 @@
 <div id="screen-town" class="screen">
   <div class="town-top">
     <div><div class="town-name" id="town-name">Freedomtopia</div><div class="town-progress" id="town-progress">0/10 citizens helped</div></div>
-    <div style="display:flex;gap:8px;align-items:center;"><span class="score-chip"><span id="town-score">⭐ 0</span></span><button class="hist-btn" onclick="openBuild()" style="margin-top:0;" title="Build your city">🏗️ Build</button><button class="hist-btn" onclick="openBank()" style="margin-top:0;" title="Save stars and earn interest">🏦 Bank</button><button class="hist-btn" onclick="openHistory()" style="margin-top:0;">📜</button></div>
+    <div style="display:flex;gap:8px;align-items:center;"><span class="score-chip"><span id="town-score">⭐ 0</span></span><button class="hist-btn" onclick="goHome()" style="margin-top:0;" title="Back to Home (leader selection). Progress is saved.">🏠 Home</button><button class="hist-btn" onclick="openBuild()" style="margin-top:0;" title="Build your city">🏗️ Build</button><button class="hist-btn" onclick="openBank()" style="margin-top:0;" title="Save stars and earn interest">🏦 Bank</button><button class="hist-btn" onclick="openHistory()" style="margin-top:0;">📜</button></div>
   </div>
   <div class="town-statstrip" id="town-statstrip"></div>
   <div class="town-viewport"><div id="town-map"></div><div class="vignette"></div>
@@ -2990,6 +2990,21 @@ function beginWithName(){
   updateNationName(nationName);
   sfx('good');
   startGame();
+}
+// Return to the home / leader-selection page. Saves first so no progress is lost, then refreshes
+// the leader cards + avatar preview so the current leader shows as selected.
+function goHome(){
+  if(typeof PLACE!=='undefined'&&PLACE&&typeof cancelPlace==='function')cancelPlace();   // drop an in-progress building placement
+  if(typeof closeDialog==='function')closeDialog();
+  ['build-overlay','bank-overlay','history-overlay'].forEach(function(id){var o=document.getElementById(id);if(o)o.style.display='none';});
+  if(typeof closeBank==='function')try{closeBank();}catch(e){}
+  if(typeof saveProfiles==='function')saveProfiles();
+  if(typeof cloudSave==='function')cloudSave();
+  if(typeof renderProfiles==='function')renderProfiles();                                 // refresh leader cards (active one highlighted)
+  if(typeof renderAvatarPreview==='function')renderAvatarPreview();                       // avatar preview reflects current leader
+  var nInput=document.getElementById('nb-name-input'); if(nInput&&typeof nationName!=='undefined'&&nationName)nInput.value=nationName;
+  showScreen('title');
+  if(typeof sfx==='function')sfx('click');
 }
 
 // ─────────────────────────────────────────────────────────────

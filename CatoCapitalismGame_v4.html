@@ -4385,11 +4385,6 @@ function buildWorld(tiers){
       if(wf%3===0)w+='<circle cx="'+(wx2+9)+'" cy="'+(wy2+5)+'" r="2.4" fill="'+WCOL[(wf+2)%5]+'"/>';
     }})();
   w+='</g>';
-  // worn desire paths: bare-earth trails on the grass between popular spots (fountain↔Bank,
-  // school↔Town Hall, market↔fountain), drawn UNDER the roads so they dead-end into pavement
-  ['M1880,1250 Q2050,1280 2160,1300','M2160,940 Q1950,960 1800,1000','M1760,1560 Q1780,1420 1795,1310'].forEach(function(wp){
-    w+='<path d="'+wp+'" fill="none" stroke="rgba(178,158,118,.38)" stroke-width="13" stroke-linecap="round"/><path d="'+wp+'" fill="none" stroke="rgba(150,128,92,.25)" stroke-width="7" stroke-linecap="round" stroke-dasharray="14 9"/>';
-  });
   // ── UNIFIED ROAD NETWORK: every road on the map (downtown curves, the street grid, and the
   //    roundabout) is painted here in shared passes — ALL curbs first, then ALL asphalt, then ALL
   //    markings — so no road's curb line ever cuts across another road's surface. Junctions and the

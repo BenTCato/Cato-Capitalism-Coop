@@ -4405,7 +4405,7 @@ function buildWorld(tiers){
   w+=bHome(190,904,tiers.avg,(P&&P.house)||0);
   w+=fountainB(900,600,tiers.h);
   w+=fbench(800,760)+fbench(980,740)+flamp(832,508)+flamp(985,500)+flamp(1192,660)+flamp(684,824);
-  w+=fhedge(640,618,70)+fhedge(1085,615,70);
+  w+=fhedge(620,618,70)+fhedge(1105,615,70);   // nudged off the roundabout curb ring (were 10-13px onto it)
   // thriving society comes alive: recess, bank trades, market shoppers
   if(tiers.ed===2){
     w+='<rect x="1148" y="200" width="86" height="56" rx="10" fill="rgba(255,255,255,.16)" stroke="rgba(255,255,255,.38)" stroke-width="2" stroke-dasharray="6 6"/>';
@@ -4422,9 +4422,9 @@ function buildWorld(tiers){
     w+='<g transform="translate(900,990)"><g class="stroller" style="animation-delay:1.6s;animation-direction:alternate-reverse;"><rect x="-5" y="-14" width="10" height="11" rx="4" fill="#3FA7A0"/><circle cx="0" cy="-18" r="5" fill="#F2CFA6"/><rect x="-12" y="-10" width="8" height="7" rx="2" fill="#7FB069"/></g></g>';
   }
   // flora
-  w+=ftree(150,180,1.1)+ftree(640,140,0.9)+ftree(1060,180,1.2)+ftree(120,760,1)+ftree(560,640,0.85)+ftree(1140,920,1.1)+ftree(240,700,0.95)+ftree(1240,1060,1)+ftree(80,440,0.85)+ftree(980,120,1)+ftree(1420,120,1.05)+ftree(40,950,0.9)+ftree(520,1120,1)+ftree(60,90,0.8);  // (removed 3 trees that sat in the river corridor: core x1660/1700/1760)
-  w+=fbush(700,420,1)+fbush(1170,648,0.9)+fbush(480,760,1.1)+fbush(1480,560,0.9)+fbush(220,840,1);
-  w+=frock(1080,820,1)+frock(1500,980,0.9)+frock(640,920,0.8)+frock(1380,180,1.1);
+  w+=ftree(150,180,1.1)+ftree(640,140,0.9)+ftree(1060,180,1.2)+ftree(120,760,1)+ftree(560,640,0.85)+ftree(1140,920,1.1)+ftree(240,700,0.95)+ftree(1240,1060,1)+ftree(80,440,0.85)+ftree(980,120,1)+ftree(1420,120,1.05)+ftree(60,950,0.9)+ftree(520,1120,1)+ftree(60,100,0.8);  // (removed 3 trees that sat in the river corridor: core x1660/1700/1760; road-sweep 2026-07-08: x40→60 canopy was 9px onto the west loop road, y90→100 canopy grazed the top loop road)
+  w+=fbush(700,420,1)+fbush(1170,648,0.9)+fbush(480,760,1.1)+fbush(1440,560,0.9)+fbush(220,840,1);   // road-sweep: x1480→1440, bush sat 22px onto the east loop road
+  w+=frock(1080,820,1)+frock(1440,980,0.9)+frock(640,920,0.8)+frock(1380,180,1.1);                   // road-sweep: x1500→1440, rock sat DEAD CENTER on the east loop road
   // (the three static decorative clouds that used to float over the school/hall/houses at top tier are
   //  removed — the real wind-driven cloud system handles the sky now)
   // every answer visibly changes the town: flowers track happiness, litter tracks decline
@@ -4759,7 +4759,7 @@ function buildExpansion(tiers){
   function park(x,y){return ftree(x-38,y-4,1.16)+ftree(x+42,y-8,0.92)+fbush(x-4,y+12,1)+fflower(x-44,y+16)+fflower(x+32,y+18)+fbench(x,y);}
   var parkStr='';
   [[430,1710],[3170,1710],[300,780],[3120,760],[380,1180],[2950,1180],[700,340],[2500,360]].forEach(function(p){
-    if(inCore(p[0],p[1])||inRiver(p[0],p[1])||nearRoad(p[0],p[1],48)||onBldg(p[0],p[1],44)||!farEnough(p[0],p[1],120))return;
+    if(inCore(p[0],p[1])||inRiver(p[0],p[1])||nearRoad(p[0],p[1],100)||onBldg(p[0],p[1],44)||!farEnough(p[0],p[1],120))return;   // 100: a park's shade trees reach ±42 from its center with ~26px canopies, so 48 let them sit fully on the road
     placed.push(p); parkStr+=park(p[0],p[1]);
   });
 
@@ -4768,8 +4768,12 @@ function buildExpansion(tiers){
   for(var py=180;py<2320;py+=118){for(var px=170;px<3520;px+=130){
     var jx=px+((px*13+py*7)%54)-27, jy=py+((px*5+py*11)%48)-24;     // deterministic jitter breaks up the rows
     if(inCore(jx,jy)||inRiver(jx,jy))continue;
-    if(nearRoad(jx,jy,30)||onBldg(jx,jy,18)||!farEnough(jx,jy,94))continue;
     var r=(jx*7+jy*3)%10;
+    // road keep-out scales with the prop's VISUAL size (canopy > bush > rock > flower), measured from
+    // the road centerline: half-road 29 + widest canopy ~24 → 56 for trees, down to 34 for flowers.
+    // The old flat 30 let tree canopies overhang the asphalt by up to 23px.
+    var rdm=r<5?56:(r<7?48:(r<8?44:34));
+    if(nearRoad(jx,jy,rdm)||onBldg(jx,jy,18)||!farEnough(jx,jy,94))continue;
     if(r<5)fieldStr+=ftree(jx,jy,0.8+((jx+jy)%3)*0.14);
     else if(r<7)fieldStr+=fbush(jx,jy,0.9+((px)%2)*0.2);
     else if(r<8)fieldStr+=frock(jx,jy,0.85+((py)%2)*0.15);

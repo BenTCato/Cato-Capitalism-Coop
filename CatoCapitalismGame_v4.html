@@ -3739,6 +3739,8 @@ const FEEDBACK_ENDPOINT='';
 let svState={fun:0,learn:0,fav:[]};
 
 function openSurvey(){
+  // drop focus from the 💬 opener button, so a later SPACE can't re-trigger it and close the form
+  try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}catch(e){}
   svState={fun:0,learn:0,fav:[]};
   renderSvStars('sv-fun','fun');renderSvStars('sv-learn','learn');renderSvChips();
   const t=document.getElementById('sv-text');if(t)t.value='';
@@ -5337,6 +5339,13 @@ function initTownControls(){
   document.addEventListener('keydown',function(e){
     const town=document.getElementById('screen-town');
     if(!town||!town.classList.contains('active'))return;
+    // typing in ANY form field (feedback form, sign-in, bank amount, class code…): the game keeps its
+    // hands off entirely — no preventDefault (so spaces/letters type normally) and no game actions
+    const tgt=e.target;
+    if(tgt&&(tgt.tagName==='INPUT'||tgt.tagName==='TEXTAREA'||tgt.tagName==='SELECT'||tgt.isContentEditable))return;
+    // an overlay is open (feedback, newspaper, mini-game…): don't feed the game or steal keys meant
+    // for the overlay's own buttons; clear held movement so the player doesn't glide on close
+    if(typeof overlaysOpen==='function'&&overlaysOpen()){keysDown={};return;}
     if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].indexOf(e.code)>=0)e.preventDefault();
     if(PLACE){ if(e.code==='Space'){confirmPlace();return;} if(e.code==='Escape'){cancelPlace();return;} keysDown[e.code]=true; return; } // placement: SPACE builds, ESC cancels, WASD still walks
     if(e.code==='Escape'&&dlgOpen){closeDialog();return;}

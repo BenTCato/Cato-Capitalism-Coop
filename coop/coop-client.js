@@ -295,12 +295,13 @@
   // ── tiny "connected" badge ────────────────────────────────────
   var badge = document.createElement('div');
   badge.id = 'coop-badge';
-  // lives in the empty middle of the top header band, clear of the map view
+  // mounted INSIDE the header's right-side flex row (next to the sound button), so it's part of the
+  // top bar rather than floating over the page; falls back to a fixed pill if the header is missing
   badge.style.cssText =
-    'position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:9999;font-family:Verdana,sans-serif;' +
-    'font-size:11px;font-weight:700;color:#fff;background:rgba(16,22,40,.82);' +
-    'padding:5px 11px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);' +
-    'display:flex;align-items:center;gap:7px;pointer-events:none;';
+    'font-family:Verdana,sans-serif;font-size:11px;font-weight:700;color:#fff;' +
+    'background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.25);' +
+    'padding:4px 10px;border-radius:999px;white-space:nowrap;' +
+    'display:flex;align-items:center;gap:6px;pointer-events:none;';
   badge.innerHTML = '<span id="coop-dot" style="width:9px;height:9px;border-radius:50%;background:#9aa;"></span>' +
                     '<span id="coop-text">Connecting…</span>';
   function setBadge(world, n) {
@@ -311,8 +312,21 @@
     if (world) { dot.style.background = '#2EB872'; txt.textContent = world + ' · ' + onlineCount + ' online'; }
     else { dot.style.background = '#E03131'; txt.textContent = 'Reconnecting…'; }
   }
-  window.addEventListener('DOMContentLoaded', function () { document.body.appendChild(badge); });
-  if (document.body) document.body.appendChild(badge);
+  // mount into the header row just left of the sound button; re-inserting the same node is safe
+  function mountTopbar(el, beforeEl){
+    var hr = document.querySelector('.header .hd-right') || document.querySelector('.hd-right');
+    if (hr) {
+      var anchor = (beforeEl && beforeEl.parentElement === hr) ? beforeEl : document.getElementById('sfx-btn');
+      if (anchor && anchor.parentElement === hr) hr.insertBefore(el, anchor); else hr.appendChild(el);
+      el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.transform = '';
+    } else {   // no header on this page: fall back to a fixed pill at top center
+      el.style.position = 'fixed'; el.style.top = '16px'; el.style.left = '50%';
+      el.style.transform = 'translateX(-50%)'; el.style.zIndex = '9999';
+      document.body.appendChild(el);
+    }
+  }
+  window.addEventListener('DOMContentLoaded', function () { mountTopbar(badge); });
+  if (document.body) mountTopbar(badge);
 
   // ── "Join a Class" code entry,lets a class (or two tabs) share one private world ──
   var joinBtn, joinOv;
@@ -329,9 +343,9 @@
     if (document.getElementById('coop-join-btn') || !document.body) return;
     joinBtn = document.createElement('button');
     joinBtn.id = 'coop-join-btn';
-    joinBtn.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;font-family:Verdana,sans-serif;font-size:12px;font-weight:800;color:#13234a;background:#FFD166;border:none;cursor:pointer;padding:7px 13px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);';   // sits in the top header band, clear of the map view
+    joinBtn.style.cssText = 'font-family:Verdana,sans-serif;font-size:11px;font-weight:800;color:#13234a;background:#FFD166;border:none;cursor:pointer;padding:5px 11px;border-radius:999px;white-space:nowrap;';   // header pill, sized to sit beside the sound button
     joinBtn.onclick = openJoin;
-    document.body.appendChild(joinBtn);
+    mountTopbar(joinBtn, badge);   // header order: [🔑 Join a class][World · N online][🔊][💬]
 
     joinOv = document.createElement('div');
     joinOv.id = 'coop-join-ov';

@@ -509,6 +509,11 @@
     /* fountain spray pulses with pump pressure; thins as it stretches upward (volume conservation) */
     .spray{transform-box:fill-box;transform-origin:50% 100%;animation:sprayPulse 1.9s ease-in-out infinite;}
     @keyframes sprayPulse{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.12) scaleX(.95)}}
+    /* eyes blink every ~4.6s; per-character delays keep the town from blinking in unison */
+    .blink{transform-box:fill-box;transform-origin:50% 50%;animation:blink 4.6s infinite;}
+    @keyframes blink{0%,95.5%,100%{transform:scaleY(1)}97%{transform:scaleY(.12)}98.5%{transform:scaleY(1)}}
+    /* water reflections shimmer as wavelets break the mirrored image */
+    .reflection{animation:shim 3.4s ease-in-out infinite;}
     .no-wind .sway,.no-wind .cl,.no-wind .cl2,.no-wind .cl3,.no-wind .flow,.no-wind .smoke,.no-wind .riverflow,.no-wind .cloud-billow,.no-wind .ripple,.no-wind .duck,.no-wind .duck .duck-body,.no-wind .glint,.no-wind .lampglow,.no-wind .spray{animation:none!important;}
     /* hard freeze: still water locks up, the fountain is winterized, ducks migrate, the rowboat is docked.
        Ripples and glints hide entirely so no open-water motion shows through the translucent ice sheet. */
@@ -516,7 +521,7 @@
     /* ice sheet: fades in over the pond and fountain basin as the freeze sets, thaws back out in spring */
     .pond-ice{opacity:0;transition:opacity 3s ease;pointer-events:none;}
     .frozen .pond-ice{opacity:.78;}
-    @media (prefers-reduced-motion: reduce){.sway,.flow,.riverflow,.cloud-billow,.ripple,.duck,.duck .duck-body,.glint,.lampglow,.spray{animation:none!important;}}
+    @media (prefers-reduced-motion: reduce){.sway,.flow,.riverflow,.cloud-billow,.ripple,.duck,.duck .duck-body,.glint,.lampglow,.spray,.blink,.reflection{animation:none!important;}}
     .dlg{display:none;position:absolute;left:0;right:0;bottom:0;z-index:20;padding:10px;}
     .dlg.open{display:block;animation:fadeUp .22s ease;}
     #emote-fab{position:absolute;right:14px;bottom:14px;z-index:30;width:50px;height:50px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(16,22,40,.85);color:#fff;font-size:1.5rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);}
@@ -4061,6 +4066,8 @@ function worldDefs(){
   '<linearGradient id="fabric" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".28"/><stop offset="1" stop-color="#000000" stop-opacity=".14"/></linearGradient>'+
   '<pattern id="shingle" width="14" height="7" patternUnits="userSpaceOnUse"><path d="M0,6.5 h14" stroke="#000000" stroke-opacity=".18" stroke-width="1"/><path d="M7,0 v6.5" stroke="#000000" stroke-opacity=".10" stroke-width="1"/><path d="M0,3.2 h14" stroke="#ffffff" stroke-opacity=".10" stroke-width="0.8"/></pattern>'+
   '<pattern id="courses" width="20" height="10" patternUnits="userSpaceOnUse"><path d="M0,9.5 h20" stroke="#000000" stroke-opacity=".08" stroke-width="1"/><path d="M10,0 v9.5" stroke="#000000" stroke-opacity=".05" stroke-width="1"/></pattern>'+
+  '<linearGradient id="coneG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFE9A8" stop-opacity=".5"/><stop offset="1" stop-color="#FFE9A8" stop-opacity="0"/></linearGradient>'+   // headlight beam falloff
+  '<radialGradient id="sheenG"><stop offset="0%" stop-color="#FFFFFF" stop-opacity=".22"/><stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>'+                        // sky sheen on still water
   '</defs>';
 }
 function ftree(x,y,s){reg(x-12*s,y-8*s,24*s,12*s);
@@ -4114,7 +4121,10 @@ function urban(x,y,w,floors,cols,t,bodies,winCol,extra){
   const body=bodies[t];
   let s='<g transform="translate('+x+','+(y-h)+')">';
   s+=sh(w/2,h+5,w*0.55,8).replace('translate','');
+  s+='<path d="M2,'+h+' L'+w+','+h+' L'+(w+16)+','+(h+11)+' L18,'+(h+11)+' Z" fill="rgba(14,24,38,.15)"/>';   // directional cast shadow, down-right to match the sun every other prop uses
   s+='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="'+body+'"/>';
+  s+='<rect x="0" y="'+(h-3)+'" width="'+w+'" height="3.5" fill="rgba(0,0,0,.18)"/>';                          // ambient-occlusion strip grounds the wall on the earth
+  s+='<path class="snowdrift" d="M0,'+h+' Q'+(w*0.22)+','+(h-8)+' '+(w*0.46)+','+h+' Q'+(w*0.72)+','+(h-6)+' '+w+','+h+' L'+w+','+(h+2)+' L0,'+(h+2)+' Z" fill="#F4F8FC" opacity="0"/>';   // snow banks against the wall with the snowpack
   s+='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="url(#wallV)"/>';                          // body gradient
   if(t>0)s+='<rect x="0" y="10" width="'+w+'" height="'+(h-10)+'" fill="url(#courses)"/>';           // masonry courses (developed tiers)
   s+='<rect x="'+(w-10)+'" y="0" width="10" height="'+h+'" fill="rgba(0,0,0,.11)"/>';                // right shade
@@ -4234,7 +4244,7 @@ const NPC_CFG=[
 function npcSVG(i,answered){
   const p=NPC_POS[i],cfg=NPC_CFG[i%NPC_CFG.length],skin=SKIN[cfg.skin].c,pant=SPRITE.pants[cfg.outfit]||'#3B4252';
   let s='<g class="cit'+(answered?' cit-done':'')+'" id="npc-'+i+'" transform="translate('+p[0]+','+p[1]+') scale(0.92)">';
-  s+='<ellipse cx="0" cy="34" rx="13" ry="4" fill="rgba(20,30,40,.2)"/>';
+  s+='<ellipse id="npc-sh-'+i+'" cx="0" cy="34" rx="13" ry="4" fill="rgba(20,30,40,.2)"/>';
   s+='<g id="npc-body-'+i+'"'+(answered?' opacity=".55"':'')+'>';
   s+='<rect x="-8" y="18" width="6.5" height="12" rx="3" fill="'+pant+'"/><rect x="1.5" y="18" width="6.5" height="12" rx="3" fill="'+pant+'"/>';
   s+='<rect x="-9" y="27" width="8.5" height="6" rx="3" fill="'+SPRITE.shoes+'"/><rect x="0.5" y="27" width="8.5" height="6" rx="3" fill="'+SPRITE.shoes+'"/>';
@@ -4289,8 +4299,9 @@ function worldHead(av){
   inner+='<ellipse cx="71" cy="102" rx="9" ry="12" fill="'+skin.c+'"/><ellipse cx="169" cy="102" rx="9" ry="12" fill="'+skin.c+'"/>';
   inner+='<ellipse cx="120" cy="98" rx="47" ry="50" fill="'+skin.c+'"/>';
   inner+='<path d="M140,56 Q166,76 162,104 Q158,130 140,141 Q158,118 156,97 Q154,72 140,56 Z" fill="rgba(0,0,0,.08)"/>'; // cel shade
-  inner+='<circle cx="102" cy="100" r="6.5" fill="#2B2620"/><circle cx="138" cy="100" r="6.5" fill="#2B2620"/>';
-  inner+='<circle cx="104" cy="97.5" r="2.2" fill="#fff"/><circle cx="140" cy="97.5" r="2.2" fill="#fff"/>';
+  // eyes blink every few seconds, phase-shifted per character so the town never blinks in unison
+  inner+='<g class="blink" style="animation-delay:-'+(Math.random()*4.6).toFixed(2)+'s"><circle cx="102" cy="100" r="6.5" fill="#2B2620"/><circle cx="138" cy="100" r="6.5" fill="#2B2620"/>'+
+         '<circle cx="104" cy="97.5" r="2.2" fill="#fff"/><circle cx="140" cy="97.5" r="2.2" fill="#fff"/></g>';
   inner+='<path d="M106,124 Q120,134 134,124" stroke="#2B2620" stroke-width="4" fill="none" stroke-linecap="round"/>';
   inner+=beardSVG(av.beard,hc);
   inner+=glassesSVG(av.glasses);
@@ -4374,6 +4385,11 @@ function buildWorld(tiers){
       if(wf%3===0)w+='<circle cx="'+(wx2+9)+'" cy="'+(wy2+5)+'" r="2.4" fill="'+WCOL[(wf+2)%5]+'"/>';
     }})();
   w+='</g>';
+  // worn desire paths: bare-earth trails on the grass between popular spots (fountain↔Bank,
+  // school↔Town Hall, market↔fountain), drawn UNDER the roads so they dead-end into pavement
+  ['M1880,1250 Q2050,1280 2160,1300','M2160,940 Q1950,960 1800,1000','M1760,1560 Q1780,1420 1795,1310'].forEach(function(wp){
+    w+='<path d="'+wp+'" fill="none" stroke="rgba(178,158,118,.38)" stroke-width="13" stroke-linecap="round"/><path d="'+wp+'" fill="none" stroke="rgba(150,128,92,.25)" stroke-width="7" stroke-linecap="round" stroke-dasharray="14 9"/>';
+  });
   // ── UNIFIED ROAD NETWORK: every road on the map (downtown curves, the street grid, and the
   //    roundabout) is painted here in shared passes — ALL curbs first, then ALL asphalt, then ALL
   //    markings — so no road's curb line ever cuts across another road's surface. Junctions and the
@@ -4382,6 +4398,11 @@ function buildWorld(tiers){
   EXP_RG=roadGrid();
   ROAD_RECTS=[]; EXP_RG.SEG.forEach(function(g){ if(g.h)ROAD_RECTS.push({x0:Math.min(g.a,g.b),y0:g.y-20,x1:Math.max(g.a,g.b),y1:g.y+20}); else ROAD_RECTS.push({x0:g.x-20,y0:Math.min(g.a,g.b),x1:g.x+20,y1:Math.max(g.a,g.b)}); });
   w+=roadsUnified(EXP_RG);
+  // street furniture on the finished pavement: crosswalks at busy approaches, manhole covers on the long runs
+  w+=xwalk(900,1155,90)+xwalk(1755,620,0)+xwalk(2400,1285,90)+xwalk(1855,2040,0)+xwalk(1858,420,0)+xwalk(2760,1390,90);
+  [[600,2040],[1500,220],[3200,420],[2760,800],[240,1500],[1500,2620],[520,900]].forEach(function(mh){
+    w+='<circle cx="'+mh[0]+'" cy="'+mh[1]+'" r="5.5" fill="#4A525E" stroke="#2A3140" stroke-width="1.5"/><path d="M'+(mh[0]-3)+','+mh[1]+' h6 M'+mh[0]+','+(mh[1]-3)+' v6" stroke="#2A3140" stroke-width="1"/>';
+  });
   REG_DX=CORE_DX;REG_DY=CORE_DY;w+='<g transform="translate('+CORE_DX+','+CORE_DY+')">';  // ↓ downtown core, shifted to map center
   // (downtown's six curvy roads + the roundabout are now part of the unified road layer above, in final coords)
   // (the river is now a full top-to-bottom waterway drawn in FINAL coords just before the expansion,see riverSVG below)
@@ -4391,6 +4412,7 @@ function buildWorld(tiers){
   w+='<ellipse cx="350" cy="1010" rx="120" ry="64" fill="'+AP.water2+'"/><ellipse cx="350" cy="1006" rx="104" ry="52" fill="'+AP.water+'"/>'+
      '<g style="pointer-events:none;"><ellipse class="ripple" cx="350" cy="1006" rx="88" ry="42" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.6"/><ellipse class="ripple r2" cx="350" cy="1006" rx="88" ry="42" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.4"/><ellipse class="ripple r3" cx="350" cy="1006" rx="88" ry="42" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.2"/></g>'+
      '<ellipse class="glint" cx="320" cy="990" rx="24" ry="8" fill="rgba(255,255,255,.4)"/><ellipse class="glint g2" cx="384" cy="1018" rx="13" ry="5" fill="rgba(255,255,255,.35)"/><ellipse class="glint g3" cx="336" cy="1032" rx="9" ry="3.5" fill="rgba(255,255,255,.3)"/>'+
+     '<ellipse cx="332" cy="998" rx="82" ry="36" fill="url(#sheenG)"/>'+   // sky sheen: still water mirrors the bright sky
      '<g class="pond-ice"><ellipse cx="350" cy="1006" rx="104" ry="52" fill="#DDE9F2"/><path d="M308,994 l26,11 M352,1022 l22,-9 M330,1006 l-14,14" stroke="rgba(255,255,255,.7)" stroke-width="2" stroke-linecap="round"/></g>';   // winter ice sheet with surface cracks
   reg(232,942,238,132);
   w+='<rect x="404" y="978" width="64" height="16" rx="3" fill="#A8794F"/>'+fduck(312,1014)+fduck(352,1032,-9);
@@ -4422,7 +4444,11 @@ function buildWorld(tiers){
     w+='<g transform="translate(900,990)"><g class="stroller" style="animation-delay:1.6s;animation-direction:alternate-reverse;"><rect x="-5" y="-14" width="10" height="11" rx="4" fill="#3FA7A0"/><circle cx="0" cy="-18" r="5" fill="#F2CFA6"/><rect x="-12" y="-10" width="8" height="7" rx="2" fill="#7FB069"/></g></g>';
   }
   // flora
-  w+=ftree(150,180,1.1)+ftree(640,140,0.9)+ftree(1060,180,1.2)+ftree(120,760,1)+ftree(560,640,0.85)+ftree(1140,920,1.1)+ftree(240,700,0.95)+ftree(1240,1060,1)+ftree(80,440,0.85)+ftree(980,120,1)+ftree(1420,120,1.05)+ftree(60,950,0.9)+ftree(520,1120,1)+ftree(60,100,0.8);  // (removed 3 trees that sat in the river corridor: core x1660/1700/1760; road-sweep 2026-07-08: x40→60 canopy was 9px onto the west loop road, y90→100 canopy grazed the top loop road)
+  // core shade trees, each with an autumn leaf pile that fades in under the canopy
+  // (3 river-corridor trees removed earlier; road-sweep 2026-07-08 nudges baked in: x40→60, y90→100)
+  [[150,180,1.1],[640,140,0.9],[1060,180,1.2],[120,760,1],[560,640,0.85],[1140,920,1.1],[240,700,0.95],[1240,1060,1],[80,440,0.85],[980,120,1],[1420,120,1.05],[60,950,0.9],[520,1120,1],[60,100,0.8]].forEach(function(tp){
+    w+='<ellipse class="leafpile" cx="'+tp[0]+'" cy="'+(tp[1]+4)+'" rx="'+(11*tp[2]).toFixed(1)+'" ry="'+(3.5*tp[2]).toFixed(1)+'" fill="#C9803B" opacity="0"/>'+ftree(tp[0],tp[1],tp[2]);
+  });
   w+=fbush(700,420,1)+fbush(1170,648,0.9)+fbush(480,760,1.1)+fbush(1440,560,0.9)+fbush(220,840,1);   // road-sweep: x1480→1440, bush sat 22px onto the east loop road
   w+=frock(1080,820,1)+frock(1440,980,0.9)+frock(640,920,0.8)+frock(1380,180,1.1);                   // road-sweep: x1500→1440, rock sat DEAD CENTER on the east loop road
   // (the three static decorative clouds that used to float over the school/hall/houses at top tier are
@@ -4450,6 +4476,10 @@ function buildWorld(tiers){
     w+='<path class="riverflow" d="M'+(RX-11)+',-40 q-6,120 0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240" stroke="rgba(255,255,255,.34)" stroke-width="3.5" fill="none" stroke-linecap="round"/>';
     w+='<path class="riverflow" style="animation-duration:2.7s" d="M'+(RX+12)+',-140 q6,120 0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240" stroke="rgba(255,255,255,.26)" stroke-width="3" fill="none" stroke-linecap="round"/>';
     w+='<path class="shimmer" d="M'+(RX-2)+',420 q-4,50 0,100 M'+(RX+4)+',1420 q4,50 0,100 M'+(RX-3)+',2320 q-4,50 0,100" stroke="rgba(255,255,255,.4)" stroke-width="4" fill="none" stroke-linecap="round"/>';
+    // bridge reflections: dark post shadows wobble on the water just downstream of each deck
+    [220,420,1337,2040,2280,2620].forEach(function(by2){
+      w+='<path class="reflection" d="M'+(RX-26)+','+(by2+42)+' q3,9 0,18 M'+(RX+2)+','+(by2+42)+' q-3,10 0,20 M'+(RX+26)+','+(by2+42)+' q3,8 0,16" stroke="rgba(30,50,74,.28)" stroke-width="5" fill="none" stroke-linecap="round"/>';
+    });
     // river life: everything floats DOWNSTREAM with the current; speed differs with draft (the low log
     // rides faster water than the deep-hulled rowboat), and townTick adds a gentle eddy sway + wrap.
     // Drawn BEFORE the bridges below, so drifting items pass UNDER the bridge decks, not over them.
@@ -4690,7 +4720,11 @@ function buildExpansion(tiers){
   var RG=EXP_RG||roadGrid(), VL=RG.VL, SIDE=RG.SIDE, SEG=RG.SEG;   // SEG feeds nearRoad() and lamp placement below
   // ── buildings set just above each street, facing it (road in front of every building) ──
   // place a row of buildings along a street; off=-44 lines the NORTH side, off=+92 the SOUTH side (both sides → a full street)
-  function row(streetY,x0,x1,step,fn,off){off=(off===undefined?-44:off);var o='';for(var x=x0;x+104<=x1;x+=step){var cx=x+52,sk=false;for(var j=0;j<VL.length;j++){if(Math.abs(cx-VL[j])<92){sk=true;break;}}if(sk)continue;if(x+108>2440&&x<2680)continue;/* keep the river corridor (final x2440–2680) clear */o+=fn(x,streetY+off);}return o;}
+  function row(streetY,x0,x1,step,fn,off){off=(off===undefined?-44:off);var o='';for(var x=x0;x+104<=x1;x+=step){var cx=x+52,sk=false;for(var j=0;j<VL.length;j++){if(Math.abs(cx-VL[j])<92){sk=true;break;}}if(sk)continue;if(x+108>2440&&x<2680)continue;/* keep the river corridor (final x2440–2680) clear */
+    var b=streetY+off;
+    o+='<path d="M'+(cx-50)+','+b+' L'+(cx+50)+','+b+' L'+(cx+66)+','+(b+11)+' L'+(cx-34)+','+(b+11)+' Z" fill="rgba(14,24,38,.13)"/>'+   // directional cast shadow under every row building
+       fn(x,b)+
+       '<path class="snowdrift" d="M'+(cx-50)+','+b+' Q'+(cx-28)+','+(b-8)+' '+(cx-2)+','+b+' Q'+(cx+26)+','+(b-6)+' '+(cx+50)+','+b+' L'+(cx+50)+','+(b+2)+' L'+(cx-50)+','+(b+2)+' Z" fill="#F4F8FC" opacity="0"/>';}return o;}   // winter drift along the wall base
   var bi=0;
   // Signs for districts you can buy in the Build menu (roads are the town's street plan and always show)
   function forSaleSign(x,y){ return '<g transform="translate('+x+','+y+')">'+sh(0,28,78,10)+
@@ -4857,6 +4891,7 @@ function renderTown(){
     playerSVG()+
     '<g id="fg-layer" transform="translate('+CORE_DX+','+CORE_DY+')">'+fgStr+'</g>'+
     '<rect id="night-rect" width="'+WORLD_W+'" height="'+WORLD_H+'" fill="#16214E" opacity="0" style="pointer-events:none;"/>'+
+    '<g style="pointer-events:none;"><rect id="flash-rect" width="'+WORLD_W+'" height="'+WORLD_H+'" fill="#EAF2FF" opacity="0"/><path id="bolt" stroke="#F4F9FF" stroke-width="4.5" fill="none" stroke-linejoin="miter" opacity="0"/></g>'+
     '<g id="glow-g" opacity="0" style="pointer-events:none;" transform="translate('+CORE_DX+','+CORE_DY+')">'+glowStr+'</g>'+
     '<g id="prompt-g" style="display:none;"><circle id="prompt-ring" r="34" fill="none" stroke="#FFE9A8" stroke-width="3" stroke-dasharray="8 7"/><g id="prompt-tag"><rect x="-58" y="-86" width="116" height="24" rx="12" fill="rgba(20,28,20,.85)"/><text id="prompt-txt" y="-69" text-anchor="middle" font-size="12.5" font-weight="800" fill="#FFE9A8" font-family="Verdana">SPACE · Talk</text></g></g>'+
     '</svg>';
@@ -4872,7 +4907,7 @@ function renderTown(){
       l1:document.getElementById('pleg1'),l2:document.getElementById('pleg2'),pr:document.getElementById('prompt-g'),
       ptxt:document.getElementById('prompt-txt'),fx:document.getElementById('fx-layer'),night:document.getElementById('night-rect'),bob:document.getElementById('player-bob'),
       glow:document.getElementById('glow-g'),shadow:document.getElementById('player-shadow')};
-  npcState.forEach(function(n,i){n.el=document.getElementById('npc-'+i);n.bel=document.getElementById('npc-body-'+i);});
+  npcState.forEach(function(n,i){n.el=document.getElementById('npc-'+i);n.bel=document.getElementById('npc-body-'+i);n.shel=document.getElementById('npc-sh-'+i);});
   TC.baseGrade=GFX.grade[tiers.avg];                      // day/night lighting multiplies on top of this policy-driven grade
   if(TC.svg)TC.svg.style.filter=TC.baseGrade;
   TC.cloudEls=null;TC.riverEls=null;TC.carEls=null;TC.heads=null;TC._stq=-1;TC._leafCol='';TC._dustCol='';   // re-cache animated nodes after every rebuild
@@ -4885,6 +4920,11 @@ function renderTown(){
   // seasons: cache the canopy circles (and their summer green) so autumn can tint them without a rebuild
   TC.treeCircs=[];
   if(TC.svg){var _tds=TC.svg.querySelectorAll('#treeD circle, #treeD2 circle, #fg-layer circle');for(var _ti=0;_ti<_tds.length;_ti++){var _f=_tds[_ti].getAttribute('fill');if(_f&&_f.charAt(0)==='#'){_tds[_ti]._base=_f;TC.treeCircs.push(_tds[_ti]);}}}
+  TC.drifts=TC.svg?TC.svg.querySelectorAll('.snowdrift'):null;   // winter drifts at building bases
+  TC.piles=TC.svg?TC.svg.querySelectorAll('.leafpile'):null;     // autumn piles under trees
+  TC.flash=document.getElementById('flash-rect');                // lightning flash + bolt
+  TC.bolt=document.getElementById('bolt');
+  TC.zv=1;                                                       // smoothed speed-zoom factor
   fxInit();
   TC.fountainTier=tiers.h;
   buildMinimap(); TC.mmp=document.getElementById('minimap-player');
@@ -4950,6 +4990,7 @@ function carsSVG(){
   CARS.forEach(function(c,i){
     s+='<g id="car-'+i+'" transform="translate('+c.x+','+c.y+')"><g id="car-b-'+i+'" transform="scale('+c.dir+',1)">'+
       sh(0,8,16,3.5)+
+      '<path class="headlight" d="M15,-3 L62,-12 L62,12 L15,3 Z" fill="url(#coneG)" opacity="0"/>'+   // beam cone projects onto the road ahead; same on/off cycle as the headlight glow
       '<rect x="-16" y="-6" width="32" height="11" rx="4" fill="'+c.col+'"/>'+
       '<rect x="-9" y="-12" width="15" height="8" rx="3" fill="'+c.col+'"/>'+
       '<rect x="-7" y="-11" width="11" height="6" rx="2" fill="url(#glass)"/>'+
@@ -4964,7 +5005,7 @@ function carsSVG(){
 let TC={}; // cached node refs (skill: cache, never query in the update loop)
 let lastTick=0,tickFrame=0;
 const FXNS='http://www.w3.org/2000/svg';
-let FX={dust:[],leaf:[],drop:[],fly:[],coin:[],bird:[],rain:[],snow:[],distMoved:0};
+let FX={dust:[],leaf:[],drop:[],fly:[],coin:[],bird:[],rain:[],snow:[],print:[],distMoved:0};
 let npcState=[];
 function fxPool(n,tag,attrs){
   const out=[];
@@ -4988,18 +5029,19 @@ function fxInit(){
   FX.bird=fxPool(5,'path',{d:'M-5,0 Q-2.5,-3.5 0,-0.5 Q2.5,-3.5 5,0',stroke:'#3A4658','stroke-width':'1.6',fill:'none'});   // distant gliding birds
   FX.rain=fxPool(30,'rect',{width:'1.5',height:'11',rx:'0.7',fill:'#A9CBE8'});   // rain streaks (slight sideways drift = wind-blown)
   FX.snow=fxPool(34,'circle',{r:'2',fill:'#FFFFFF'});                            // snowflakes: light, slow, wandering fall
+  FX.print=fxPool(16,'ellipse',{rx:'2.4',ry:'1.3',fill:'rgba(84,104,124,.5)'});  // footprints pressed into the snowpack, fading as fresh snow fills them
 }
 function fxSpawn(pool,x,y,vx,vy,life){
   for(let i=0;i<pool.length;i++){if(pool[i].life<=0){const p=pool[i];p.x=x;p.y=y;p.vx=vx;p.vy=vy;p.life=life;return;}}
 }
-function fxStep(pool,fade,grav){
+function fxStep(pool,fade,grav,spin){
   const cx=camX(),cy=camY();
   for(let i=0;i<pool.length;i++){
     const p=pool[i];
     if(p.life<=0){if(p.el.getAttribute('opacity')!=='0')p.el.setAttribute('opacity','0');continue;}
     p.life-=fade;p.x+=p.vx;p.y+=p.vy;p.vy+=grav;
-    if(p.x<cx-40||p.x>cx+VIEW_W+40||p.y<cy-40||p.y>cy+VIEW_H+40){p.life=0;p.el.setAttribute('opacity','0');continue;} // culling
-    p.el.setAttribute('transform','translate('+p.x+','+p.y+')');
+    if(p.x<cx-60||p.x>cx+VIEW_W+60||p.y<cy-60||p.y>cy+VIEW_H+60){p.life=0;p.el.setAttribute('opacity','0');continue;} // culling (margin covers the speed-zoom)
+    p.el.setAttribute('transform','translate('+p.x+','+p.y+')'+(spin?' rotate('+((((p.life*520)+(p.x%57)*7)%360)|0)+')':''));   // spin: tumbling leaves/petals, phase-shifted per particle
     p.el.setAttribute('opacity',String(Math.max(0,Math.min(.85,p.life))));
   }
 }
@@ -5043,6 +5085,7 @@ function townTick(){
       if(FX.distMoved>26){FX.distMoved=0;
         // footsteps react to the ground: splashes when wet, powder kicks on snowpack (dust turns white
         // via the lighting pass), grass flecks on turf, plain dust otherwise
+        if(WX.snow>0.4)fxSpawn(FX.print,player.x-player.dir*7,player.y+31,0,0,1.15);   // a footprint pressed into the snow, slowly filled by fresh fall
         if(WX.wet>0.4)fxSpawn(FX.drop,player.x-player.dir*6,player.y+30,-player.dir*0.5,-0.9,0.5);
         else if(WX.snow<0.5&&Math.random()<0.3)fxSpawn(FX.leaf,player.x-player.dir*8,player.y+28,-player.dir*0.5,-0.5,0.5);
         else fxSpawn(FX.dust,player.x-player.dir*8,player.y+28,-player.dir*0.4,-0.25,0.7);}
@@ -5072,9 +5115,13 @@ function townTick(){
   if(GFX.lookAhead&&(player.vx||player.vy)){ var lsp=Math.hypot(player.vx,player.vy)||1; laX=player.vx/lsp*GFX.lookAhead; laY=player.vy/lsp*GFX.lookAhead; }
   var desCX=player.x+laX, desCY=player.y+laY;
   if(GFX.camLerp>0){ var _k=Math.min(1,GFX.camLerp*dt); camCX+=(desCX-camCX)*_k; camCY+=(desCY-camCY)*_k; } else { camCX=desCX; camCY=desCY; }
-  var vbx=Math.max(0,Math.min(WORLD_W-VIEW_W,camCX-VIEW_W/2)), vby=Math.max(0,Math.min(WORLD_H-VIEW_H,camCY-VIEW_H/2));
+  // filmic speed zoom: the camera eases ~5% wider at a full sprint and tightens back at rest
+  var _zt=GFX.reduceMotion?1:1+Math.min(1,Math.hypot(player.vx,player.vy)/GFX.speed)*0.055;
+  TC.zv=(TC.zv||1)+(_zt-(TC.zv||1))*Math.min(1,0.05*dt);
+  var VW=VIEW_W*TC.zv, VH=VIEW_H*TC.zv;
+  var vbx=Math.max(0,Math.min(WORLD_W-VW,camCX-VW/2)), vby=Math.max(0,Math.min(WORLD_H-VH,camCY-VH/2));
   var _sx=0,_sy=0; if(_shakeUntil>Date.now()){ _sx=(Math.random()-0.5)*_shakeAmp; _sy=(Math.random()-0.5)*_shakeAmp; }
-  TC.svg.setAttribute('viewBox',(vbx+_sx).toFixed(1)+' '+(vby+_sy).toFixed(1)+' '+VIEW_W+' '+VIEW_H);
+  TC.svg.setAttribute('viewBox',(vbx+_sx).toFixed(1)+' '+(vby+_sy).toFixed(1)+' '+VW.toFixed(1)+' '+VH.toFixed(1));
   if(PLACE){ updatePlaceGhost(); if(TC.pr)TC.pr.style.display='none'; if(IS_TOUCH){var _pab=document.getElementById('act-btn');if(_pab)_pab.classList.remove('show');} } // placement mode: ghost follows player (ambient passes below keep running; interactive prompts are skipped after the lighting pass)
   // particles (pooled; stepped at half rate; camera-culled)
   if(tickFrame%GFX.fxEvery===0){
@@ -5096,7 +5143,7 @@ function townTick(){
         }
       }
     }
-    fxStep(FX.dust,0.05,0);fxStep(FX.leaf,0.01,0.012);fxStep(FX.drop,0.05,0.12);fxStep(FX.fly,0.012,0);fxStep(FX.coin,0.035,0.1);fxStep(FX.bird,0.004,0);fxStep(FX.rain,0.03,0.05);fxStep(FX.snow,0.008,0.001);
+    fxStep(FX.dust,0.05,0);fxStep(FX.leaf,0.01,0.012,true);fxStep(FX.drop,0.05,0.12);fxStep(FX.fly,0.012,0);fxStep(FX.coin,0.035,0.1);fxStep(FX.bird,0.004,0);fxStep(FX.rain,0.03,0.05);fxStep(FX.snow,0.008,0.001);fxStep(FX.print,0.0022,0);
   }
   // wind pass: advect clouds with a shared, gusting wind. Gusts are the sum of two slow sine waves
   // (a cheap stand-in for turbulence), so speed swells and lulls the way real wind does; higher
@@ -5181,9 +5228,24 @@ function townTick(){
     // snowpack whitens the ground (roads stay plowed); wildflowers carpet the grass in spring
     if(TC.snowRect)TC.snowRect.setAttribute('opacity',(WX.snow*0.6).toFixed(2));
     if(TC.wildG)TC.wildG.setAttribute('opacity',(sea.spr*(1-WX.snow)).toFixed(2));
+    // drifts bank against building walls with the snowpack; autumn piles gather under the shade trees
+    if(TC.drifts)for(var sdi=0;sdi<TC.drifts.length;sdi++)TC.drifts[sdi].setAttribute('opacity',(WX.snow*0.9).toFixed(2));
+    if(TC.piles)for(var lpi=0;lpi<TC.piles.length;lpi++)TC.piles[lpi].setAttribute('opacity',(sea.aut*0.8).toFixed(2));
     // hard freeze: pond ripples and ducks lock in, the fountain is shut off for the season
     if(TC.svg)TC.svg.classList.toggle('frozen',sea.win>0.6||WX.snow>0.5);
   }
+  // lightning: rare double-strobe flash + jagged bolt during heavy storms (~10-23s apart, brief and
+  // dim enough to stay photosensitivity-friendly; skipped entirely for reduced-motion and weak devices)
+  if(TC.flash&&WX.storm>0.7&&!GFX.lowPower&&!GFX.reduceMotion){
+    if(!WX.nextBolt||now>WX.nextBolt){WX.nextBolt=now+10000+Math.random()*13000;WX.boltAt=now;
+      var _bx=camX()+140+Math.random()*(VIEW_W-280),_byY=camY();
+      if(TC.bolt)TC.bolt.setAttribute('d','M'+_bx.toFixed(0)+','+_byY.toFixed(0)+' l-16,95 l12,6 l-26,120 l14,5 l-15,105');
+    }
+    var _ft=now-(WX.boltAt||0);
+    var _fo=_ft<90?0.65:_ft<170?0.15:_ft<260?0.45:_ft<470?0.45*(1-(_ft-260)/210):0;
+    TC.flash.setAttribute('opacity',_fo.toFixed(2));
+    if(TC.bolt)TC.bolt.setAttribute('opacity',_ft<300?(0.9*(1-_ft/300)).toFixed(2):'0');
+  } else if(TC.flash&&TC.flash.getAttribute('opacity')!=='0'){TC.flash.setAttribute('opacity','0');if(TC.bolt)TC.bolt.setAttribute('opacity','0');}
   if(PLACE)return;   // placement mode: the living world above keeps ticking, but NPC wander and prompts pause here
   // NPC wander (idle life)
   if(GFX.wander&&!overlaysOpen()){
@@ -5214,7 +5276,9 @@ function townTick(){
       // unmirrored). Facing is smoothed, so a citizen pivots through the turn instead of snap-flipping.
       n.fs=(n.fs===undefined?(n.face||1):n.fs)+((n.face||1)-(n.fs===undefined?(n.face||1):n.fs))*Math.min(1,0.25*dt);
       if(Math.abs(n.fs)<0.08)n.fs=0.08*(n.face||1);
-      if(n.bel)n.bel.setAttribute('transform','translate(0,'+(stepped?(Math.sin(n.step/9)*1.3).toFixed(2):'0')+') scale('+n.fs.toFixed(3)+',1)');
+      var nbob=stepped?Math.sin(n.step/9)*1.3:0;
+      if(n.bel)n.bel.setAttribute('transform','translate(0,'+nbob.toFixed(2)+') scale('+n.fs.toFixed(3)+',1)');
+      if(n.shel)n.shel.setAttribute('rx',(13*(1-nbob*0.05)).toFixed(2));   // contact shadow squashes with each stride, same as the player's
     }
   }
   // proximity (live positions)

@@ -1000,6 +1000,25 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 
 ---
 
+## 2026-07-09, Custom tree art: three illustrated designs replace the procedural trees
+
+- **What changed:** three tree illustrations contributed by the user's friend (a tiered pine, a
+  round leaf-cluster canopy, and a branching oak) now replace the old two circle-blob procedural
+  trees. Source SVGs live in the new `Illustrations/` folder (which will house all future
+  image/illustration assets). Each design was adapted into the `#treeD`/`#treeD2`/`#treeD3` defs:
+  trunk base normalized to (0,0), sized to match the old trees (~47-55px at scale 1), canopies
+  wrapped in the shared wind-sway animation, and every canopy shape tagged `class="cnp"` for the
+  seasonal tint pass. `ftree()` now picks between all three designs deterministically by position;
+  the foreground-layer trees use the same defs via `<use>` instead of their own inline circles.
+- **Evergreen realism:** the pine's canopy shapes carry `class="evg"` — the seasonal pass skips
+  spring/autumn tinting for them (needles stay green year-round) while winter snow-dust still
+  applies to all three designs.
+- **Why it matters:** hand-drawn art with real silhouettes (tiered pine, layered clusters, visible
+  branches) gives the map far more character than two-circle blobs, and the adaptation keeps every
+  existing system working: sway, seasons, autumn leaf piles, snow dusting, and road keep-outs.
+
+---
+
 ## 2026-07-07, Build anywhere you own + the downtown city center opened for building
 
 - **Direction:** a chain of related requests: first "let people place newly acquired buildings

@@ -4446,11 +4446,9 @@ function buildWorld(tiers){
   EXP_RG=roadGrid();
   ROAD_RECTS=[]; EXP_RG.SEG.forEach(function(g){ if(g.h)ROAD_RECTS.push({x0:Math.min(g.a,g.b),y0:g.y-20,x1:Math.max(g.a,g.b),y1:g.y+20}); else ROAD_RECTS.push({x0:g.x-20,y0:Math.min(g.a,g.b),x1:g.x+20,y1:Math.max(g.a,g.b)}); });
   w+=roadsUnified(EXP_RG);
-  // street furniture on the finished pavement: crosswalks at busy approaches, manhole covers on the long runs
+  // street furniture on the finished pavement: crosswalks at busy approaches
+  // (manhole covers removed 2026-07-09 — at game scale they read as wheels lying on the road)
   w+=xwalk(900,1155,90)+xwalk(1755,620,0)+xwalk(2400,1285,90)+xwalk(1855,2040,0)+xwalk(1858,420,0)+xwalk(2760,1390,90);
-  [[600,2040],[1500,220],[3200,420],[2760,800],[240,1500],[1500,2620],[520,900]].forEach(function(mh){
-    w+='<circle cx="'+mh[0]+'" cy="'+mh[1]+'" r="5.5" fill="#4A525E" stroke="#2A3140" stroke-width="1.5"/><path d="M'+(mh[0]-3)+','+mh[1]+' h6 M'+mh[0]+','+(mh[1]-3)+' v6" stroke="#2A3140" stroke-width="1"/>';
-  });
   REG_DX=CORE_DX;REG_DY=CORE_DY;w+='<g transform="translate('+CORE_DX+','+CORE_DY+')">';  // ↓ downtown core, shifted to map center
   // (downtown's six curvy roads + the roundabout are now part of the unified road layer above, in final coords)
   // (the river is now a full top-to-bottom waterway drawn in FINAL coords just before the expansion,see riverSVG below)

@@ -1053,6 +1053,9 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 - **Why it matters:** the placement model now accounts for what hangs OVER a road (lamp heads,
   canopy discs), not just where things stand. Re-ran the sweep after fixes: zero overlaps across 38
   lamps, 5 parks, 82 field props, and every hand-placed core prop. Visual pass follows the deploy.
+- **Manhole covers removed (same day, user report):** the seven covers from the graphics batch read
+  as "wheel things" lying on the road at game scale rather than flush metal covers. Deleted;
+  crosswalks stay as the roads' detail element.
 
 ---
 

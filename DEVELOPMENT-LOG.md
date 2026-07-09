@@ -1066,3 +1066,39 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 - Likewise, an interim **4-cloud dial-back** tweak from this chat was replaced by the wind-driven cloud
   system already recorded under *Real-physics pass*. The soft ground shadows above are separate and do
   stand.
+
+---
+
+## 2026-07-09, Full question rewrite to operating-profile voice + NY reading standards
+
+- **Direction:** Rewrite every question in the game to match the intern's `cato-operating-profile.md`
+  voice and the New York Next Generation ELA reading standards.
+- **Scope:** All ~541 questions across three data sets were reworded: the 493 grade-leveled `MQ()`
+  pool questions in `QG[6..12]` and the shared reading bands `QGB.A/B/C`; the 40 rich scenario
+  questions in `QBANK` and `NEWQ1`–`NEWQ6`; and the 8 `QUIZ_QS` Town Hall Quiz items. In total 5,785
+  individual text strings (scenario prompts, answer labels, newspaper headlines/sublines, feedback,
+  and takeaways) were rewritten.
+- **How:** Voice follows the profile: direct, plain, data-and-consequence over opinion, no jargon,
+  no em dashes or en dashes, no emojis in prose, balanced framing on every option (no strawmen).
+  Reading level is matched to each pool's target grade per NY ELA bands (Grade 6 = short concrete
+  sentences; Grades 11-12 = college-prep syntax with precise economics vocabulary).
+- **What was preserved exactly:** every `fx` stat object, `best` answer, `letter`/`type`, `npc`,
+  `tag`, `icon`, `gradient`, `links`/`url`, and all historical `figure` quotes/names/years/sources
+  were kept byte-for-byte. Only human-readable strings changed. Verified programmatically that all
+  protected fields are identical to the originals.
+- **Verification:** each of the 53 rewritten JavaScript blocks passed a Node syntax check; a
+  structural fingerprint confirmed no stat objects, quotes, or entries were added, dropped, or
+  reordered; and the finished file was re-read to confirm every rewritten block is present and each
+  original block is gone. Line counts per block were preserved, so nothing downstream shifted.
+- **Wiring confirmed (correction):** an earlier draft of this note wrongly said the question bank
+  was not wired in. That was a false alarm from reading a truncated copy of the file. The bank IS
+  wired: `startGame()` runs `Q=dealTerm(null)` and `continueTerm()` runs `Q=dealTerm(Q)`, and
+  `dealTerm()` pulls from `gradePool(GRADE_KEY, npc)`, i.e. the rewritten `QG`/`QGB` pools. An init
+  IIFE also attaches figure quotes (`CATO_QUOTES`) and charts (`CATO_CHARTS`) to each pool question
+  by regex-matching the body text. Verified the rewrite did not regress that matching: figure
+  attachment held at 224/493 questions after vs 221/493 before (the ~44% rate is by design, since
+  the matchers only cover specific scenario topics). `QBANK` and `NEWQ1`–`NEWQ6` remain legacy and
+  are not read by the live `dealTerm()` path; they were rewritten anyway for consistency.
+- **Why it matters:** the questions are the core teaching surface of the game. They now speak in the
+  intern's voice and meet grade-appropriate reading levels, making the free-market ideas clearer and
+  more accessible to the 16-25 audience while keeping every citation and game-balance value intact.

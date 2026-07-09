@@ -1019,6 +1019,21 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 
 ---
 
+## 2026-07-09, Custom vehicle art: four illustrated designs replace the procedural cars
+
+- **What changed:** four vehicle illustrations by the same friend (orange sports car, blue sports
+  car, teal van, teal+red bus — `Illustrations/cars-04..07.svg`) replace the old rectangle-built
+  cars. New `vehicleDefs()` provides `#carA..#carD`: each normalized to face RIGHT (the three
+  left-facing sources are mirrored with a negative x-scale), wheels on y=0, sized 40-50px.
+  `carsSVG()` instances now `<use>` the defs; each keeps its shadow, gradient headlight cone, and
+  glow (front offset `f` is per-vehicle since the bus is longer). The bus cruises slower (1.4) to
+  read as the heavy vehicle. Braking-for-pedestrians, end-of-road flips, and dusk/rain headlights
+  all work unchanged.
+- **Why it matters:** real car silhouettes with hoods, windshields, and hubcaps replace colored
+  rectangles — and the bus gives the streets vehicle variety for free.
+
+---
+
 ## 2026-07-07, Build anywhere you own + the downtown city center opened for building
 
 - **Direction:** a chain of related requests: first "let people place newly acquired buildings

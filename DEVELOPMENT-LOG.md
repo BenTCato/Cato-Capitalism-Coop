@@ -1038,6 +1038,24 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 
 ---
 
+## 2026-07-09, Road-clearance sweep round 2 (post-resize): lamp heads, canopy lift, cart
+
+- **What changed:** a second full mathematical sweep (all roads incl. curves/roundabout vs every
+  prop's true visual disc) at the new sizes found three classes of obstacle the first sweep's
+  simpler model missed. (1) **Street lamp heads on the asphalt:** lamps south of an E-W road stood
+  at +42 while their heads hang 44px up — putting the head dead center on the road; and lamps beside
+  one road could stand right on a CROSSING road at junctions. South-side lamps now stand at +84, and
+  both base and head must clear every other road segment (`nearRoadX`). (2) **Canopy lift:** tree
+  canopies float ~34px above the trunk, so trees SOUTH of a road lean their canopy over it even with
+  the base 60px clear — field-tree margin 60→92, and park shade trees now validate their own spots
+  (park centers back to margin 52, so benches survive; a road-adjacent park just goes treeless).
+  (3) The market **handcart** sat 10px onto the downtown market curve → nudged to (855,1062).
+- **Why it matters:** the placement model now accounts for what hangs OVER a road (lamp heads,
+  canopy discs), not just where things stand. Re-ran the sweep after fixes: zero overlaps across 38
+  lamps, 5 parks, 82 field props, and every hand-placed core prop. Visual pass follows the deploy.
+
+---
+
 ## 2026-07-07, Build anywhere you own + the downtown city center opened for building
 
 - **Direction:** a chain of related requests: first "let people place newly acquired buildings

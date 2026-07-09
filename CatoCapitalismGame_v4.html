@@ -4468,7 +4468,7 @@ function buildWorld(tiers){
   w+=bHouse(280,260,tiers.h,'#E8956D')+bHouse(450,210,tiers.h,'#8FB7D9')+bHouse(360,400,tiers.h,'#D9C28F');
   w+=fenceH(180,560,7)+fcrops(196,520)+fscare(290,520)+fwell(560,360);
   w+=bSchool(1240,250+96,tiers.ed);
-  w+=bShops(700,1000+84,tiers.e)+fcart(880,1050)+fbarrel(660,1056)+fcrate(700,1062);
+  w+=bShops(700,1000+84,tiers.e)+fcart(855,1062)+fbarrel(660,1056)+fcrate(700,1062);   // cart nudged off the market road curve (was 10px onto it)
   w+=bBank(1300,620+88,tiers.e);
   w+=bPress(1310,820+80,tiers.f);   // moved west into downtown (inside the loop, below the Bank), clear of the river (now at core x≈1660)
   w+=bHall(820,300+92,tiers.avg);
@@ -4823,25 +4823,36 @@ function buildExpansion(tiers){
   function inRiver(px,py){return px>2440&&px<2680;}
   var placed=[], farEnough=function(px,py,m){for(var q=0;q<placed.length;q++){if(Math.abs(placed[q][0]-px)<m&&Math.abs(placed[q][1]-py)<m)return false;}return true;};
 
-  // 1) STREET LAMPS: walk each road segment and set lamps just off the curb, spaced out, alternating sides
+  // 1) STREET LAMPS: walk each road segment and set lamps just off the curb, spaced out, alternating
+  //    sides. Two hard rules keep every lamp head off the asphalt: (a) lamps SOUTH of a horizontal
+  //    road stand further out (+75) because the head hangs 44px UP — at the old +42 the head sat dead
+  //    center on the road; (b) both the base and the head must clear every OTHER road (junctions used
+  //    to plant lamps beside one road right on top of the crossing one).
+  function nearRoadX(px,py,m,skip){for(var i2=0;i2<SEG.length;i2++){if(i2===skip)continue;var g2=SEG[i2];if(g2.h){if(px>=g2.a-m&&px<=g2.b+m&&Math.abs(py-g2.y)<m)return true;}else{if(py>=g2.a-m&&py<=g2.b+m&&Math.abs(px-g2.x)<m)return true;}}return false;}
   var lampStr='';
   SEG.forEach(function(g,gi){
     var horiz=g.h, a=Math.min(g.a,g.b), b=Math.max(g.a,g.b);
     for(var tpos=a+150; tpos<=b-150; tpos+=320){
       var side=((((tpos/320)|0)+gi)%2)?42:-42;
+      if(horiz&&side>0)side=84;                                     // south of an E-W road: stand clear so the up-hanging head (44px tall, r8) fully misses the curb (29+8=37 < 84-44)
       var lx=horiz?tpos:(g.x+side), ly=horiz?(g.y+side):tpos;
       if(lx<120||lx>3540||ly<150||ly>2300)continue;
       if(inRiver(lx,ly)||inCore(lx,ly))continue;                    // river + downtown handled elsewhere
+      if(nearRoadX(lx,ly,40,gi)||nearRoadX(lx,ly-44,38,gi))continue; // base AND head must clear every crossing road
       if(onBldg(lx,ly,16)||!farEnough(lx,ly,150))continue;
       placed.push([lx,ly]); lampStr+=flamp(lx,ly);
     }
   });
 
   // 2) PARKS: the ONLY benches out here, each a little rest spot (shade trees + bush + flowers) so a bench always has a reason
-  function park(x,y){return ftree(x-38,y-4,1.16)+ftree(x+42,y-8,0.92)+fbush(x-4,y+12,1)+fflower(x-44,y+16)+fflower(x+32,y+18)+fbench(x,y);}
+  // Each shade tree validates ITS OWN spot (canopy disc vs every road, incl. the 34px canopy lift);
+  // a park too close to a road for trees still gets its bench + bush + flowers, so no rest spot vanishes.
+  function park(x,y){var o='';
+    [[x-38,y-4,1.16],[x+42,y-8,0.92]].forEach(function(tp){ if(!nearRoad(tp[0],tp[1],66)&&!nearRoad(tp[0],tp[1]-34,58))o+=ftree(tp[0],tp[1],tp[2]); });
+    return o+fbush(x-4,y+12,1)+fflower(x-44,y+16)+fflower(x+32,y+18)+fbench(x,y);}
   var parkStr='';
   [[430,1710],[3170,1710],[300,780],[3120,760],[380,1180],[2950,1180],[700,340],[2500,360]].forEach(function(p){
-    if(inCore(p[0],p[1])||inRiver(p[0],p[1])||nearRoad(p[0],p[1],104)||onBldg(p[0],p[1],44)||!farEnough(p[0],p[1],120))return;   // 104: a park's shade trees reach ±42 from center with ~29px canopies at the larger tree size
+    if(inCore(p[0],p[1])||inRiver(p[0],p[1])||nearRoad(p[0],p[1],52)||onBldg(p[0],p[1],44)||!farEnough(p[0],p[1],120))return;   // 52 covers the bench/bush footprint; trees self-validate above
     placed.push(p); parkStr+=park(p[0],p[1]);
   });
 
@@ -4854,7 +4865,10 @@ function buildExpansion(tiers){
     // road keep-out scales with the prop's VISUAL size (canopy > bush > rock > flower), measured from
     // the road centerline: half-road 29 + widest canopy ~24 → 56 for trees, down to 34 for flowers.
     // The old flat 30 let tree canopies overhang the asphalt by up to 23px.
-    var rdm=r<5?60:(r<7?48:(r<8?44:34));   // 60: retuned for the ~14% larger illustrated canopies
+    // keep-out per prop type, from the road centerline. Trees need by far the most because the canopy
+    // disc floats ~34px ABOVE the trunk: a tree standing south of an E-W road leans its whole canopy
+    // toward the asphalt (92 = 29 half-road + 23 canopy radius + 36 canopy lift + slack).
+    var rdm=r<5?92:(r<7?52:(r<8?46:34));
     if(nearRoad(jx,jy,rdm)||onBldg(jx,jy,18)||!farEnough(jx,jy,94))continue;
     if(r<5)fieldStr+=ftree(jx,jy,0.8+((jx+jy)%3)*0.14);
     else if(r<7)fieldStr+=fbush(jx,jy,0.9+((px)%2)*0.2);

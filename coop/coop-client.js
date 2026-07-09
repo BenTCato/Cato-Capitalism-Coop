@@ -424,9 +424,20 @@
     }
     return out;
   }
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function pickQuestions(n) {
     var pool = buildDuelPool().slice();
-    for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+    // Prefer questions this player has NOT seen yet (NPC terms or past duels). Fall back to
+    // seen ones only if there aren't enough fresh questions to fill the duel.
+    try {
+      var keyFn = g('qKey', null), storeFn = g('seenStore', null);
+      var seen = (typeof storeFn === 'function') ? storeFn() : null;
+      if (seen && typeof keyFn === 'function') {
+        var unseen = shuffle(pool.filter(function (q) { return !seen[keyFn(q)]; }));
+        var rest = shuffle(pool.filter(function (q) { return seen[keyFn(q)]; }));
+        pool = unseen.concat(rest);          // fresh questions first, seen ones only as backfill
+      } else { shuffle(pool); }
+    } catch (e) { shuffle(pool); }
     var LET = ['A', 'B', 'C', 'D', 'E', 'F'];
     return pool.slice(0, n).map(function (q) {
       // copy choices, flag the correct one, then SHUFFLE so the best answer isn't always "A"
@@ -555,7 +566,12 @@
       '<div class="duel-row"><button class="duel-btn duel-ghost" id="duel-cancel2">Cancel challenge</button></div>');
     card.querySelector('#duel-cancel2').onclick = function () { cancelChallenge(); };
   }
-  function startAnswering(d) { mySubmitted = false; qIdx = 0; myAnswers = []; renderQuestion(d); }
+  function startAnswering(d) {
+    mySubmitted = false; qIdx = 0; myAnswers = [];
+    // remember these questions so neither NPC terms nor future duels repeat them for this player
+    try { var mark = g('markSeen', null); if (typeof mark === 'function' && d && d.questions) mark(d.questions); } catch (e) {}
+    renderQuestion(d);
+  }
   function renderQuestion(d) {
     if (!d.questions || !d.questions[qIdx]) { return; }
     var q = d.questions[qIdx];

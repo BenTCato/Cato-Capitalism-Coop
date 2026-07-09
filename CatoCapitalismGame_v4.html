@@ -5961,19 +5961,31 @@ function gradePool(grade,npcIndex){
   if(grade<=6) return own.length?own:(QGB.A||[]).filter(function(q){return q.npc===npcIndex;}); // Grade 6 stays in its own age-level pool, never the higher 6-8 band
   return own.concat((QGB[bandOf(grade)]||[]).filter(function(q){return q.npc===npcIndex;}));
 }
+// ── Seen-question tracking (shared by NPC terms and 1v1 duels) ──
+// A question is remembered per profile (P.seenQ) so the same one is not shown twice, in any form.
+function qKey(q){ return ((q&&(q.tag||q.title))||'')+'|'+((q&&q.body)||'').slice(0,60); }
+function seenStore(){ if(typeof P==='undefined'||!P) return null; if(!P.seenQ) P.seenQ={}; return P.seenQ; }
+function markSeen(list){ var s=seenStore(); if(!s||!list||!list.length) return; list.forEach(function(q){ if(q) s[qKey(q)]=1; }); if(typeof saveProfiles==='function'){ try{ saveProfiles(); }catch(e){} } }
 function dealTerm(exclude){
   // One question per citizen (Q[i] = NPC i). Pull from that citizen's grade pool.
-  // Safety fallback (pools are always full): any question for this grade+band.
+  // Prefer questions this player has NOT seen before (across NPC terms AND duels); a citizen's
+  // pool is recycled only once every question in it has been used, so the game never runs dry.
   exclude=exclude||[];
+  var seen=seenStore()||{};
   const term=[];
   for(let i=0;i<10;i++){
     let pool=gradePool(GRADE_KEY,i);
     if(!pool.length){ pool=(QG[GRADE_KEY]||[]).concat(QGB[bandOf(GRADE_KEY)]||[]); }
-    let fresh=pool.filter(function(q){return exclude.indexOf(q)<0;});   // avoid repeating last term's questions
-    let src=fresh.length?fresh:pool;                                    // fall back to full pool if all were used
-    let pick=src.length?src[Math.floor(Math.random()*src.length)]:null;
+    let unseen=pool.filter(function(q){return exclude.indexOf(q)<0 && !seen[qKey(q)];}); // not seen and not last term
+    if(!unseen.length){
+      pool.forEach(function(q){ var k=qKey(q); if(seen[k]) delete seen[k]; });           // whole pool seen → recycle this citizen
+      unseen=pool.filter(function(q){return exclude.indexOf(q)<0;});
+      if(!unseen.length) unseen=pool;
+    }
+    let pick=unseen.length?unseen[Math.floor(Math.random()*unseen.length)]:null;
     if(pick)term.push(pick);
   }
+  markSeen(term);                                                                          // remember what we just dealt
   return term;
 }
 // ════════ GRADE-LEVELED QUESTION POOLS (compact; free-market framing; no invented quotes/stats) ════════

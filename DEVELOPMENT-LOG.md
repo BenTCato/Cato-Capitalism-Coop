@@ -1178,6 +1178,30 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
   was a self-contained function replacement with surrounding code untouched.
 - **To deploy:** commit `coop/coop-client.js` (served by the co-op server as `/__coop/client.js`)
   and push; Render auto-deploys.
+
+---
+
+## 2026-07-09, No repeated questions across NPC terms and duels
+
+- **Direction:** Make sure a player never sees the same question twice, in any form (NPC citizens
+  or 1v1 duels).
+- **How it works:** added a shared, per-profile "seen" set. `CatoCapitalismGame_v4.html` now defines
+  `qKey(q)` (a stable id from the question's tag/title plus the first 60 chars of its body),
+  `seenStore()` (returns `P.seenQ`, persisted with the profile), and `markSeen(list)`.
+  - `dealTerm()` now prefers questions not in the seen set (and still skips the previous term), marks
+    the dealt term seen, and recycles a citizen's pool only after every question in it has been used,
+    so the game never runs dry.
+  - `coop/coop-client.js`: `pickQuestions()` prefers unseen questions (seen ones only backfill if
+    there aren't enough fresh), and `startAnswering()` marks a duel's questions seen for both players.
+    Because duels and NPC terms share `P.seenQ`, a duel won't reuse a question the player already saw
+    as a citizen, and vice versa.
+- **Verification (Node simulation over the real rewritten pools):** across grades 6, 8, 10, and 12,
+  no citizen repeated a question until its entire pool was exhausted; a duel right after an NPC term
+  had zero overlap with that term; and two consecutive duels had zero overlap. No runtime errors.
+- **Known limits:** per-citizen grade pools are small, so after a player exhausts a citizen's pool it
+  recycles (repeats become possible again). Duel questions are challenger-supplied, so the no-repeat
+  guarantee is per-player from that player's own history; it cannot know what the opponent saw before.
+- **To deploy:** commit `CatoCapitalismGame_v4.html` and `coop/coop-client.js`, then push.
 - **Why it matters:** the questions are the core teaching surface of the game. They now speak in the
   intern's voice and meet grade-appropriate reading levels, making the free-market ideas clearer and
   more accessible to the 16-25 audience while keeping every citation and game-balance value intact.

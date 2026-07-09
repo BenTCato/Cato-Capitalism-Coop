@@ -1031,6 +1031,10 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
   all work unchanged.
 - **Why it matters:** real car silhouettes with hoods, windshields, and hubcaps replace colored
   rectangles — and the bus gives the streets vehicle variety for free.
+- **Size bump (same day, user request):** trees +~14% (def scales 0.115→0.13 / 0.13→0.148) and
+  vehicles +~15% (0.1→0.115 sports, 0.088→0.1 van, 0.069→0.078 bus; front offsets 20→23 / 26→29 so
+  headlight cones stay on the bumpers). Road keep-outs retuned for the wider canopies (field trees
+  56→60, parks 100→104) so the larger art still never touches pavement.
 
 ---
 

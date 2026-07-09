@@ -1158,6 +1158,26 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
   attachment held at 224/493 questions after vs 221/493 before (the ~44% rate is by design, since
   the matchers only cover specific scenario topics). `QBANK` and `NEWQ1`–`NEWQ6` remain legacy and
   are not read by the live `dealTerm()` path; they were rewritten anyway for consistency.
+
+---
+
+## 2026-07-09, Duel questions now follow grade standards and profile voice
+
+- **Direction:** Make 1v1 duel questions correlate with the selected grade level and the
+  operating-profile voice, instead of pulling mostly from the fixed rich-scenario banks.
+- **Change:** Rewrote `buildDuelPool()` in `coop/coop-client.js`. It previously gathered from
+  `Q`, `QBANK`, and `NEWQ1`–`NEWQ6` (about 50 questions, only ~10 of which were grade-based).
+  It now draws from the selected grade's pools via `gradePool(GRADE_KEY, npc)` for all 10 citizens,
+  plus the current term's `Q`. Because the `QG`/`QGB` pools are the grade-leveled, profile-voice
+  rewrites, duel questions now match both the player's grade reading level and the intended voice.
+- **Safety fallback:** if the grade pools are not reachable at runtime, it falls back to the legacy
+  `Q`/`QBANK`/`NEWQ` banks so duels still work.
+- **Note:** duels are challenger-supplied, so a duel uses the challenger's selected grade for its
+  question set.
+- **Verification:** the new `buildDuelPool()` was syntax-checked in isolation with Node; the edit
+  was a self-contained function replacement with surrounding code untouched.
+- **To deploy:** commit `coop/coop-client.js` (served by the co-op server as `/__coop/client.js`)
+  and push; Render auto-deploys.
 - **Why it matters:** the questions are the core teaching surface of the game. They now speak in the
   intern's voice and meet grade-appropriate reading levels, making the free-market ideas clearer and
   more accessible to the 16-25 audience while keeping every citation and game-balance value intact.

@@ -392,19 +392,36 @@
   function dist(a, b) { return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2)); }
   function trySfx(n) { try { var f = g('sfx'); if (typeof f === 'function') f(n); } catch (e) {} }
 
-  // gather real policy questions from the game's banks → pick N, keep the answer key
+  // gather real policy questions → pick N, keep the answer key.
+  // Draw from the SELECTED GRADE's pools so duel questions match the player's grade level
+  // and the operating-profile voice (the QG/QGB banks are the grade-leveled, rewritten ones).
   function buildDuelPool() {
-    var names = ['Q', 'QBANK', 'NEWQ1', 'NEWQ2', 'NEWQ3', 'NEWQ4', 'NEWQ5', 'NEWQ6'], out = [], seen = {};
-    names.forEach(function (nm) {
-      var arr = g(nm, null);
-      if (!Array.isArray(arr)) return;
-      arr.forEach(function (q) {
-        if (!q || !q.body || !Array.isArray(q.choices) || !q.best) return;
-        var key = (q.title || '') + '|' + q.body.slice(0, 40);
-        if (seen[key]) return; seen[key] = 1;
-        out.push(q);
+    var out = [], seen = {};
+    function add(q) {
+      if (!q || !q.body || !Array.isArray(q.choices) || !q.best) return;
+      var key = (q.title || '') + '|' + q.body.slice(0, 40);
+      if (seen[key]) return; seen[key] = 1;
+      out.push(q);
+    }
+    // Primary source: every citizen's pool for the currently selected grade.
+    var grade = g('GRADE_KEY', null);
+    var poolFn = g('gradePool', null);
+    if (typeof poolFn === 'function' && grade != null) {
+      for (var npc = 0; npc < 10; npc++) {
+        var pool = poolFn(grade, npc);
+        if (Array.isArray(pool)) pool.forEach(add);
+      }
+    }
+    // Also include this term's live questions (already grade-based).
+    var Q = g('Q', null);
+    if (Array.isArray(Q)) Q.forEach(add);
+    // Safety fallback: if the grade pools aren't reachable, use the legacy banks so duels still work.
+    if (out.length === 0) {
+      ['Q', 'QBANK', 'NEWQ1', 'NEWQ2', 'NEWQ3', 'NEWQ4', 'NEWQ5', 'NEWQ6'].forEach(function (nm) {
+        var arr = g(nm, null);
+        if (Array.isArray(arr)) arr.forEach(add);
       });
-    });
+    }
     return out;
   }
   function pickQuestions(n) {

@@ -705,6 +705,72 @@ All of the following were done today, in this order. Files updated this session:
 
 ---
 
+## Recovered entries (reconstructed 2026-07-07 from GitHub history)
+
+The log went quiet after 2026-06-25, but the GitHub repo (`BenTCato/Cato-Capitalism-Coop`, 109
+commits) shows steady work. Commit messages are all web uploads, so the entries below are
+reconstructed from commit dates, file timestamps, and the project's own docs.
+
+## 2026-06-18, Post-QA fix uploads
+
+- Two deploys in the days after the QA bug report was finalized (2026-06-17) — fixes from that
+  report landing. Why it matters: closed out the first formal QA round before the grade-level work
+  began.
+
+## 2026-06-23, Grade-level question pools completed and deployed
+
+- Four deploys finishing the Grade 6–12 reading-level system started 2026-06-22:
+  per-citizen × grade question pools reaching **~700 questions** (100 per grade across all 10
+  citizen topics), the quote-optional renderer, and `gradePool()` unioning grade + band sets (per
+  `GRADE-LEVEL-UPDATE-STATUS.md`). Why it matters: this is what lets one classroom span middle and
+  high school reading levels in the same game.
+
+## 2026-06-26, Post-sprint polish deploys
+
+- Six deploys the day after the big 2026-06-25 map/building-art sprint — continued art, layout,
+  and balance corrections to that work. Why it matters: the 06-25 sprint touched nearly every
+  building and road; this was the settling pass.
+
+## 2026-06-29, How-To-Play walkthrough page
+
+- `How-To-Play-Walkthrough.html` added (three deploys) and the development log updated (the final
+  06-25 entry was cut short in that edit — recovered above). Why it matters: gave teachers/students
+  a standalone illustrated guide outside the in-game help.
+
+## 2026-06-30, Co-op dashboard + join page updates
+
+- `coop/dashboard.html` and `coop/join.html` revised. Why it matters: the teacher dashboard and
+  student join flow are the front door for classroom sessions.
+
+## 2026-07-01, Automatic cloud accounts (name + PIN) and Render blueprint
+
+- Four deploys adding automatic sign-in/progress saving: name + PIN accounts with durable storage
+  via Upstash Redis on Render (`coop/ACCOUNTS-SETUP.md`, `render.yaml`, sign-in UI + debounced
+  `cloudSave` in the game). Why it matters: student progress (avatar, stars, items, house, grades)
+  now survives across devices without manual save codes.
+
+## 2026-07-02, Four-agent playthrough review + fixes (13 deploys)
+
+- `PLAYTHROUGH-FINDINGS.md` written: a four-agent review (core loop, town/build, screens/copy,
+  co-op/mobile/perf) with prioritized P0/P1 lists. The placement bug (a props-loop `var P` shadowing
+  the profile global) was root-caused and fixed the same session; `coop-client.js`/`coop-server.js`
+  updated (duel settlement, account handling); sign-out added for shared Chromebooks. Why it
+  matters: the biggest single hardening day on record — correctness/integrity issues (save-load,
+  duels, PINs, class-question exploit) identified and worked down.
+
+## 2026-07-06, Playthrough-findings fixes continued (7 deploys)
+
+- Seven further deploys working through the remaining P0/P1 items from `PLAYTHROUGH-FINDINGS.md`.
+  Why it matters: cleared the backlog ahead of the 2026-07-07 realism/animation overhaul.
+
+## 2026-07-07, GitHub reconciliation note
+
+- Today's 11 pushes correspond to the seven detailed 2026-07-07 entries below (physics pass, life
+  systems, seasons, roster, QA rounds, unified roads, polish + cleanup). Log verified complete
+  against all 109 commits in the repo as of 19:59 UTC.
+
+---
+
 ## 2026-07-07, Real-physics pass: avatar, clouds, water, day/night, ambient props
 
 - **Direction:** make movement and the environment behave like the real world instead of looping
@@ -841,6 +907,96 @@ All of the following were done today, in this order. Files updated this session:
 - **Fairgrounds signpost:** the "🎡 FAIRGROUNDS 🎢 / open build land" text now only renders while
   the bottom band is empty — building the first attraction there hides it for good (checked via
   `ownsAttraction` + placement positions at world build).
+
+---
+
+## 2026-07-07, Project folder cleanup: removed superseded builds and unused assets
+
+- **Deleted (user-approved, ~1.6MB):** old game builds `CatoCapitalismGame_FINAL.html`, `_v2.html`,
+  `_v3.html`, and the original `policy_game.html` prototype; concept-art sources `auhocratic
+  city.jpg`, `flat vector galtsgulch.jpg`, `socialist city.jpg`, `Cato_Institute-logo.svg (1).png`
+  (all now embedded as base64 inside v4); plus stray sync artifacts (`.fuse_hidden*`, `.Rhistory`).
+- **Why it matters:** `coop-server.js` globs `CatoCapitalismGame*.html` and picks the highest
+  version, so stale builds sitting next to v4 were both clutter and a small deployment hazard.
+  Every deleted file was verified unreferenced by the game, the co-op server, the dashboards, and
+  the walkthrough. Folder is now 1.8MB: v4 + coop server + docs + skills-reference only.
+
+---
+
+## 2026-07-07, Co-op UI moved off the map (`coop/coop-client.js`)
+
+- **What changed:** the "🔑 Join a class" button and the "Class World · N online" status badge were
+  fixed-position pills pinned to the left edge (`left:12px`, `bottom:172px`/`132px`), floating
+  directly over the map's left side during play. First moved to float centered in the header band;
+  then (same day, user feedback: "floating") mounted PROPERLY INSIDE the header's `.hd-right` flex
+  row via a new `mountTopbar()` helper — they now sit as real top-bar items just left of the 🔊
+  sound button (order: 🔑 Join · World status · 🔊 · 💬), restyled to match the header buttons,
+  with a fixed top-center fallback if the header is ever missing.
+- **Why it matters:** the pills were covering town scenery and NPCs on the map's west side; as true
+  header items they scroll with the bar, never overlap the world, and read as part of the UI.
+
+---
+
+## 2026-07-08, Road-clearance sweep: no prop touches any road anywhere
+
+- **What changed:** a computational sweep of every road (all 34 unified roads sampled, incl. the six
+  downtown bezier curves + roundabout ring) against every prop's VISUAL footprint (canopy, not
+  trunk). Found and fixed: a rock sitting **dead center on the east loop road** (core 1500,980 →
+  1440), a bush 22px onto the same road (1480,560 → 1440), two trees whose canopies overhung the
+  west/top loop roads (40,950 → 60,950; 60,90 → 60,100), and both fountain-plaza hedges clipping the
+  roundabout's new curb ring (640→620, 1085→1105). Two systemic rules fixed in `buildExpansion`:
+  the field-scatter road margin is now size-aware (56 trees / 48 bushes / 44 rocks / 34 flowers,
+  measured from centerline; was a flat 30, letting canopies overhang asphalt by up to 23px) and the
+  park keep-out went 48 → 100 (a park's shade trees reach ±42 with ~26px canopies, so 48 could put
+  one fully on the road).
+- **Why it matters:** trees and rocks on the pavement broke the "clean pavement" standard the road
+  unification set; the placement rules now respect what a prop LOOKS like, not just where its base
+  sits, so this stays fixed for every future scatter. Verified: re-ran the sweep, zero overlaps.
+
+---
+
+## 2026-07-08, Graphics batch: ten visual upgrades (approved as a set)
+
+- **Lightning:** heavy storms now fire a double-strobe screen flash with a jagged bolt every
+  10-23s. Brief and dim by design (photosensitivity), skipped entirely on reduced-motion and
+  low-power devices.
+- **Headlight cones:** each car projects a gradient beam wedge onto the road ahead, on the same
+  dusk/rain cycle as the headlight glow (shares the `.headlight` class, so no new lighting code).
+- **Road markings:** six crosswalks at busy approaches (the dormant `xwalk()` finally earns its
+  keep), plus seven manhole covers on the long runs.
+- **Building shadows:** every building (core `urban()` + all expansion rows) gets a directional
+  cast shadow down-right matching the global sun, plus an ambient-occlusion strip at the
+  foundation. Grounds the whole town.
+- **Seasonal ground detail:** footprints pressed into snowpack behind the player (pooled, fade as
+  fresh snow fills them), snowdrifts banking against every building wall (opacity follows the
+  snowpack), autumn leaf piles under the 14 core shade trees (follow `sea.aut`).
+- **Water reflections:** a sky sheen on the pond and wobbling bridge-post reflections downstream of
+  each deck (shimmer animation).
+- **Tumbling leaves:** `fxStep` gained an optional spin arg; leaves/petals now rotate as they fall,
+  phase-shifted per particle.
+- **Character micro-life:** all characters blink every ~4.6s with per-character delays (creator
+  previews included); NPC contact shadows squash with each stride like the player's.
+- **Worn desire paths:** bare-earth trails between popular spots. *(Removed same day at user
+  request — the dirt lines didn't sit right visually. The other nine features stay.)*
+- **Speed camera:** the viewBox eases ~5% wider at full sprint and tightens at rest (off for
+  reduced-motion). Particle culling margin widened to match.
+- **Why it matters:** depth (shadows), drama (lightning), and micro-life (blinks, footprints,
+  tumbling leaves) are the difference between a diagram and a place. All ten respect the existing
+  lowPower/reduceMotion fallbacks. All new blocks syntax-checked.
+
+---
+
+## 2026-07-08, Bug fix: game keys hijacked the feedback form (and every other form field)
+
+- **What changed:** the global town keydown handler ran even while typing in the 💬 feedback form —
+  it `preventDefault`ed SPACE/WASD (so those characters could never be typed) and left the opener
+  button focused, so SPACE re-triggered it and closed the form mid-sentence. The handler now
+  (1) returns immediately when focus is in ANY input/textarea/select/contentEditable, stealing no
+  keys, (2) returns and clears held movement whenever an overlay is open, and (3) `openSurvey()`
+  blurs the opener button. Fixes the same latent key-theft for the bank amount box and the class
+  code input.
+- **Why it matters:** students literally could not write feedback containing a space, a "w", "a",
+  "s", or "d" — which rules out most English sentences.
 
 ---
 

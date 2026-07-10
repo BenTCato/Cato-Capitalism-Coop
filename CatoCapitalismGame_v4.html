@@ -514,14 +514,21 @@
     @keyframes blink{0%,95.5%,100%{transform:scaleY(1)}97%{transform:scaleY(.12)}98.5%{transform:scaleY(1)}}
     /* water reflections shimmer as wavelets break the mirrored image */
     .reflection{animation:shim 3.4s ease-in-out infinite;}
-    .no-wind .sway,.no-wind .cl,.no-wind .cl2,.no-wind .cl3,.no-wind .flow,.no-wind .smoke,.no-wind .riverflow,.no-wind .cloud-billow,.no-wind .ripple,.no-wind .duck,.no-wind .duck .duck-body,.no-wind .glint,.no-wind .lampglow,.no-wind .spray{animation:none!important;}
+    /* water mesh: wave-crest tiles scroll downstream by EXACTLY one tile length, so the loop is
+       seamless (shader-skill UV panning). Two octaves at different speeds give parallax depth. */
+    .wmesh{animation:wmeshA 7s linear infinite;}
+    .wmesh.w2{animation-name:wmeshB;animation-duration:11s;}
+    .wmesh.wp{animation-duration:13s;}
+    @keyframes wmeshA{to{transform:translateY(64px)}}
+    @keyframes wmeshB{to{transform:translateY(96px)}}
+    .no-wind .sway,.no-wind .cl,.no-wind .cl2,.no-wind .cl3,.no-wind .flow,.no-wind .smoke,.no-wind .riverflow,.no-wind .cloud-billow,.no-wind .ripple,.no-wind .duck,.no-wind .duck .duck-body,.no-wind .glint,.no-wind .lampglow,.no-wind .spray,.no-wind .wmesh{animation:none!important;}
     /* hard freeze: still water locks up, the fountain is winterized, ducks migrate, the rowboat is docked.
        Ripples and glints hide entirely so no open-water motion shows through the translucent ice sheet. */
     .frozen .ripple,.frozen .glint,.frozen .spray,.frozen .duck,.frozen .boat{display:none;}
     /* ice sheet: fades in over the pond and fountain basin as the freeze sets, thaws back out in spring */
     .pond-ice{opacity:0;transition:opacity 3s ease;pointer-events:none;}
     .frozen .pond-ice{opacity:.78;}
-    @media (prefers-reduced-motion: reduce){.sway,.flow,.riverflow,.cloud-billow,.ripple,.duck,.duck .duck-body,.glint,.lampglow,.spray,.blink,.reflection{animation:none!important;}}
+    @media (prefers-reduced-motion: reduce){.sway,.flow,.riverflow,.cloud-billow,.ripple,.duck,.duck .duck-body,.glint,.lampglow,.spray,.blink,.reflection,.wmesh{animation:none!important;}}
     .dlg{display:none;position:absolute;left:0;right:0;bottom:0;z-index:20;padding:10px;}
     .dlg.open{display:block;animation:fadeUp .22s ease;}
     #emote-fab{position:absolute;right:14px;bottom:14px;z-index:30;width:50px;height:50px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(16,22,40,.85);color:#fff;font-size:1.5rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);}
@@ -4120,6 +4127,30 @@ function worldDefs(){
   '<pattern id="courses" width="20" height="10" patternUnits="userSpaceOnUse"><path d="M0,9.5 h20" stroke="#000000" stroke-opacity=".08" stroke-width="1"/><path d="M10,0 v9.5" stroke="#000000" stroke-opacity=".05" stroke-width="1"/></pattern>'+
   '<linearGradient id="coneG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFE9A8" stop-opacity=".5"/><stop offset="1" stop-color="#FFE9A8" stop-opacity="0"/></linearGradient>'+   // headlight beam falloff
   '<radialGradient id="sheenG"><stop offset="0%" stop-color="#FFFFFF" stop-opacity=".22"/><stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>'+                        // sky sheen on still water
+  // ── TERRAIN + WATER MATERIALS (shader-skill port: albedo base + tiling detail layer + depth tint).
+  //    All detail patterns use only black/white alpha, so the policy-driven grass tint (blendAmb)
+  //    keeps showing through — one "material", every surface, zero per-frame JS cost.
+  '<pattern id="grassTx" width="48" height="48" patternUnits="userSpaceOnUse">'+                             // micro detail: grass tufts + light flecks
+    '<path d="M7,38 l2,-7 M10,38 l2,-6 M13,38 l1,-5 M31,16 l2,-6 M34,16 l2,-5 M22,44 l2,-5 M40,30 l2,-6 M43,30 l1,-5" stroke="#0A2808" stroke-opacity=".10" stroke-width="1.6" stroke-linecap="round" fill="none"/>'+
+    '<circle cx="18" cy="9" r="1.2" fill="#FFFFFF" fill-opacity=".07"/><circle cx="41" cy="42" r="1.4" fill="#FFFFFF" fill-opacity=".06"/><circle cx="5" cy="22" r="1.1" fill="#FFFFFF" fill-opacity=".06"/>'+
+  '</pattern>'+
+  '<pattern id="grassBand" width="260" height="260" patternUnits="userSpaceOnUse" patternTransform="rotate(18)">'+  // macro variation: broad meadow banding kills the flat single-tone look
+    '<rect width="260" height="118" fill="#000000" fill-opacity=".025"/><rect y="176" width="260" height="52" fill="#FFFFFF" fill-opacity=".022"/>'+
+  '</pattern>'+
+  '<pattern id="sandTx" width="40" height="40" patternUnits="userSpaceOnUse">'+                              // shoreline speckle
+    '<circle cx="7" cy="9" r="1.1" fill="#7A5A34" fill-opacity=".16"/><circle cx="27" cy="20" r="1.3" fill="#7A5A34" fill-opacity=".13"/><circle cx="15" cy="32" r="1" fill="#FFFFFF" fill-opacity=".14"/><circle cx="34" cy="6" r="1" fill="#FFFFFF" fill-opacity=".12"/>'+
+  '</pattern>'+
+  '<pattern id="waterTx" width="64" height="64" patternUnits="userSpaceOnUse">'+                             // wave-crest tile (the "normal map"); scrolled by exactly 64px → seamless
+    '<path d="M8,16 q8,-6 16,0 M36,40 q8,-6 16,0 M18,52 q7,-5 14,0" stroke="#FFFFFF" stroke-opacity=".10" stroke-width="2.2" fill="none" stroke-linecap="round"/>'+
+    '<path d="M44,10 q6,-4 12,0" stroke="#FFFFFF" stroke-opacity=".07" stroke-width="1.8" fill="none" stroke-linecap="round"/>'+
+  '</pattern>'+
+  '<pattern id="waterTx2" width="96" height="96" patternUnits="userSpaceOnUse">'+                            // second octave, larger + fainter, scrolled at a different speed for parallax depth
+    '<path d="M10,26 q12,-8 24,0 M52,66 q12,-8 24,0" stroke="#FFFFFF" stroke-opacity=".06" stroke-width="3" fill="none" stroke-linecap="round"/>'+
+    '<path d="M58,18 q9,-6 18,0" stroke="#08243C" stroke-opacity=".08" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
+  '</pattern>'+
+  '<linearGradient id="riverDepth" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#08243C" stop-opacity="0"/><stop offset="0.5" stop-color="#08243C" stop-opacity=".20"/><stop offset="1" stop-color="#08243C" stop-opacity="0"/></linearGradient>'+   // deeper channel center
+  '<radialGradient id="pondDepth"><stop offset="0%" stop-color="#08243C" stop-opacity=".18"/><stop offset="70%" stop-color="#08243C" stop-opacity=".06"/><stop offset="100%" stop-color="#08243C" stop-opacity="0"/></radialGradient>'+                          // pond deepens toward the middle
+  '<clipPath id="pondClip"><ellipse cx="350" cy="1006" rx="104" ry="52"/></clipPath>'+
   '</defs>';
 }
 function ftree(x,y,s){reg(x-12*s,y-8*s,24*s,12*s);
@@ -4254,6 +4285,7 @@ function fountainB(x,y,t){reg(x-58,y-18,116,40);
   let s='<g transform="translate('+x+','+y+')">'+sh(0,20,60,10);
   s+='<ellipse cx="0" cy="12" rx="58" ry="21" fill="'+(t===2?'#E8E4D8':'#9AA0A6')+'"/>';
   s+='<ellipse cx="0" cy="9" rx="47" ry="15" fill="'+(t===0?'#6E7B79':AP.water)+'"/>';
+  if(t>0)s+='<ellipse cx="0" cy="9" rx="47" ry="15" fill="url(#waterTx)" opacity=".55"/>';   // basin water shares the wave-mesh material
   if(t>0)s+='<ellipse cx="-13" cy="5" rx="13" ry="4" fill="rgba(255,255,255,.55)"/>';
   s+='<ellipse class="pond-ice" cx="0" cy="9" rx="47" ry="15" fill="#DDE9F2"/>';   // fountain basin ices over in a hard freeze
   s+='<ellipse cx="0" cy="-2" rx="13" ry="5" fill="'+(t===2?'#E8E4D8':'#9AA0A6')+'"/>';
@@ -4425,6 +4457,11 @@ function buildWorld(tiers){
   let w=treeDefs()+worldDefs()+vehicleDefs();
   w+='<rect width="'+WORLD_W+'" height="'+WORLD_H+'" fill="'+AP.grass+'"/>';
   for(let i=0;i<260;i++){const gx=(i*457)%WORLD_W,gy=(i*331)%WORLD_H;w+='<ellipse cx="'+gx+'" cy="'+gy+'" rx="'+(46+(i%4)*20)+'" ry="'+(20+(i%3)*8)+'" fill="'+AP.grass2+'"/>';}
+  // ground material stack (multi-octave, shader-skill style): base tint (policy-driven) → mid-octave
+  // patches (above) → broad rotated meadow banding (macro) → tuft/fleck detail tile (micro). The two
+  // texture layers are alpha-only, so seasonal snow and the policy palette read through them.
+  w+='<rect width="'+WORLD_W+'" height="'+WORLD_H+'" fill="url(#grassBand)"/>';
+  w+='<rect width="'+WORLD_W+'" height="'+WORLD_H+'" fill="url(#grassTx)"/>';
   // winter snowpack: a ground-level white layer that the lighting pass fades in as snow accumulates.
   // It sits UNDER roads and buildings, so streets stay plowed and rooftops stay clear while lawns whiten.
   w+='<rect id="snow-rect" width="'+WORLD_W+'" height="'+WORLD_H+'" fill="#F4F8FC" opacity="0"/>';
@@ -4455,7 +4492,14 @@ function buildWorld(tiers){
   // pond + dock
   // pond: still water reads as ripple rings spreading from disturbances (ducks, dripping dock) that fade
   // as their energy spreads over a growing circumference, plus sun glints that twinkle with the wavelets
-  w+='<ellipse cx="350" cy="1010" rx="120" ry="64" fill="'+AP.water2+'"/><ellipse cx="350" cy="1006" rx="104" ry="52" fill="'+AP.water+'"/>'+
+  // pond material stack: sand shoreline (transition zone) → shallow ring → water albedo → depth
+  // tint toward the middle → slow scrolling wave-mesh clipped to the basin → ripples/glints/sheen/ice
+  w+='<ellipse cx="350" cy="1012" rx="131" ry="72" fill="#D9C79C"/><ellipse cx="350" cy="1012" rx="131" ry="72" fill="url(#sandTx)"/>'+
+     '<ellipse cx="350" cy="1010" rx="120" ry="64" fill="'+AP.water2+'"/><ellipse cx="350" cy="1006" rx="104" ry="52" fill="'+AP.water+'"/>'+
+     '<ellipse cx="350" cy="1006" rx="104" ry="52" fill="url(#pondDepth)"/>'+
+     '<g clip-path="url(#pondClip)"><rect class="wmesh wp" x="242" y="890" width="216" height="232" fill="url(#waterTx)"/></g>'+   // clip on the parent so the mesh scrolls INSIDE the basin
+     '<g transform="translate(247,1032)"><path d="M0,0 c-1,-8 -3,-12 -2,-19 M3,1 c1,-7 3,-11 2,-17 M-3,1 c-2,-6 -4,-9 -4,-14" stroke="#4E7A3A" stroke-width="1.8" fill="none" stroke-linecap="round"/></g>'+   // reeds at the shore
+     '<g transform="translate(452,992)"><path d="M0,0 c-1,-7 -2,-11 -1,-16 M3,0 c1,-6 2,-9 2,-13" stroke="#4E7A3A" stroke-width="1.8" fill="none" stroke-linecap="round"/></g>'+
      '<g style="pointer-events:none;"><ellipse class="ripple" cx="350" cy="1006" rx="88" ry="42" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.6"/><ellipse class="ripple r2" cx="350" cy="1006" rx="88" ry="42" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.4"/><ellipse class="ripple r3" cx="350" cy="1006" rx="88" ry="42" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.2"/></g>'+
      '<ellipse class="glint" cx="320" cy="990" rx="24" ry="8" fill="rgba(255,255,255,.4)"/><ellipse class="glint g2" cx="384" cy="1018" rx="13" ry="5" fill="rgba(255,255,255,.35)"/><ellipse class="glint g3" cx="336" cy="1032" rx="9" ry="3.5" fill="rgba(255,255,255,.3)"/>'+
      '<ellipse cx="332" cy="998" rx="82" ry="36" fill="url(#sheenG)"/>'+   // sky sheen: still water mirrors the bright sky
@@ -4515,8 +4559,16 @@ function buildWorld(tiers){
   //    buildings are kept out of its corridor (see the river keep-clear in buildExpansion's row()). ──
   (function(){
     var RX=2560;                                                          // straight channel center: clear of the loop road (west) and the arterial (east)
+    // river material stack: sandy shore strips (transition zone) → shallow bank → water albedo →
+    // deep-channel gradient → two wave-mesh layers scrolling downstream at different speeds
+    // (parallax octaves; each scrolls exactly one tile length, so the loop is seamless)
+    w+='<rect x="'+(RX-59)+'" y="-40" width="9" height="2860" fill="#D9C79C"/><rect x="'+(RX+50)+'" y="-40" width="9" height="2860" fill="#D9C79C"/>';
+    w+='<rect x="'+(RX-59)+'" y="-40" width="118" height="2860" fill="url(#sandTx)"/>';
     w+='<rect x="'+(RX-50)+'" y="-40" width="100" height="2860" fill="'+AP.water2+'"/>';   // shore/bank (runs to the new fairgrounds bottom)
     w+='<rect x="'+(RX-40)+'" y="-40" width="80" height="2860" fill="'+AP.water+'"/>';      // water
+    w+='<rect x="'+(RX-40)+'" y="-40" width="80" height="2860" fill="url(#riverDepth)"/>';  // channel deepens toward the center
+    w+='<rect class="wmesh" x="'+(RX-40)+'" y="-104" width="80" height="3028" fill="url(#waterTx)"/>';
+    w+='<rect class="wmesh w2" x="'+(RX-40)+'" y="-136" width="80" height="3060" fill="url(#waterTx2)"/>';
     // current: two continuous streamlines run the full channel; the dash pattern slides downstream at a
     // constant rate (seamless, no snap-back) and the streaks weave gently like real surface flow lines.
     w+='<path class="riverflow" d="M'+(RX-11)+',-40 q-6,120 0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240 t0,240" stroke="rgba(255,255,255,.34)" stroke-width="3.5" fill="none" stroke-linecap="round"/>';

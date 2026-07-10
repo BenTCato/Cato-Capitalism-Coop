@@ -4598,8 +4598,10 @@ function buildWorld(tiers){
     // invisible). No centerline on the decks — real bridges drop the marking — and drifting river
     // traffic passes beneath because the decks draw after the log/boat/ducks.
     XR.forEach(function(y){
-      w+='<path d="M'+(RX-54)+','+y+' L'+(RX+54)+','+y+'" fill="none" stroke="'+AP.curb+'" stroke-width="58" stroke-linecap="butt"/>';
-      w+='<path d="M'+(RX-54)+','+y+' L'+(RX+54)+','+y+'" fill="none" stroke="'+AP.road+'" stroke-width="50" stroke-linecap="butt"/>';
+      // decks span RX±64: past the water (±40), the banks (±50) AND the new sand shore strips (±59),
+      // so no shoreline material ever peeks through a bridge; ends butt seamlessly into the main road
+      w+='<path d="M'+(RX-64)+','+y+' L'+(RX+64)+','+y+'" fill="none" stroke="'+AP.curb+'" stroke-width="58" stroke-linecap="butt"/>';
+      w+='<path d="M'+(RX-64)+','+y+' L'+(RX+64)+','+y+'" fill="none" stroke="'+AP.road+'" stroke-width="50" stroke-linecap="butt"/>';
     });
     var edges=[-40]; XR.forEach(function(y){edges.push(y-GH,y+GH);}); edges.push(2820);
     // collision is shifted UP by FOOT so the walkable band lines up with the player's FEET (which render +34 below player.y):

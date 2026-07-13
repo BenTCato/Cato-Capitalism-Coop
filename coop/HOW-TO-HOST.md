@@ -81,6 +81,24 @@ city's stats; the shared layer is the other players walking through it.
 
 ---
 
+## Student privacy (please read before class)
+
+Keeping student data minimal is part of the design. Two things to do:
+
+1. **Ask students to sign in with a first name or nickname only, never a full
+   name.** The optional "save my progress" account stores only that display
+   name, a numeric PIN, and game progress. No email, address, location, photos,
+   or trackers are ever collected.
+2. **The account is optional.** Students can play the whole game with no account
+   at all, in which case nothing about them is stored on any server.
+
+Idle accounts are deleted automatically after 90 days of no use. The full
+privacy notice is served at `/privacy` (also linked from the join screen, the
+dashboard, and the in-game "Join a class" box). For any data question or a
+deletion request, contact Ben Taylor at btaylor@cato.org.
+
+---
+
 ## How it works (for the curious)
 
 `coop/coop-server.js` is a tiny zero-dependency Node server. It serves the
@@ -88,4 +106,9 @@ existing game file (untouched — opening the `.html` directly is still normal
 single-player) with a small co-op script injected. Each browser streams its
 game state to the host a few times a second; the host keeps everyone's state in
 memory and hands it back out to the dashboard and to other players' towns.
-Nothing is saved to disk and nothing leaves your local network.
+
+**Local classroom mode (the launcher):** nothing is saved to disk and nothing
+leaves your local network. **Online hosted mode (optional accounts):** if the
+game is deployed to the internet with cloud saves turned on, the optional
+display name, hashed PIN, and progress are stored in a secured database over an
+encrypted connection, and auto-expire after 90 days idle. See `/privacy`.

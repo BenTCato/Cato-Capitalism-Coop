@@ -34,6 +34,7 @@ const IS_CLOUD   = ENV_PORT !== null;
 const REDIS_URL   = (process.env.UPSTASH_REDIS_REST_URL || '').replace(/\/+$/, '');
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
 const STORE_ON    = !!(REDIS_URL && REDIS_TOKEN);
+const ACCT_TTL_S  = 90 * 24 * 60 * 60;  // idle accounts auto-expire after 90 days (privacy retention); refreshed on every sign-in/save
 // run one Redis command, e.g. redis(['SET','key','value']) → resolves the result
 function redis(cmd) {
   return new Promise((resolve, reject) => {
@@ -53,6 +54,47 @@ function redis(cmd) {
 }
 function acctKey(name) { return 'cato:acct:' + String(name || '').toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_-]/g, '').slice(0, 40); }
 function pinHash(name, pin) { return crypto.createHash('sha256').update('cato|' + String(name || '').toLowerCase().trim() + '|' + String(pin || '')).digest('hex'); }
+// constant-time compare so a wrong PIN can't be distinguished by response timing
+function pinMatch(a, b) {
+  a = String(a || ''); b = String(b || '');
+  const ba = Buffer.from(a), bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  try { return crypto.timingSafeEqual(ba, bb); } catch (e) { return false; }
+}
+
+// ── brute-force throttle for PIN sign-in (in-memory, per client+name) ──
+// PINs are short (3-6 digits); without this an attacker could guess every combination.
+const authFails = new Map();            // key -> { count, first, blockedUntil }
+const AUTH_WINDOW_MS  = 10 * 60 * 1000; // failures counted within a 10-minute window
+const AUTH_MAX_FAILS  = 8;              // after this many, lock the pair out
+const AUTH_BLOCK_MS   = 5  * 60 * 1000; // ...for 5 minutes
+function clientIp(req) {
+  const xff = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return xff || (req.socket && req.socket.remoteAddress) || 'unknown';
+}
+function throttleKey(req, name) { return clientIp(req) + '|' + String(name || '').toLowerCase().trim(); }
+function authBlocked(key) {
+  const e = authFails.get(key);
+  if (!e) return false;
+  if (e.blockedUntil && Date.now() < e.blockedUntil) return true;
+  if (e.blockedUntil && Date.now() >= e.blockedUntil) authFails.delete(key);
+  return false;
+}
+function noteAuthFail(key) {
+  const now = Date.now();
+  let e = authFails.get(key);
+  if (!e || now - e.first > AUTH_WINDOW_MS) e = { count: 0, first: now, blockedUntil: 0 };
+  e.count++;
+  if (e.count >= AUTH_MAX_FAILS) e.blockedUntil = now + AUTH_BLOCK_MS;
+  authFails.set(key, e);
+}
+function noteAuthOk(key) { authFails.delete(key); }
+function pruneAuthFails() {
+  const now = Date.now();
+  for (const [k, e] of authFails) {
+    if ((e.blockedUntil && now >= e.blockedUntil) || (now - e.first > AUTH_WINDOW_MS)) authFails.delete(k);
+  }
+}
 
 // ── choose which game file to serve ───────────────────────────────
 function gameScore(f) {
@@ -128,6 +170,7 @@ function pruneAll() {
     if (code !== DEFAULT_ROOM && r.players.size === 0 && (now - (r.touched || 0) > 60000)) rooms.delete(code);
   }
   pruneDuels();
+  pruneAuthFails();
 }
 function publicList(r) {
   pruneRoom(r);
@@ -233,7 +276,11 @@ function pruneDuels() {
 // ── tiny helpers ──────────────────────────────────────────────────
 function send(res, code, type, body, extraHeaders) {
   const h = Object.assign({ 'Content-Type': type, 'Cache-Control': 'no-store',
-    'Access-Control-Allow-Origin': '*' }, extraHeaders || {});
+    'Access-Control-Allow-Origin': '*',
+    // baseline hardening headers (safe for this inline-heavy game; no CSP so inline SVG/scripts keep working)
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'no-referrer' }, extraHeaders || {});
   res.writeHead(code, h);
   res.end(body);
 }
@@ -290,6 +337,11 @@ const server = http.createServer(async (req, res) => {
     return sendFile(res, path.join(COOP_DIR, 'join.html'), 'text/html; charset=utf-8');
   }
 
+  // privacy notice
+  if (p === '/privacy' || p === '/privacy.html') {
+    return sendFile(res, path.join(COOP_DIR, 'privacy.html'), 'text/html; charset=utf-8');
+  }
+
   // injected client script
   if (p === '/__coop/client.js') {
     return sendFile(res, path.join(COOP_DIR, 'coop-client.js'), 'application/javascript; charset=utf-8');
@@ -312,16 +364,20 @@ const server = http.createServer(async (req, res) => {
     const raw = await readBody(req);
     let d; try { d = JSON.parse(raw); } catch (e) { return send(res, 400, 'application/json', '{"ok":false,"error":"bad_json"}'); }
     const name = String((d && d.name) || '').trim(), pin = String((d && d.pin) || '');
-    if (name.length < 2 || name.length > 24 || !/^\d{3,6}$/.test(pin)) return send(res, 200, 'application/json', '{"ok":false,"error":"invalid"}');
+    if (name.length < 2 || name.length > 24 || !/^\d{4,6}$/.test(pin)) return send(res, 200, 'application/json', '{"ok":false,"error":"invalid"}');
     if (!STORE_ON) return send(res, 200, 'application/json', '{"ok":false,"error":"storage_off"}');
+    const tkey = throttleKey(req, name);
+    if (authBlocked(tkey)) return send(res, 429, 'application/json', '{"ok":false,"error":"too_many_attempts"}');
     try {
       const key = acctKey(name), want = pinHash(name, pin), cur = await redis(['GET', key]);
       if (!cur) { const rec = { pin: want, display: name, data: null, created: Date.now(), updated: Date.now() };
-        await redis(['SET', key, JSON.stringify(rec)]);
+        await redis(['SET', key, JSON.stringify(rec), 'EX', String(ACCT_TTL_S)]);
+        noteAuthOk(tkey);
         return send(res, 200, 'application/json', '{"ok":true,"isNew":true,"data":null}'); }
       let rec = null; try { rec = JSON.parse(cur); } catch (e) {}
       if (!rec) return send(res, 200, 'application/json', '{"ok":false,"error":"corrupt"}');
-      if (rec.pin !== want) return send(res, 200, 'application/json', '{"ok":false,"error":"wrong_pin"}');
+      if (!pinMatch(rec.pin, want)) { noteAuthFail(tkey); return send(res, 200, 'application/json', '{"ok":false,"error":"wrong_pin"}'); }
+      noteAuthOk(tkey);
       return send(res, 200, 'application/json', JSON.stringify({ ok: true, isNew: false, data: rec.data || null }));
     } catch (e) { return send(res, 200, 'application/json', '{"ok":false,"error":"store_error"}'); }
   }
@@ -331,13 +387,15 @@ const server = http.createServer(async (req, res) => {
     let d; try { d = JSON.parse(raw); } catch (e) { return send(res, 400, 'application/json', '{"ok":false,"error":"bad_json"}'); }
     const name = String((d && d.name) || '').trim(), pin = String((d && d.pin) || '');
     if (!STORE_ON) return send(res, 200, 'application/json', '{"ok":false,"error":"storage_off"}');
-    if (name.length < 2 || !/^\d{3,6}$/.test(pin)) return send(res, 200, 'application/json', '{"ok":false,"error":"invalid"}');
+    if (name.length < 2 || !/^\d{4,6}$/.test(pin)) return send(res, 200, 'application/json', '{"ok":false,"error":"invalid"}');
+    const tkeyS = throttleKey(req, name);
+    if (authBlocked(tkeyS)) return send(res, 429, 'application/json', '{"ok":false,"error":"too_many_attempts"}');
     try {
       const key = acctKey(name), want = pinHash(name, pin), cur = await redis(['GET', key]);
       let rec = null; try { rec = cur ? JSON.parse(cur) : null; } catch (e) {}
-      if (!rec || rec.pin !== want) return send(res, 200, 'application/json', '{"ok":false,"error":"auth"}');
+      if (!rec || !pinMatch(rec.pin, want)) { noteAuthFail(tkeyS); return send(res, 200, 'application/json', '{"ok":false,"error":"auth"}'); }
       rec.data = d.data || null; rec.updated = Date.now();
-      await redis(['SET', key, JSON.stringify(rec)]);
+      await redis(['SET', key, JSON.stringify(rec), 'EX', String(ACCT_TTL_S)]);
       return send(res, 200, 'application/json', '{"ok":true}');
     } catch (e) { return send(res, 200, 'application/json', '{"ok":false,"error":"store_error"}'); }
   }
@@ -572,3 +630,4 @@ function banner(port) {
 }
 
 start(IS_CLOUD ? ENV_PORT : START_PORT, 12);
+// security hardening: PIN brute-force throttle, constant-time PIN compare, baseline response headers (added July 2026 audit)

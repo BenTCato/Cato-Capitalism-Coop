@@ -1059,6 +1059,116 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 
 ---
 
+## 2026-07-09, Terrain + water materials: textured, meshed ground and water (skills-reference port)
+
+- **Direction:** "textualize and mesh the map; specifically the ground and water" — lose the flat
+  AI-generated look, working from the game-developer skills in `skills-reference/`.
+- **Skills applied:** the shader doc's surface-material model (albedo base + tiling detail texture +
+  depth tint + specular) became SVG pattern layers; its water UV-panning became CSS-scrolled pattern
+  rects that move EXACTLY one tile length per loop (perfectly seamless); the performance doc's
+  batching rule became shared `<pattern>` paint servers (one material definition, reused everywhere,
+  zero per-frame JS — all motion on the compositor); its LOD principle keeps textures static under
+  `no-wind`/reduced-motion; the modeling doc's transition-zone rule produced the shorelines.
+- **Ground:** a 4-octave material stack — policy-tinted base → existing mid-octave patches → broad
+  rotated meadow banding (`grassBand`, macro) → tuft-and-fleck detail tile (`grassTx`, micro). Both
+  texture layers are alpha-only, so the policy palette and winter snowpack read through them.
+- **Water:** wave-crest tile (`waterTx`) + a larger second octave (`waterTx2`) scroll downstream at
+  different speeds for parallax depth; a deep-channel gradient darkens the river center and a radial
+  depth tint deepens the pond middle; the fountain basin shares the wave material. The pond's mesh
+  scrolls inside a parent-level clip so the basin stays fixed while the water moves.
+- **Shorelines:** sandy speckled strips along both river banks and a sand ring around the pond, plus
+  reed clumps at the pond's edge — the land-to-water transition is now a real zone, not a hard line.
+- **Why it matters:** flat single-tone fills are the biggest "AI-generated" tell; layered materials
+  with seams, motion, and transition zones read as authored — a prerequisite for pitching the game
+  to teachers and students as a finished product.
+- **Bridge fix (same day, user report):** the new 9px sand shore strips poked out 5px past both ends
+  of every bridge deck (decks spanned RX±54, shores reach ±59). Decks widened to RX±64 so they cover
+  water, banks, and shoreline completely, still butting seamlessly into the main road.
+
+---
+
+## 2026-07-09, De-AI-ification deep dive: the world reads authored (full skills-reference pass)
+
+- **Direction:** "create a less AI generated world map… improve every area… no restraints" — every
+  change below traces to a specific technique in `skills-reference/`.
+- **Toon outlines (shader.md's cel-shading pass):** every building — expansion houses, shops,
+  offices, and all core `urban()` civic buildings — now carries a subtle 1.4px dark outline on wall
+  and roof silhouettes. The single strongest "illustrated, not generated" cue.
+- **Road materials (shader surface model):** an asphalt speckle-and-crack texture pass over every
+  road, a translucent tire-wear band down each traveled center, and the roundabout interior dressed
+  as a paved civic plaza (paver grid + inner ring) around the fountain.
+- **De-gridded streets (ECS data-driven variety, keyed to position — never random):** ~1 in 8 lots
+  is now a vacant gap; every building takes a ±4px hash setback so facade lines waver; hue/roof/door
+  and office floor-count are keyed to position hash instead of placement order (kills the visible
+  repeating cycle); north-side lots get a paved walkway from door to curb plus a hash-chosen yard
+  kit (flowerbed / mailbox / dooryard shrub).
+- **Nature composition (modeling/scene-creation skill):** 9 hash-seeded tree GROVES cluster the
+  countryside into woodland masses with deliberate negative space between; 6 year-round flower
+  drifts replace confetti scatter; the farm gains an orchard (2×3 fruit trees — deliberately
+  gridded, since orchards really are) and a fenced sheep pasture with two sheep (one grazing, one
+  bobbing); rocks and reed clumps alternate down the river banks between bridges.
+- **Cinematic grade (davinci.md):** a constant radial grade — warm key-light center, cool edge
+  falloff — sits under the day/night tint, unifying the palette the way a LUT does.
+- **Performance (performance-optimization.md):** every addition is a static string or shared
+  pattern; zero new per-frame JS; seasonal tint picks up the orchard canopies via the existing
+  `.cnp` class.
+- **Verification:** all six modified builders extracted and EXECUTED under Node (this caught one
+  real bug: an inline comment swallowing a closing bracket in the office row — fixed);
+  `buildWorld` syntax-checked. Live visual audit after deploy.
+
+---
+
+## 2026-07-10, World rescale: realistic avatar-to-structure ratio
+
+- **Direction:** houses were literally avatar-height (58px vs a ~68px avatar) — the worst remaining
+  believability tell. Buildings, trees, and vehicles all scaled up.
+- **Buildings:** expansion houses 58→80px tall and 84→96 wide (extra siding course, second window
+  row, bigger door), centered on their lots; shops 1.4x and offices 1.35x via uniform scale-wraps
+  (window/sign internals untouched); core civic buildings (`urban()`) grow to 40+30/floor while the
+  COLLIDER keeps the old 34+24/floor height, so the extra height rises visually behind without
+  blocking any walk path; `winGrid` gained a floor-pitch param so window rows track the taller
+  floors. South-side row offset 102→110 keeps the taller back-to-back blocks from overlapping
+  (max gap math: block 240 = 34 + H + gap + H + 44).
+- **Trees:** +23% (defs 0.16 / 0.185 / 0.16 → pines ~77px, oaks/rounds ~70px — properly above the
+  rooflines). **Vehicles:** +20-22% (sports 0.14, van 0.12, bus 0.094 → the bus is now ~68px, a
+  real road presence); headlight cones/glows track the new bumper offsets (f 28/35).
+- **Clearance retune:** field-tree road margin 92→108, grove margin likewise, park self-checks
+  80/78, leaf piles widened. The full clearance sweep at the new geometry caught the orchard's first
+  row sitting on the downtown link road (rows moved to core y662+) and one core tree 1px onto the
+  loop road (y120→126) — re-swept: all clear.
+- **Why it matters:** when a person stands door-height next to their house instead of roof-height,
+  the whole scene snaps into believable proportion — the single biggest scale cue in the game.
+- **Vehicle bump 2 (same day, live-audit verdict):** the first deploy's live check showed the bus
+  braking at the avatar's knees — still toy-scale. Second notch: sports 0.155, van 0.135, bus 0.105
+  (~80px long); bumper offsets f 31/39. Houses and downtown verified at proper ratio on the same
+  audit (avatar stands door-height at houses; the Bank reads ~2 avatars tall).
+
+---
+
+## 2026-07-10, Mega bug check: ground-truth overlap audit (math + visual)
+
+- **Method:** the actual game builders were EXECUTED under Node with every prop function
+  instrumented and all districts/attractions owned (worst-case density) — dumping 158 prop
+  placements, 78 building boxes, and 174 colliders of ground-truth geometry. An analyzer then
+  checked every overlap class: props vs roads, props vs buildings (canopy discs AND trunks),
+  building vs building, props vs water, and NPC anchors + all five interaction SPOTs vs colliders.
+  The live build was then walked visually in Chrome, which CONFIRMED the math's findings on screen
+  before the fixes (the rock visibly on the school wall, the bush in the Bank).
+- **Real bugs found and fixed (4):** (1) the bush relocated during the road sweep had been pushed
+  INTO the Bank's east wall → moved south of the Bank, clear of wall and road; (2) a rock had sat
+  INSIDE the school's footprint since the original layout → moved east of the school; (3) park
+  shade trees never checked buildings, and one overlapped a house → park trees now verify no
+  building under trunk or canopy; (4) back-to-back house rows could overlap by up to 4px because
+  the ±4 setback jitter ate the 6px block gap → jitter tightened to ±3 and south offset 110→108
+  (guaranteed ≥2px gap at worst-case jitter).
+- **Dismissed as false positives (verified by hand):** the farm fence and six fairground venue
+  flags came from the analyzer's circle-model on wide boxes (real boxes clear their roads by 6-7px);
+  one "building overlap" was the player home double-instrumented through its internal urban() call.
+- **Also verified clean:** NPC anchors and every interaction SPOT reachable, venues clear of the
+  promenade and river, scaled shops/awnings within their lots, zero console errors.
+
+---
+
 ## 2026-07-07, Build anywhere you own + the downtown city center opened for building
 
 - **Direction:** a chain of related requests: first "let people place newly acquired buildings
@@ -1205,3 +1315,80 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 - **Why it matters:** the questions are the core teaching surface of the game. They now speak in the
   intern's voice and meet grade-appropriate reading levels, making the free-market ideas clearer and
   more accessible to the 16-25 audience while keeping every citation and game-balance value intact.
+
+---
+
+## 2026-07-13, Security & privacy audit + fixes (publication readiness)
+
+- **Direction:** Research the best privacy/security Claude skills on GitHub, add the best ones to
+  `skills-reference/`, then use them to audit the game's code and fix issues before publication.
+- **Skills researched and added** (chosen for source credibility after a GitHub-wide search):
+  `security-review.md` (official Anthropic security-review methodology, MIT), `owasp-security.md`
+  (OWASP Top 10:2025 + ASVS 5.0, MIT), `insecure-defaults.md` and `supply-chain-risk-auditor.md`
+  (Trail of Bits security firm, CC BY-SA 4.0), and `coppa-children-privacy.md` (from the 282-skill
+  Privacy-Data-Protection database, Apache-2.0). See `skills-reference/README.md` for the full table
+  and the runners-up that were evaluated and rejected.
+- **Audit result:** no critical/exploitable vulnerabilities (no SQL/command injection, path traversal,
+  RCE, or hardcoded secrets). Full write-up in `SECURITY-AUDIT-2026-07-13.md`.
+- **Code fixes (all in `coop/coop-server.js`):**
+  - Account sign-in hardened against brute force: added an in-memory throttle (8 failed attempts per
+    client+name in a 10-minute window → 5-minute lockout, HTTP 429), raised the minimum PIN from 3 to
+    4 digits, and switched PIN comparison to constant-time `crypto.timingSafeEqual`. Applied to both
+    `/__coop/account/signin` and `/__coop/account/save`; throttle map is cleaned in the existing prune cycle.
+  - Added baseline security headers to every response (`X-Content-Type-Options: nosniff`,
+    `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: no-referrer`). No CSP, deliberately, since the
+    game is inline-script/inline-SVG heavy and a strict CSP would break it.
+- **Left as-is (documented, not bugs):** wildcard CORS is safe here because auth is explicit
+  name+PIN with no cookies/ambient session; the `eval()` in `coop-client.js` only ever receives
+  hard-coded literals (not user input) so it is not exploitable; zero npm dependencies means an
+  essentially clean supply chain.
+- **Privacy (policy, not code):** the accounts feature stores display name + PIN + progress, so with
+  classroom use COPPA is in scope. Recommended before publish: a short privacy notice, "first
+  name/nickname only" guidance for teachers, and a data-retention window for idle accounts. Details
+  in the audit report.
+- **Verification:** the new security logic was unit-tested (12/12 passing, `outputs/sec-fix-test.js`):
+  PIN match/reject, PIN-policy enforcement, lockout timing, reset-on-success, and per-client isolation.
+  Note: this session's Linux sandbox served a stale, truncated view of the OneDrive-synced `coop/`
+  files, so in-sandbox `node --check` gave false errors against cut-off copies; the authoritative
+  files are complete and edited regions were verified balanced. Recommend running
+  `node --check coop/coop-server.js` and a one-time `npm start` locally as the final pre-publish check.
+- **Local boot verification (same session):** the fixed server was reconstructed and booted in the
+  sandbox on a test port; confirmed a clean start, the game page served with the co-op client
+  injected and all three security headers present, `/__coop/create` returning a join code, `ping`
+  working, a 3-digit PIN rejected as `invalid`, and a valid 4-digit PIN returning `storage_off`
+  (correct fail-secure behavior with no Redis configured).
+
+---
+
+## 2026-07-13, Privacy notice + retention + teacher guidance (publication readiness)
+
+- **Direction:** Draft the privacy notice and teacher guidance identified in the security audit, so
+  the game is publication-ready on the privacy side. Chosen options: contact = btaylor@cato.org,
+  retention = 90 days idle, delivery = a served page linked from the screens.
+- **New file `coop/privacy.html`:** a plain-language privacy notice (Cato/CEF voice, no jargon, no em
+  dashes). Covers: the game itself collects nothing; the only stored data is the optional display
+  name + hashed PIN + game progress; explicit "we do not collect" list (no email, location, photos,
+  ads/trackers, no open chat); use limited to saving progress; storage (local mode saves nothing,
+  hosted mode uses secured Upstash over TLS); 90-day idle deletion; review/delete rights for players
+  and parents; a 13+ intended-audience statement with a delete path for under-13; and the contact.
+- **Retention implemented in code (so the notice is truthful):** `coop/coop-server.js` now sets a
+  90-day TTL (`ACCT_TTL_S`, `SET ... EX`) on every account write, in both the create and save paths,
+  so idle accounts auto-expire. Added a `/privacy` (and `/privacy.html`) route to serve the notice.
+- **Linked from every entry point:** the projector **join screen** (`join.html`), the **teacher
+  dashboard** header plus a highlighted first-names-only tip on the class bar (`dashboard.html`), and
+  the student-facing **"Join a class" overlay** in the injected client (`coop-client.js`), which now
+  also reminds students to use a first name or nickname only.
+- **Teacher guidance:** `coop/HOW-TO-HOST.md` gained a "Student privacy (please read before class)"
+  section (first-names-only, accounts optional, 90-day deletion, contact) and its "how it works" note
+  was corrected to distinguish local classroom mode (nothing leaves the network) from online hosted
+  mode (optional accounts stored in a secured database, auto-expiring after 90 days idle).
+- **Verification:** all edited regions of `coop-server.js` were confirmed syntactically balanced via
+  the authoritative file (the `/privacy` route mirrors the proven `/join` route; both TTL `SET`
+  edits and the `ACCT_TTL_S` constant are correctly embedded). `privacy.html` is valid standalone
+  HTML. Note: the sandbox's OneDrive mount served stale partial-sync snapshots of the `coop/` files
+  during this session, so a fresh in-sandbox boot of the very latest file was not re-run; recommend a
+  local `node --check coop/coop-server.js` + `npm start` as the final pre-publish check.
+- **Why it matters:** this closes the last non-code publication item from the audit. Students can play
+  with zero data collection, the optional accounts are minimal and self-deleting, teachers get clear
+  privacy guidance, and there is a real, contactable privacy notice — the posture the COPPA skill
+  calls for in a classroom game.

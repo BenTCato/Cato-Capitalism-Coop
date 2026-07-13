@@ -361,6 +361,7 @@
         '<button id="coop-join-go" style="flex:1;padding:11px;border:none;border-radius:10px;background:#2d6fd6;color:#fff;font-weight:800;cursor:pointer;font-family:inherit;">Join →</button>' +
       '</div>' +
       '<button id="coop-join-leave" style="display:none;margin-top:12px;background:none;border:none;color:#b03030;font-weight:700;cursor:pointer;font-size:.8rem;font-family:inherit;text-decoration:underline;">Leave this class</button>' +
+      '<div style="margin-top:14px;font-size:.72rem;color:#8a96ac;">Use a first name or nickname only. <a href="/privacy" target="_blank" style="color:#8a96ac;">Privacy notice</a></div>' +
       '</div>';
     document.body.appendChild(joinOv);
     var inp = document.getElementById('coop-join-input');

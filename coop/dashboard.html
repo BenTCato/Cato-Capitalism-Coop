@@ -357,6 +357,7 @@ function render(list){
 
 // ── class room (private world via a join code) ───────────────────
 var ROOM=(function(){try{return localStorage.getItem('coopHostRoom')||'';}catch(e){return '';}})();
+var HOSTKEY=(function(){try{return localStorage.getItem('coopHostKey_'+(ROOM||''))||'';}catch(e){return '';}})();  // teacher token for the current room (required for teacher actions)
 function studentLink(){ return location.origin+'/?room='+encodeURIComponent(ROOM); }
 function renderClassBar(){
   var none=document.getElementById('class-none'), act=document.getElementById('class-active');
@@ -373,7 +374,7 @@ function renderClassBar(){
 function startClass(){
   fetch('/__coop/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:(wn?wn.value:'')})})
     .then(function(r){return r.json();}).then(function(d){
-      if(d&&d.code){ ROOM=d.code; try{localStorage.setItem('coopHostRoom',ROOM);}catch(e){} renderClassBar(); poll(); }
+      if(d&&d.code){ ROOM=d.code; HOSTKEY=d.key||''; try{localStorage.setItem('coopHostRoom',ROOM); if(HOSTKEY)localStorage.setItem('coopHostKey_'+ROOM,HOSTKEY);}catch(e){} renderClassBar(); poll(); }
     }).catch(function(){});
 }
 
@@ -394,7 +395,7 @@ function wireForm(){
   document.querySelectorAll('#tq-body .tq-style').forEach(function(b){ b.onclick=function(){ tqStyle=b.getAttribute('data-s'); tqView=''; renderTQ(LASTTQ); }; });
   var post=document.getElementById('tq-post'); if(post) post.onclick=function(){
     var text=(document.getElementById('tq-text')||{}).value||'';
-    var body={room:ROOM,style:tqStyle,text:text};
+    var body={room:ROOM,key:HOSTKEY,style:tqStyle,text:text};
     if(tqStyle==='mc'){
       var ch=[]; document.querySelectorAll('#tq-body .tq-choice').forEach(function(inp){ ch.push(inp.value||''); });
       var sel=document.querySelector('#tq-body input[name="tq-correct"]:checked');
@@ -423,9 +424,9 @@ function tqActiveHTML(tq){
   return h;
 }
 function wireActive(tq){
-  var end=document.getElementById('tq-end'); if(end)end.onclick=function(){ fetch('/__coop/tq/end',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:ROOM})}).then(function(){tqView='';poll();}); };
+  var end=document.getElementById('tq-end'); if(end)end.onclick=function(){ fetch('/__coop/tq/end',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:ROOM,key:HOSTKEY})}).then(function(){tqView='';poll();}); };
   document.querySelectorAll('#tq-body .tq-yes,#tq-body .tq-no').forEach(function(b){ b.onclick=function(){
-    fetch('/__coop/tq/decide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:ROOM,id:b.getAttribute('data-id'),award:b.classList.contains('tq-yes')})}).then(function(){poll();}); }; });
+    fetch('/__coop/tq/decide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:ROOM,key:HOSTKEY,id:b.getAttribute('data-id'),award:b.classList.contains('tq-yes')})}).then(function(){poll();}); }; });
 }
 var LASTTQ=null;
 function renderTQ(tq){
@@ -460,7 +461,7 @@ function poll(){
 }
 var wn=document.getElementById('worldname');
 wn.addEventListener('change',function(){
-  fetch('/__coop/world',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:ROOM,world:wn.value})});
+  fetch('/__coop/world',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:ROOM,key:HOSTKEY,world:wn.value})});
 });
 var scBtn=document.getElementById('start-class'); if(scBtn)scBtn.onclick=startClass;
 var ncBtn=document.getElementById('new-class'); if(ncBtn)ncBtn.onclick=startClass;

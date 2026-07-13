@@ -137,6 +137,26 @@ const rooms = new Map();
 const DEFAULT_ROOM = 'MAIN';           // players with no code share this open world
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no easily-confused chars (O/0, I/1)
 
+// ── DUEL QUESTION BANK: server-authoritative so a challenger can't supply their own answer key ──
+let DUEL_BANK = [];
+try {
+  DUEL_BANK = JSON.parse(fs.readFileSync(path.join(COOP_DIR, 'duel-bank.json'), 'utf8'));
+  if (!Array.isArray(DUEL_BANK)) DUEL_BANK = [];
+} catch (e) { DUEL_BANK = []; }
+if (!DUEL_BANK.length) {
+  // minimal fallback so duels still work if the bank file is missing
+  DUEL_BANK = [
+    { title:'Trade', body:'Two towns each make something the other wants. What should your town do?',
+      choices:['Let them trade freely, no border tax.','Add a small fee on imports.','Ban the imports to protect local makers.','Have the town buy everything itself.'], best:0 },
+    { title:'Business', body:'You want more new businesses to open. What helps most?',
+      choices:['Cut the red tape so it is easy to start one.','Add more permits and inspections first.','Have the town run the businesses.','Pick a few founders to receive grants.'], best:0 }
+  ];
+}
+function randToken() { return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10); }
+// a room's teacher actions are authorized only if the room has a teacherKey AND the caller presents it.
+// rooms with no teacherKey (the open MAIN world) stay open, matching the legacy anonymous behavior.
+function teacherOK(r, d) { return !r || !r.teacherKey || !!(d && d.key && String(d.key) === r.teacherKey); }
+
 function normCode(c) {
   c = String(c == null ? '' : c).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
   return c || DEFAULT_ROOM;
@@ -215,6 +235,20 @@ const duels = new Map();
 const DUEL_PENDING_MS = 35000;   // a challenge expires if not answered in time
 const DUEL_DONE_MS    = 60000;   // a finished duel lingers this long so both clients see the result (60s covers a reload during settling so the winner still gets the star delta)
 
+// build N duel questions from the server bank: copy, shuffle choices, letter them, and record the
+// correct LETTER as the key (identical, unknown-in-advance questions for both players)
+function pickDuelQuestions(n) {
+  const LET = ['A','B','C','D','E','F'];
+  const pool = DUEL_BANK.slice();
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+  return pool.slice(0, n).map(function (q) {
+    const idx = q.choices.map(function (_, i) { return i; });
+    for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
+    let best = 'A';
+    const choices = idx.map(function (srcI, k) { if (srcI === q.best) best = LET[k]; return { letter: LET[k], label: String(q.choices[srcI]).slice(0, 200) }; });
+    return { title: String(q.title || 'Policy Question').slice(0, 60), body: String(q.body).slice(0, 400), choices: choices, best: best };
+  });
+}
 function newDuelId() {
   let id;
   do { id = 'd_' + Math.random().toString(36).slice(2, 9); } while (duels.has(id));
@@ -292,9 +326,12 @@ function sendFile(res, file, type) {
 }
 function readBody(req) {
   return new Promise((resolve) => {
-    let b = '';
-    req.on('data', c => { b += c; if (b.length > 1e6) req.destroy(); });
-    req.on('end', () => resolve(b));
+    let b = '', done = false;
+    const fin = () => { if (!done) { done = true; resolve(b); } };
+    req.on('data', c => { b += c; if (b.length > 1e6) { b = ''; try { req.destroy(); } catch (e) {} fin(); } });
+    req.on('end', fin);
+    req.on('close', fin);       // client aborted / socket closed: settle so the handler never hangs
+    req.on('error', fin);
   });
 }
 
@@ -353,9 +390,11 @@ const server = http.createServer(async (req, res) => {
     let name = '';
     try { const d = JSON.parse(raw); if (d && typeof d.name === 'string') name = d.name.slice(0, 40); } catch (e) {}
     const code = newCode();
-    const r = { name: name || ('Class ' + code), players: new Map(), touched: Date.now() };
+    const teacherKey = randToken();
+    const r = { name: name || ('Class ' + code), players: new Map(), touched: Date.now(), teacherKey: teacherKey };
     rooms.set(code, r);
-    return send(res, 200, 'application/json', JSON.stringify({ ok: true, code: code, world: r.name }));
+    // the key is returned ONLY here (to the creator) and is required for this room's teacher actions
+    return send(res, 200, 'application/json', JSON.stringify({ ok: true, code: code, world: r.name, key: teacherKey }));
   }
 
   // ── ACCOUNTS: name + PIN sign-in with durable auto-save (Upstash) ──
@@ -430,7 +469,10 @@ const server = http.createServer(async (req, res) => {
     if (duelForPlayer(room, d.to.id))   return send(res, 200, 'application/json', '{"ok":false,"error":"That player is already in a duel."}');
     const rChal = getRoom(room, false); const tgt = rChal && rChal.players.get(String(d.to.id));
     if (!tgt || (Date.now() - (tgt.lastSeen || 0) > STALE_MS)) return send(res, 200, 'application/json', '{"ok":false,"error":"That player just left the town."}'); // do not strand the challenger on an absent opponent
-    const qs = Array.isArray(d.questions) ? d.questions.filter(q => q && q.body && Array.isArray(q.choices) && q.best).slice(0, 5) : [];
+    // SERVER-AUTHORITATIVE questions: pick from the bank and build the answer key here so a
+    // crafted client can't supply questions whose "best" matches what it will answer.
+    const want = Math.max(1, Math.min(5, Number(d.n) || 3));
+    const qs = pickDuelQuestions(want);
     if (qs.length < 1) return send(res, 200, 'application/json', '{"ok":false,"error":"no questions"}');
     const wager = Math.max(0, Math.min(100000, Number(d.wager) || 0));
     const duel = {
@@ -498,6 +540,7 @@ const server = http.createServer(async (req, res) => {
   if (p === '/__coop/world' && req.method === 'POST') {
     const raw = await readBody(req);
     try { const d = JSON.parse(raw); const r = getRoom(d && d.room, true);
+      if (!teacherOK(r, d)) return send(res, 403, 'application/json', '{"ok":false,"error":"not authorized"}');
       if (d && typeof d.world === 'string') r.name = d.world.slice(0, 40) || r.name;
       return send(res, 200, 'application/json', JSON.stringify({ ok: true, world: r.name })); } catch (e) {}
     return send(res, 200, 'application/json', JSON.stringify({ ok: false }));
@@ -506,7 +549,9 @@ const server = http.createServer(async (req, res) => {
   // remove a player (clean leave / kick)
   if (p === '/__coop/kick' && req.method === 'POST') {
     const raw = await readBody(req);
-    try { const d = JSON.parse(raw); if (d && d.id) { const r = getRoom(d.room, false); if (r) r.players.delete(d.id); } } catch (e) {}
+    try { const d = JSON.parse(raw); if (d && d.id) { const r = getRoom(d.room, false);
+      // the student leave-beacon (own id) is fine; removing anyone from a keyed class room needs the teacher key
+      if (r && teacherOK(r, d)) r.players.delete(d.id); } } catch (e) {}
     return send(res, 200, 'application/json', '{"ok":true}');
   }
 
@@ -515,6 +560,7 @@ const server = http.createServer(async (req, res) => {
     const raw = await readBody(req);
     let d; try { d = JSON.parse(raw); } catch (e) { return send(res, 400, 'application/json', '{"error":"bad json"}'); }
     const r = getRoom(d && d.room, true);
+    if (!teacherOK(r, d)) return send(res, 403, 'application/json', '{"ok":false,"error":"not authorized"}');
     const style = (d && d.style === 'short') ? 'short' : 'mc';
     const text = String((d && d.text) || '').slice(0, 300);
     if (!text) return send(res, 200, 'application/json', '{"ok":false,"error":"Question text is required."}');
@@ -552,6 +598,7 @@ const server = http.createServer(async (req, res) => {
   if (p === '/__coop/tq/decide' && req.method === 'POST') {
     const raw = await readBody(req);
     try { const d = JSON.parse(raw); const r = getRoom(d && d.room, false);
+      if (!teacherOK(r, d)) return send(res, 403, 'application/json', '{"ok":false,"error":"not authorized"}');
       if (r && r.tq && r.tq.responses[d.id]) { r.tq.responses[d.id].awarded = !!d.award; r.tq.responses[d.id].decided = true; }
     } catch (e) {}
     return send(res, 200, 'application/json', '{"ok":true}');
@@ -560,7 +607,9 @@ const server = http.createServer(async (req, res) => {
   // ── teacher ends the class question ──
   if (p === '/__coop/tq/end' && req.method === 'POST') {
     const raw = await readBody(req);
-    try { const d = JSON.parse(raw); const r = getRoom(d && d.room, false); if (r) r.tq = null; } catch (e) {}
+    try { const d = JSON.parse(raw); const r = getRoom(d && d.room, false);
+      if (!teacherOK(r, d)) return send(res, 403, 'application/json', '{"ok":false,"error":"not authorized"}');
+      if (r) r.tq = null; } catch (e) {}
     return send(res, 200, 'application/json', '{"ok":true}');
   }
 
@@ -568,6 +617,10 @@ const server = http.createServer(async (req, res) => {
 
   send(res, 404, 'text/plain', 'Not found');
 });
+
+// periodic reaper so rooms / stale duels / auth records are bounded even with no dashboard open
+const PRUNE_TIMER = setInterval(pruneAll, 30000);
+if (PRUNE_TIMER.unref) PRUNE_TIMER.unref();
 
 // ── start ─────────────────────────────────────────────────────────
 function start(port, attemptsLeft) {

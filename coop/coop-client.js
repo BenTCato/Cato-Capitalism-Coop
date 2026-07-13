@@ -461,9 +461,8 @@
       .then(function (r) { return r.json(); }).then(function (d) { if (cb) cb(d); }).catch(function () { if (cb) cb(null); });
   }
   function sendChallenge(toId, toName, wager, n) {
-    var qs = pickQuestions(n);
-    if (!qs.length) { toast('No questions available right now.'); return; }
-    postJSON('/__coop/duel/challenge', { room: ROOM, from: { id: ID, name: myName() }, to: { id: toId, name: toName }, wager: wager, n: n, questions: qs },
+    // questions + answer key now come from the SERVER (server-authoritative), so nothing is sent here
+    postJSON('/__coop/duel/challenge', { room: ROOM, from: { id: ID, name: myName() }, to: { id: toId, name: toName }, wager: wager, n: n },
       function (d) { if (d && d.ok) { sync(); } else { toast((d && d.error) || 'Could not start the duel.'); } });
   }
   function respondDuel(accept) {

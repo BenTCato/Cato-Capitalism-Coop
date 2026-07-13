@@ -1287,6 +1287,42 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 
 ---
 
+## 2026-07-13, Full multi-agent bug test + fixes (shops regression + co-op security)
+
+- **What we did:** ran three headless QA agents in parallel, each driving simulated users — a
+  full-playthrough logic fuzzer (all 493 questions × every choice, currency, bank, save/load), a
+  geometry auditor across 18 ownership/tier states, and a co-op tester running multiple live socket
+  clients against the deployed server — plus a live browser UI pass. Findings written to
+  `BUG-TEST-2026-07-13.md`. Single-player game came back clean (no crashes, no NaN, no economy
+  exploits, zero collider overlaps, clean live boot).
+- **Fix 1 — shop-kind regression (`CatoCapitalismGame_v4.html`).** The earlier "one shop per block"
+  change (origin 2895, step 400) fit only 2 shops per row → 8 of 12 kinds; florist, diner, music,
+  hardware never spawned. Restored all 12 with the airy look by splitting each of the 4 east rows
+  into two `row()` calls: a left lane (one storefront, clear of the x2760 street) and a right lane
+  (two storefronts, clear of the x3080 street) → 3/row × 4 = 12. A literal 5th row would have
+  collided with the east homes at y1580, so this was the clean path. Verified: jsdom all-owned run,
+  196 colliders, zero overlaps, all 12 kinds present exactly once.
+- **Fix 2 — co-op security (`coop/coop-server.js`, `coop-client.js`, `dashboard.html`, new
+  `duel-bank.json`).** Closed the three HIGH holes: (a) **teacher auth** — `/__coop/create` now
+  mints a `teacherKey`, returned only to the creator; `world`/`tq/create`/`tq/decide`/`tq/end` and
+  class-room `kick` require it (rooms with no key, i.e. the open MAIN world, stay open for legacy
+  anonymous use); (b) **self-award** closed by the same gate on `tq/decide`; (c) **duel rigging** —
+  the challenger no longer supplies questions/answer key; the server picks from a 113-question bank
+  snapshotted from the game's own graded policy questions (`duel-bank.json`), shuffles choices, and
+  holds the key server-side (never sent to clients). Also added a `setInterval(pruneAll, 30s)`
+  reaper so rooms/duels/auth records are bounded without a dashboard poll, and fixed `readBody` to
+  always settle (an oversized POST previously left a dangling promise → Render 502/hang; now it
+  resets fast and the server stays healthy).
+- **Verification:** booted the patched server locally and re-ran the co-op agent's attack scenarios
+  — 14/14 passed: teacher actions blocked without the key and allowed with it, self-award blocked,
+  duel questions served from the bank with no `best` on the wire, oversized body settling in 8ms
+  (was a hang), MAIN world still open. `node --check` clean on all JS; dashboard inline JS parses.
+- **Why it matters:** removes the one gameplay regression and makes the classroom co-op layer safe
+  to put in front of students before promotion — cheating a duel, awarding yourself stars, or
+  hijacking another class's world now all require the teacher key.
+
+---
+
 ## 2026-07-07, Build anywhere you own + the downtown city center opened for building
 
 - **Direction:** a chain of related requests: first "let people place newly acquired buildings

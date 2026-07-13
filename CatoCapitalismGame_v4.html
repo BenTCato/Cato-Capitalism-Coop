@@ -4908,7 +4908,11 @@ function buildExpansion(tiers){
   if(!ownsDistrict('east')) s+=forSaleSign(3150,1200);
   else {
     var eastBuilt=false;
-    if(ownsDev('east_shops')){ [620,860,1100,1340].forEach(function(y){s+=row(y,2895,3500,400,function(x,b){var k=nextShop();return k?expShop(x,b,k):expHouse(x,b,(x*31+b*17)|0);},undefined,true);}); eastBuilt=true; }   // one storefront centered per block (2895/3295): the old 200-step packed two per right block and left blocks empty   // 3 wider slots x 4 rows = all 12 shop kinds appear (the old spacing had crowded several out entirely)
+    if(ownsDev('east_shops')){ [620,860,1100,1340].forEach(function(y){
+      var mk=function(x,b){var k=nextShop();return k?expShop(x,b,k):expHouse(x,b,(x*31+b*17)|0);};
+      s+=row(y,2850,2955,999,mk,undefined,true);      // left lane: one storefront, clear of the x2760 street
+      s+=row(y,3128,3500,258,mk,undefined,true);      // right lane: two storefronts, clear of the x3080 street -> 3/row x 4 rows = all 12 kinds, airy spacing (a literal 5th row would collide with the east homes at y1580)
+    }); eastBuilt=true; }   // one storefront centered per block (2895/3295): the old 200-step packed two per right block and left blocks empty   // 3 wider slots x 4 rows = all 12 shop kinds appear (the old spacing had crowded several out entirely)
     if(ownsDev('east_homes')){ s+=row(1580,2820,3500,180,function(x,b){return expHouse(x,b,(x*31+b*17)|0);}); [620,860,1100,1340,1580].forEach(function(y){s+=row(y,2600,3500,185,function(x,b){return expHouse(x,b,(x*31+b*17)|0);},108);}); eastBuilt=true; }
     if(!eastBuilt) s+=readySign(3150,1200);
   }

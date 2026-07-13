@@ -1201,6 +1201,42 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 - **Also:** the old procedural civic renderers (pediments, scallop awnings, column strips) retired
   for these four; `urban()` remains for houses/press/home. Defs validated standalone (27 balanced
   groups, all ids); colliders byte-identical to the mega-check audit.
+- **Correction (see next entry):** buildings-08 and 09 were misidentified. 08 is TWO apartment
+  designs (not a Town Hall) and 09 is a pharmacy + a coffee shop (not a market). Only the Bank (10)
+  and School (11) mappings above stand.
+
+---
+
+## 2026-07-13, Art correction: 08 = two apartments, 09 = pharmacy + coffee shop (user ID'd)
+
+- **Direction:** the user identified that buildings-08 is two apartment building designs and
+  buildings-09 is a pharmacy and a coffee shop — not a Town Hall and not a market. Fix: restore the
+  old procedural Town Hall and Market, spread the two apartments across the map, use the pharmacy
+  and coffee shop as specialty stores, and restyle the other specialty stores to match.
+- **What changed (`CatoCapitalismGame_v4.html`):**
+  - `bHall()` and `bShops()` restored to their pre-illustration `urban()` renderers (pediment +
+    flag hall; scallop-awning market), colliders and spots unchanged.
+  - `bldDefs()` now splits the buildings-08 def at runtime into `#bldAptRed` (tall stepped-gable
+    tower, 0.40x ≈ 198px) and `#bldAptBrown` (wide brick walk-up, 0.40x ≈ 176px); `bldHall`/
+    `bldMarket` no longer emitted. The two apartments stand in the south band between the homes and
+    the fairgrounds — brown at (660, 2500), red at (1690, 2510) — registered as colliders and prop
+    keep-outs before any scatter runs.
+  - `expShop()` rebuilt as a parametric storefront in the friend's flat style derived from the 09
+    pair: white-outlined pastel facade, wave-scalloped awning, white name band, big blue display
+    window + brown door, and a corner sign — the pharmacy gets the white-circle red cross, everyone
+    else a hanging round sign. `EXP_SHOPS` repainted with the friend palette (pink café = the
+    coffee-shop design, light-blue pharmacy = the pharmacy design); `barber` swapped for
+    `pharmacy`, and pharmacy moved to slot 2 of `SHOPKINDS` since road clearances leave 8 shop
+    slots (2×4 rows), so late-list kinds never render.
+- **Why it matters:** the shopping district is now cohesive with the illustrated art (every
+  storefront shares the 09 buildings' language instead of two odd ones out), the apartments give
+  residential variety at city scale, and downtown keeps working landmarks. Verified headlessly by
+  executing `buildWorld()` under jsdom with all districts owned: 189 colliders, zero overlaps,
+  pharmacy + cross rendering, apartments clear of every road band. Live visual pass after the push.
+- **Ops note:** the first write raced OneDrive and corrupted the game file (duplicated 300KB tail);
+  rebuilt from the pushed GitHub copy and re-applied all edits in /tmp before a single atomic copy
+  back. Local `.git` is hollow (OneDrive doesn't sync objects) — the GitHub remote is the real
+  backup.
 
 ---
 

@@ -1169,6 +1169,41 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 
 ---
 
+## 2026-07-13, Map repopulation for the larger buildings (+ new civic art incoming)
+
+- **Direction:** after the rescale, building counts and placement read "strange" — sparse rows,
+  and several of the 12 shop kinds never appeared at all.
+- **Fixes (slot math checked against the vertical-street clearance bands before choosing steps):**
+  west homes origin/step retuned (290/145) → 3 houses per row, up from 2; south homes step 180→165
+  fills the long streets evenly; offices step 250→230; the east shopping rows rebuilt (origin 2790,
+  step 200, vacancy-gaps disabled for shops) → exactly 3 slots × 4 rows = all 12 shop kinds now
+  appear. Residential rows keep their vacant-lot character.
+- **Verified:** ground-truth harness rebuild shows 94 expansion buildings (up from 68) with zero
+  new overlaps against roads, each other, or props.
+- **Pending:** four new civic-building illustrations (buildings-08..11: Town Hall with bell tower,
+  twin-storefront Market, columned Bank, clock-gabled School) arrived via upload but the files came
+  through empty; awaiting re-drop into Illustrations/ to convert and wire in.
+
+---
+
+## 2026-07-13, Custom civic-building art: Hall, Market, Bank, School (buildings-08..11)
+
+- **What changed:** the four downtown landmarks now use the friend's illustrations, converted by an
+  automated style-inliner (CSS classes → fill/stroke attributes, coords rounded, ~27KB of defs) and
+  normalized to base-center origin. New `bldCivic()` places each with its OLD `urban()` collider
+  footprint, so every interaction spot and walk path is unchanged; nameplates (signFlat) ride above
+  the art, and the neglected tier (t=0) dims the building with a dark wash.
+  Mapping: **Town Hall** = brick hall + stepped-gable bell tower with flag (08, 0.36x, ~174px
+  tall — the town's landmark); **Market** = twin storefronts with pharmacy-cross and shop-sign poles
+  (09, 0.30x); **Bank** = columned classical facade with a $ pediment and steps (10, 0.42x);
+  **School** = clock-gabled schoolhouse with arched windows (11, 0.34x, center shifted +7 so its
+  wider art clears the recess playground).
+- **Also:** the old procedural civic renderers (pediments, scallop awnings, column strips) retired
+  for these four; `urban()` remains for houses/press/home. Defs validated standalone (27 balanced
+  groups, all ids); colliders byte-identical to the mega-check audit.
+
+---
+
 ## 2026-07-07, Build anywhere you own + the downtown city center opened for building
 
 - **Direction:** a chain of related requests: first "let people place newly acquired buildings
@@ -1392,3 +1427,19 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
   with zero data collection, the optional accounts are minimal and self-deleting, teachers get clear
   privacy guidance, and there is a real, contactable privacy notice — the posture the COPPA skill
   calls for in a classroom game.
+
+---
+
+## 2026-07-13, Co-op badge reads "Not in a class yet" before a code is entered
+
+- **Direction:** The in-game co-op badge showed "Class World · 1 online" for a student who had not
+  joined any class, which was confusing (the "1" was just themselves in the shared default world).
+- **Change:** In `coop/coop-client.js`, `setBadge()` now checks whether a class code has been entered.
+  With no code, the badge reads **"Not in a class yet"**; once a student joins a class it shows the
+  world name and online count as before (`<World> · N online`). Purely a client-side display change;
+  the shared default world and player counting are unchanged.
+- **Verification:** the revised `setBadge` logic was extracted and syntax-checked with Node and its
+  output confirmed ("Not in a class yet" with no code). No server changes.
+- **Why it matters:** removes a confusing signal for teachers/students who open the game before a
+  class is started, making the "am I in a class?" state obvious at a glance.
+- **To deploy:** re-upload `coop/coop-client.js` (served as `/__coop/client.js`) and push; Render auto-deploys.

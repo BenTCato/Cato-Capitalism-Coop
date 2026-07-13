@@ -309,7 +309,12 @@
     var dot = document.getElementById('coop-dot');
     var txt = document.getElementById('coop-text');
     if (!dot || !txt) return;
-    if (world) { dot.style.background = '#2EB872'; txt.textContent = world + ' · ' + onlineCount + ' online'; }
+    if (world) {
+      dot.style.background = '#2EB872';
+      // only show a world name + online count once a class code has been entered;
+      // the shared default world (no code) reads "Not in a class yet" instead
+      txt.textContent = ROOM ? (world + ' · ' + onlineCount + ' online') : 'Not in a class yet';
+    }
     else { dot.style.background = '#E03131'; txt.textContent = 'Reconnecting…'; }
   }
   // mount into the header row just left of the sound button; re-inserting the same node is safe

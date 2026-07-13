@@ -4751,22 +4751,24 @@ var EXP_SHOPS={cafe:{n:'CAFÉ',b:'#ff7bac',a:'#bdccd4',e:'☕'},bakery:{n:'BAKER
 // Friend-illustrated storefront template (derived from the buildings-09 pharmacy + coffee shop pair):
 // flat facade with white outline, scalloped wave awning, white name band, big display window on the
 // LEFT and the door on the RIGHT; corner sign — pharmacy gets the red cross, others a hanging round sign.
+// Art is exactly 84 tall (like the old shops): anything taller slides under the south-side homes of
+// the street above (their row bottoms sit just 2px above this art's top).
 function expShop(x,y,kind){
   var k=EXP_SHOPS[kind]||EXP_SHOPS.cafe, W=151.2, H=84;          // footprint identical to the old scale-wrapped shops (block math unchanged)
   var rx=x+52-W/2, ry=y-H;
-  reg(rx,ry,W,H); EXP_BR.push({x:rx,y:y-104,w:W,h:104});         // collider stays 84 tall; art rises to 104, kept prop-free
-  var g='<g transform="translate('+(rx+5.6)+','+(y-104)+')">'+sh(70,107,74,7);
-  g+='<rect x="0" y="14" width="140" height="90" fill="'+k.b+'" stroke="#f2f0e9" stroke-width="3"/>';
-  g+='<rect x="-4" y="0" width="148" height="16" fill="'+k.a+'" stroke="#f2f0e9" stroke-width="2.5"/>';   // awning band
-  for(var i=0;i<8;i++)g+='<path d="M'+(-4+i*18.5)+',16 h18.5 v2.5 a9.25,7 0 0 1 -18.5,0 Z" fill="'+k.a+'" stroke="#f2f0e9" stroke-width="1.6"/>';   // wave scallops
-  g+='<rect x="10" y="26" width="92" height="15" fill="#f2f0e9"/><text x="56" y="37.5" text-anchor="middle" font-size="9.5" font-weight="900" fill="#3A4658" font-family="Verdana">'+k.n+'</text>';
-  g+='<rect x="10" y="50" width="60" height="42" fill="#29abe2" stroke="#f2f0e9" stroke-width="3"/><line x1="40" y1="50" x2="40" y2="92" stroke="#f2f0e9" stroke-width="2.5"/>';
-  g+='<text x="40" y="79" text-anchor="middle" font-size="15">'+k.e+'</text>';
-  g+='<rect x="6" y="90" width="68" height="4" fill="#f2f0e9"/>';                                          // window sill
-  g+='<rect x="88" y="54" width="36" height="50" fill="#736357" stroke="#f2f0e9" stroke-width="3"/><rect x="94" y="60" width="24" height="20" fill="#0071bc" stroke="#f2f0e9" stroke-width="2"/><circle cx="119" cy="86" r="1.6" fill="#fcee21"/>';
-  g+='<rect x="84" y="100" width="44" height="4" fill="#f2f0e9"/>';                                        // doorstep
-  if(kind==='pharmacy')g+='<rect x="2" y="24" width="4" height="16" fill="#f2f0e9"/><circle cx="4" cy="20" r="9" fill="#fff" stroke="#f2f0e9" stroke-width="2.5"/><path d="M-1,20 h10 M4,15 v10" stroke="#c1272d" stroke-width="3.5"/>';
-  else g+='<line x1="132" y1="16" x2="132" y2="24" stroke="#736357" stroke-width="2.5"/><circle cx="132" cy="32" r="9" fill="#736357" stroke="#c69c6d" stroke-width="2"/><text x="132" y="35.5" text-anchor="middle" font-size="9">'+k.e+'</text>';
+  reg(rx,ry,W,H); EXP_BR.push({x:rx,y:ry,w:W,h:H});
+  var g='<g transform="translate('+(rx+5.6)+','+ry+')">'+sh(70,87,74,7);
+  g+='<rect x="0" y="12" width="140" height="72" fill="'+k.b+'" stroke="#f2f0e9" stroke-width="3"/>';
+  g+='<rect x="-4" y="0" width="148" height="14" fill="'+k.a+'" stroke="#f2f0e9" stroke-width="2.5"/>';   // awning band
+  for(var i=0;i<8;i++)g+='<path d="M'+(-4+i*18.5)+',14 h18.5 v2 a9.25,6 0 0 1 -18.5,0 Z" fill="'+k.a+'" stroke="#f2f0e9" stroke-width="1.6"/>';   // wave scallops
+  g+='<rect x="10" y="23" width="92" height="13" fill="#f2f0e9"/><text x="56" y="33" text-anchor="middle" font-size="9" font-weight="900" fill="#3A4658" font-family="Verdana">'+k.n+'</text>';
+  g+='<rect x="10" y="42" width="60" height="34" fill="#29abe2" stroke="#f2f0e9" stroke-width="3"/><line x1="40" y1="42" x2="40" y2="76" stroke="#f2f0e9" stroke-width="2.5"/>';
+  g+='<text x="40" y="66" text-anchor="middle" font-size="13">'+k.e+'</text>';
+  g+='<rect x="6" y="74.5" width="68" height="3" fill="#f2f0e9"/>';                                        // window sill
+  g+='<rect x="88" y="44" width="36" height="40" fill="#736357" stroke="#f2f0e9" stroke-width="3"/><rect x="94" y="50" width="24" height="16" fill="#0071bc" stroke="#f2f0e9" stroke-width="2"/><circle cx="119" cy="68" r="1.6" fill="#fcee21"/>';
+  g+='<rect x="84" y="81" width="44" height="3" fill="#f2f0e9"/>';                                         // doorstep
+  if(kind==='pharmacy')g+='<rect x="2" y="20" width="4" height="14" fill="#f2f0e9"/><circle cx="4" cy="16" r="8" fill="#fff" stroke="#f2f0e9" stroke-width="2.5"/><path d="M0,16 h8 M4,12 v8" stroke="#c1272d" stroke-width="3"/>';
+  else g+='<line x1="132" y1="14" x2="132" y2="20" stroke="#736357" stroke-width="2.5"/><circle cx="132" cy="27" r="8" fill="#736357" stroke="#c69c6d" stroke-width="2"/><text x="132" y="30.5" text-anchor="middle" font-size="8">'+k.e+'</text>';
   return g+'</g>';
 }
 // ── ATTRACTIONS art: a detailed themed complex (expVenue) or a "for sale" plot sign (venuePlot) ──
@@ -4849,7 +4851,7 @@ function buildExpansion(tiers){
   // Standalone apartment blocks (buildings-08 is two apartment designs, not a town hall) — spread along the south band
   function apt(id,cx,base,w2,h2){var cw=Math.min(h2,96);reg(cx-w2/2,base-cw,w2,cw);EXP_BR.push({x:cx-w2/2,y:base-h2,w:w2,h:h2});
     return '<g transform="translate('+cx+','+base+')">'+sh(0,6,w2*0.55,9)+'<use href="#'+id+'"/></g>';}
-  s+=apt('bldAptBrown',660,2500,97,176)+apt('bldAptRed',1690,2510,80,198);
+  s+=apt('bldAptBrown',660,2585,97,176)+apt('bldAptRed',3160,2585,72,184);   // opposite ends of the fairgrounds band, art tops below the south-homes row bottom (2394), bases above the promenade (2591)
   // ── street grid: now drawn by the UNIFIED road layer in buildWorld() (shared curb/asphalt/marking
   //    passes with downtown's curves, so junctions have no overlapping lines). This function reuses
   //    the same grid geometry for building keep-outs; ROAD_RECTS was already set in buildWorld.
@@ -4895,8 +4897,8 @@ function buildExpansion(tiers){
   if(!ownsDistrict('east')) s+=forSaleSign(3150,1200);
   else {
     var eastBuilt=false;
-    if(ownsDev('east_shops')){ [620,860,1100,1340].forEach(function(y){s+=row(y,2790,3500,200,function(x,b){var k=nextShop();return k?expShop(x,b,k):expHouse(x,b,(x*31+b*17)|0);},undefined,true);}); eastBuilt=true; }   // 3 wider slots x 4 rows = all 12 shop kinds appear (the old spacing had crowded several out entirely)
-    if(ownsDev('east_homes')){ s+=row(1580,2820,3500,180,function(x,b){return expHouse(x,b,(x*31+b*17)|0);}); [620,860,1100,1340,1580].forEach(function(y){s+=row(y,2820,3500,180,function(x,b){return expHouse(x,b,(x*31+b*17)|0);},108);}); eastBuilt=true; }
+    if(ownsDev('east_shops')){ [620,860,1100,1340].forEach(function(y){s+=row(y,2895,3500,400,function(x,b){var k=nextShop();return k?expShop(x,b,k):expHouse(x,b,(x*31+b*17)|0);},undefined,true);}); eastBuilt=true; }   // one storefront centered per block (2895/3295): the old 200-step packed two per right block and left blocks empty   // 3 wider slots x 4 rows = all 12 shop kinds appear (the old spacing had crowded several out entirely)
+    if(ownsDev('east_homes')){ s+=row(1580,2820,3500,180,function(x,b){return expHouse(x,b,(x*31+b*17)|0);}); [620,860,1100,1340,1580].forEach(function(y){s+=row(y,2600,3500,185,function(x,b){return expHouse(x,b,(x*31+b*17)|0);},108);}); eastBuilt=true; }
     if(!eastBuilt) s+=readySign(3150,1200);
   }
   // SOUTH neighborhood
@@ -5178,7 +5180,7 @@ function bldDefs(){
   inner=inner.slice(0,inner.lastIndexOf('</g>'));
   var cut=inner.indexOf('<g><rect fill="#0071bc" stroke="#fff" stroke-width="3" x="187.0"');
   return '<defs>'+
-    '<g id="bldAptRed" transform="scale(0.40) translate(-505,-494)">'+inner.slice(0,cut)+'</g>'+
+    '<g id="bldAptRed" transform="scale(0.38) translate(-505,-494)">'+inner.slice(0,cut)+'</g>'+
     '<g id="bldAptBrown" transform="scale(0.40) translate(-278,-494)">'+inner.slice(cut)+'</g>'+
     BLD_BANK+BLD_SCHOOL+'</defs>';
 }

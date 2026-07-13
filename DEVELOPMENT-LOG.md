@@ -1240,6 +1240,30 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 
 ---
 
+## 2026-07-13, De-cramping pass: shop spacing, house stagger, apartments respread (user request)
+
+- **Direction:** "apartments need to be more widespread and shouldn't overlap with any other
+  housing or obstacles; specialized shops should be more spaced out; the houses to the north of
+  each one should be placed a block over to the left" — verify mathematically and in the browser
+  before finalizing.
+- **What the checks found:** (1) shop art at 104px tall slid ~20px under the south-side homes of
+  the street above (colliders only touch by 2px, so the math audit passed while the art
+  overlapped); (2) the 200-step shop rows lost their two left slots to the x2760/x3080 road
+  clearances, so shops rendered as a squeezed pair per right block with empty left blocks; (3) the
+  apartments' upper floors sat ~70px behind the y2280 street's south house row.
+- **Fixes (`CatoCapitalismGame_v4.html`):** shop template compacted to exactly 84px tall (same
+  envelope the old shops proved out); east shop rows re-slotted to origin 2895 / step 400 → one
+  storefront centered per block (8 render, pharmacy in slot 2); east south-side house rows shifted
+  a block left (origin 2820→2600, step 185) so storefronts get open sky; apartments moved to
+  opposite ends of the fairgrounds band — brown walk-up at (660,2585), red tower at (3160,2585,
+  rescaled 0.40→0.38) — art tops clear the south-homes row bottom (2394) and bases clear the
+  promenade (2591).
+- **Verification:** jsdom ground-truth run with every district owned: 188 colliders, zero overlaps,
+  all road bands clear; then a live in-browser preview (game builders monkey-patched in memory,
+  world overlay rendered at each site) confirmed the spacing visually before any push.
+
+---
+
 ## 2026-07-07, Build anywhere you own + the downtown city center opened for building
 
 - **Direction:** a chain of related requests: first "let people place newly acquired buildings

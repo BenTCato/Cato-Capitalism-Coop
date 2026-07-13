@@ -1264,6 +1264,29 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 
 ---
 
+## 2026-07-13, Promenade rowhouses: ten tinted apartments line the bottom road
+
+- **Direction:** "add more of the same kinds of apartments to fill in the bottom road, change the
+  colors so it looks like a lively area."
+- **What changed (`CatoCapitalismGame_v4.html`):** `bldDefs()` now emits six apartment defs — the
+  two buildings-08 designs plus wall-tint variants (`tint()` swaps only the wall fill): red tower
+  in brick red / orange `#f7931e` / green `#7ac943`, brown walk-up in brick / pink `#ff7bac` /
+  light blue `#9ac7d6`. Ten rowhouses line the fairgrounds' north edge at base y2585:
+  380P·660·900O | sign gap | 1450B·1650P·1900G·2150R | river | 2950B·3160R·3390O — no two
+  neighbors share a tint. Gaps are reserved for the FAIRGROUNDS ghost sign (x~950-1370) and the
+  river corridor (x2490-2630); every spot clears the vertical-road bands, the promenade (2591),
+  and the south-homes row bottoms (2394).
+- **Save-safety:** `apt()` now checks `P.town.pos` and silently skips any apartment whose footprint
+  would intersect a venue the player has already placed in the fairgrounds band (verified: a stub
+  venue at x330 correctly suppresses the 380 rowhouse). `canPlaceAt` already blocks future venue
+  placement on the apartments via colliders.
+- **Why it matters:** the bottom road reads as a lively, colorful promenade street framing the
+  fairgrounds instead of two lone towers, using only recolors of the friend's art so the style
+  stays cohesive. Verified: jsdom run with all districts owned — 196 colliders, zero overlaps;
+  live in-browser preview of both halves of the strip before pushing.
+
+---
+
 ## 2026-07-07, Build anywhere you own + the downtown city center opened for building
 
 - **Direction:** a chain of related requests: first "let people place newly acquired buildings

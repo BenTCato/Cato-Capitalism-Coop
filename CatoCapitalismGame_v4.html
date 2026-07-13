@@ -4849,9 +4849,20 @@ function fflower(x,y){return '<g transform="translate('+x+','+y+')">'+sh(0,2,7,2
 function buildExpansion(tiers){
   var s=''; EXP_BR=[];
   // Standalone apartment blocks (buildings-08 is two apartment designs, not a town hall) — spread along the south band
-  function apt(id,cx,base,w2,h2){var cw=Math.min(h2,96);reg(cx-w2/2,base-cw,w2,cw);EXP_BR.push({x:cx-w2/2,y:base-h2,w:w2,h:h2});
+  function apt(id,cx,base,w2,h2){
+    var ax=cx-w2/2, ay=base-h2;
+    if(P&&P.town&&P.town.pos){ for(var vk in P.town.pos){ var vp=P.town.pos[vk];
+      if(vp&&ax<vp.x+ATTR_W+8&&ax+w2>vp.x-8&&ay<vp.y+8&&base>vp.y-ATTR_H-8) return ''; } }   // never stand on a player-placed venue
+    var cw=Math.min(h2,96);reg(ax,base-cw,w2,cw);EXP_BR.push({x:ax,y:ay,w:w2,h:h2});
     return '<g transform="translate('+cx+','+base+')">'+sh(0,6,w2*0.55,9)+'<use href="#'+id+'"/></g>';}
-  s+=apt('bldAptBrown',660,2585,97,176)+apt('bldAptRed',3160,2585,72,184);   // opposite ends of the fairgrounds band, art tops below the south-homes row bottom (2394), bases above the promenade (2591)
+  // Promenade rowhouses: ten apartments line the bottom road at the fairgrounds' north edge — the two
+  // buildings-08 designs in mixed wall tints so the street reads lively. Gaps are left for the
+  // FAIRGROUNDS sign (x~950-1370) and the river corridor (x2490-2630); every spot clears the
+  // vertical-road bands, the promenade (2591), and the south-homes row bottoms (2394).
+  s+=apt('bldAptBrownP',380,2585,97,176)+apt('bldAptBrown',660,2585,97,176)+apt('bldAptRedO',900,2585,72,184)
+    +apt('bldAptBrownB',1450,2585,97,176)+apt('bldAptBrownP',1650,2585,97,176)+apt('bldAptRedG',1900,2585,72,184)
+    +apt('bldAptRed',2150,2585,72,184)+apt('bldAptBrownB',2950,2585,97,176)+apt('bldAptRed',3160,2585,72,184)
+    +apt('bldAptRedO',3390,2585,72,184);
   // ── street grid: now drawn by the UNIFIED road layer in buildWorld() (shared curb/asphalt/marking
   //    passes with downtown's curves, so junctions have no overlapping lines). This function reuses
   //    the same grid geometry for building keep-outs; ROAD_RECTS was already set in buildWorld.
@@ -5179,9 +5190,15 @@ function bldDefs(){
   var inner=BLD_HALL.replace('<g id="bldHall" transform="scale(0.36) translate(-380,-494)">','');
   inner=inner.slice(0,inner.lastIndexOf('</g>'));
   var cut=inner.indexOf('<g><rect fill="#0071bc" stroke="#fff" stroke-width="3" x="187.0"');
+  var red=inner.slice(0,cut), brown=inner.slice(cut);
+  function tint(g,from,to){return g.split(from).join(to);}   // wall-color variants for a lively mixed street
   return '<defs>'+
-    '<g id="bldAptRed" transform="scale(0.38) translate(-505,-494)">'+inner.slice(0,cut)+'</g>'+
-    '<g id="bldAptBrown" transform="scale(0.40) translate(-278,-494)">'+inner.slice(cut)+'</g>'+
+    '<g id="bldAptRed" transform="scale(0.38) translate(-505,-494)">'+red+'</g>'+
+    '<g id="bldAptRedO" transform="scale(0.38) translate(-505,-494)">'+tint(red,'#c1272d','#f7931e')+'</g>'+
+    '<g id="bldAptRedG" transform="scale(0.38) translate(-505,-494)">'+tint(red,'#c1272d','#7ac943')+'</g>'+
+    '<g id="bldAptBrown" transform="scale(0.40) translate(-278,-494)">'+brown+'</g>'+
+    '<g id="bldAptBrownP" transform="scale(0.40) translate(-278,-494)">'+tint(brown,'#c97632','#ff7bac')+'</g>'+
+    '<g id="bldAptBrownB" transform="scale(0.40) translate(-278,-494)">'+tint(brown,'#c97632','#9ac7d6')+'</g>'+
     BLD_BANK+BLD_SCHOOL+'</defs>';
 }
 function bldCivic(id,cx,base,artW,artH,label,labelW,t){

@@ -1697,3 +1697,21 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
   execute cleanly.
 - **Notes (not bugs):** the relocated bottom-right fairground fits ~10 of 12 attractions (overflow
   can go in the downtown build zone); the river overlaps the 6 road crossings by design (bridges).
+
+---
+
+## 2026-07-14, Deep-dive bug check round 2: live browser + broader headless (post-push)
+
+- **Direction:** "do another deep dive bug check" (after pushing the fixes live).
+- **Live browser (deployed site):** confirmed the deploy carries the latest code (office ground-only
+  collider, 10 cars, bottom-right fairground); 0 console errors; drove the real `collides()` engine —
+  the top road is now WALKABLE (the reported block is gone), buildings/river block correctly, and
+  bridges cross via the north half of each deck. Live full-map screenshot matches the intended city
+  (dense offices, packed left, downtown intact, moving cars, river + bridges).
+- **Broader headless:** 6 ownership states × 3 tiers → 0 load errors, 0 building-vs-road, 0
+  building-vs-building, 0 on-fairground everywhere; 10/10 NPC anchors reachable; a 135-point road
+  walkability scan found 0 blocked cells (only the river/bridge centerline, as expected).
+- **Verdict:** clean, no new bugs. Full report appended to `BUG-TEST-2026-07-14.md`.
+- **One pre-existing polish item (optional, not introduced by the rework):** the river collider starts
+  at each bridge centerline, so the south half of every bridge deck reads as over-water; crossing
+  still works via the north half. Could inset the river collider ~20px at each crossing.

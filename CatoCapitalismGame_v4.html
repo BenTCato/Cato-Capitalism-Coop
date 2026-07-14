@@ -4859,12 +4859,12 @@ function buildExpansion(tiers){
   // (base 2560 → top ~2384, clear of the south-homes bottoms at 2280); the lower, shorter row sits
   // BELOW it (base 2795, h150 → top 2645, clears the road band). Both rows stay left of the x1800
   // spine stub and clear of the map border. The two buildings-08 designs alternate in mixed tints.
-  var APX=[250,460,670,880,1090,1300,1510,1690], APID=['bldAptBrownP','bldAptBrown','bldAptRedO','bldAptBrownB','bldAptRedG','bldAptRed'];
+  var APX=[240,405,570,735,900,1065,1230,1395,1560,1725,1890,2055,2220], APID=['bldAptBrownP','bldAptBrown','bldAptRedO','bldAptBrownB','bldAptRedG','bldAptRed'];   // 13 columns × 2 rows = 26 units → a dense city apartment district (skips the x1800 spine band, stays left of the fairgrounds)
   APX.forEach(function(cx,i){ s+=apt(APID[i%APID.length],cx,2560,88,176); });          // upper row (above the promenade)
   APX.forEach(function(cx,i){ s+=apt(APID[(i+3)%APID.length],cx,2795,88,150); });       // lower row (below the promenade)
   // Residents' green: a few benches on the grass strip between the south homes (row bottoms ~2280) and
   // the apartment band (tops ~2384) — a sensible rest spot for the neighborhood, clear of every road.
-  s+=fbench(340,2350)+fbench(760,2350)+fbench(1180,2350)+fbench(1600,2350);
+  s+=fbench(340,2350)+fbench(760,2350)+fbench(1180,2350)+fbench(1600,2350)+fbench(2050,2350);
   // ── street grid: now drawn by the UNIFIED road layer in buildWorld() (shared curb/asphalt/marking
   //    passes with downtown's curves, so junctions have no overlapping lines). This function reuses
   //    the same grid geometry for building keep-outs; ROAD_RECTS was already set in buildWorld.
@@ -4879,6 +4879,7 @@ function buildExpansion(tiers){
     var hz=((x*73+streetY*131)|0);
     if(!noVac&&hz%8===0)continue;                                    // vacant lot: negative space breaks the grid rhythm (skipped for shop rows so every shop kind appears)
     var b=streetY+off+((hz%7)-3);                                    // ±3px setback jitter (±4 could eat the 6px block gap between back-to-back rows)
+    if(cx>2680&&b>2300)continue;                                     // keep the bottom-RIGHT fairgrounds clear (nothing builds on the fairgrounds)
     o+='<path d="M'+(cx-58)+','+b+' L'+(cx+58)+','+b+' L'+(cx+74)+','+(b+12)+' L'+(cx-42)+','+(b+12)+' Z" fill="rgba(14,24,38,.13)"/>'+   // directional cast shadow, widened for the larger buildings
        fn(x,b);
     if(off<0){                                                       // door faces the street: connect it like a real lot
@@ -4904,7 +4905,7 @@ function buildExpansion(tiers){
   function nextShop(){ return shopN<SHOPKINDS.length ? SHOPKINDS[shopN++] : null; }
   // WEST neighborhood
   if(!ownsDistrict('west')) s+=forSaleSign(500,1200);
-  else if(ownsDev('west_homes')) SIDE.forEach(function(y){ s+=row(y,290,900,145,function(x,b){return expHouse(x,b,(x*31+b*17)|0);}); s+=row(y,290,900,145,function(x,b){return expHouse(x,b,(x*31+b*17)|0);},108); });   // origin+step retuned to dodge the vertical-street clearance bands: 3 houses/row (was 2)
+  else if(ownsDev('west_homes')) SIDE.forEach(function(y){ s+=row(y,290,900,145,function(x,b){return expHouse(x,b,(x*31+b*17)|0);},undefined,true); s+=row(y,290,900,145,function(x,b){return expHouse(x,b,(x*31+b*17)|0);},108,true); s+=expHouse(96,y-44,(y*7)|0)+expHouse(96,y+108,(y*13)|0); });   // dense left neighborhood: both lanes with no vacant lots + a far-left column filling the map edge (clear of the x240 spine)
   else s+=readySign(500,1200);
   // EAST market district (shops on the north rows, homes on the south)
   if(!ownsDistrict('east')) s+=forSaleSign(3150,1200);
@@ -4915,8 +4916,10 @@ function buildExpansion(tiers){
       s+=row(y,2850,2955,999,mk,undefined,true);      // left lane: one storefront, clear of the x2760 street
       s+=row(y,3128,3500,258,mk,undefined,true);      // right lane: two storefronts, clear of the x3080 street -> 3/row x 4 rows = all 12 kinds, airy spacing
     });
-      // right-of-river HOMES below the shop district (per the town plan): a house row along the y1580 side street
-      s+=row(1580,2850,3500,175,function(x,b){return expHouse(x,b,(x*31+b*17)|0);});
+      // right-of-river HOMES below the shop district (per the town plan): a DENSE double-lane block on
+      // the y1580 side street so the neighborhood under the shops reads full, not sparse
+      s+=row(1580,2850,3500,150,function(x,b){return expHouse(x,b,(x*31+b*17)|0);},undefined,true);
+      s+=row(1580,2850,3500,150,function(x,b){return expHouse(x,b,(x*31+b*17)|0);},108,true);
       eastBuilt=true; }   // one storefront centered per block (2895/3295): the old 200-step packed two per right block and left blocks empty   // 3 wider slots x 4 rows = all 12 shop kinds appear (the old spacing had crowded several out entirely)
     if(!eastBuilt) s+=readySign(3150,1200);
   }
@@ -4926,7 +4929,7 @@ function buildExpansion(tiers){
   else s+=readySign(1800,2160);
   // NORTH business district (offices)
   if(!ownsDistrict('north')) s+=forSaleSign(1800,330);
-  else if(ownsDev('north_offices')) [220,420].forEach(function(y){s+=row(y,160,3480,230,function(x,b){return expOffice(x,b,2+((x*3+b)%2),(x*31+b*17)|0);});});   // offices span the FULL top edge (160→3480) per the town plan; row() skips the river corridor + vertical-road bands; floors + facade keyed to position
+  else if(ownsDev('north_offices')) [220,420].forEach(function(y){s+=row(y,160,3480,155,function(x,b){return expOffice(x,b,3+((x*7+b)%3),(x*31+b*17)|0);},undefined,true);});   // dense full-width office band (step 155, no vacant lots) with 3-5 floors → a real city skyline; row() skips the river corridor + vertical-road bands
   else s+=readySign(1800,330);
   // ── FAIRGROUNDS (bottom band): open build land. Attractions render wherever the player placed them.
   //    The FAIRGROUNDS signpost only shows while the land is still empty; once the player builds the

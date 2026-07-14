@@ -1619,3 +1619,38 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
   fairgrounds empty bottom-right, center untouched. The whole script parsed under jsdom, so the
   10-car array edit is syntactically valid (cars don't instance in headless because `GFX.lowPower`
   suppresses `carsSVG` off-screen).
+- **Follow-up (same day):** regenerated the two printable maps in `Maps/` to match the new layout —
+  `World Map - All Buildings` (full built-out world, all districts owned) and `World Map - Land Only`
+  (roads, roundabout, pond, river + bridges; building/prop functions stubbed to empty). Both
+  re-rendered from the updated game via jsdom and exported to landscape PDFs (+ SVG originals).
+
+---
+
+## 2026-07-14, City-density pass + fairgrounds keep-out (sharpie-map compare, math + visual)
+
+- **Direction:** compared the build against the user's sharpie drawing mathematically and visually.
+  Fixes requested: houses were landing on the fairgrounds; houses under the shopping district were
+  too sparse; and the town needed more offices, more apartments, and more houses on the left to read
+  as a real city.
+- **Math baseline (jsdom ground-truth on `EXP_BR`):** 103 expansion buildings — offices 12, west
+  homes 20, apartments 16, and **2 houses intruding on the bottom-right fairgrounds** (the south
+  y2280 back-lane, bases ~2388 inside the fairgrounds band).
+- **What changed (`CatoCapitalismGame_v4.html`):**
+  - **Fairgrounds keep-out** in `row()`: any lot with `cx>2680 && b>2300` is skipped, so nothing
+    ever builds on the bottom-right fairgrounds (removed the 2 intruders at the root, not by hand).
+  - **Offices** densified for a skyline: step 230→155 with `noVac` (no vacant lots) and floors
+    3-5 (was 2-3) across the full top edge.
+  - **Apartments** expanded to a 13-column × 2-row band (was 8×2), spanning x240–2220 and skipping
+    the x1800 spine → ~26 units massed bottom-left for a true city block.
+  - **Houses under the shops** (right of river) rebuilt as a dense double-lane block on the y1580
+    street (step 150, both lanes, no vacancies).
+  - **Left neighborhood** filled: west rows now build both lanes with no vacant lots plus a far-left
+    column at the map edge (clear of the x240 spine).
+- **Math after (jsdom re-run):** 142 buildings — offices 12→**27**, west homes 20→**36**, apartment
+  units **26** (bottom-left area ~34 incl. adjacent homes), denser under-shop homes, **0 on the
+  fairgrounds**; all 12 shop kinds still render exactly once; zero load errors.
+- **Visual:** rasterized the rendered world to PNG and compared to the sharpie plan — dense office
+  band across the top, packed left neighborhood, 12 shops with a full house block beneath, big
+  apartment district bottom-left, homes across the bottom-centre, empty fairgrounds bottom-right,
+  center untouched. (A live Chrome pass on the local file was not possible — the extension can't open
+  `file://` URLs and the deployed site still runs the pre-edit build; edits remain local/unpushed.)

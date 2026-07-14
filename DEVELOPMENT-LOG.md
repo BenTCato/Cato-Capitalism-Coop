@@ -1577,3 +1577,45 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 - **Why it matters:** removes a confusing signal for teachers/students who open the game before a
   class is started, making the "am I in a class?" state obvious at a glance.
 - **To deploy:** re-upload `coop/coop-client.js` (served as `/__coop/client.js`) and push; Render auto-deploys.
+
+---
+
+## 2026-07-14, Town map rezoned to the user's hand-drawn plan (fairgrounds moved, apartments respread)
+
+- **Direction:** the user submitted a hand-drawn world map (`Image (3).jpg`): offices (B) across the
+  whole top, houses (H) on the left and center, the 12 shops in a 3×4 grid right of the river, more
+  houses right of the river below the shops, a big apartment (A) band in the bottom-LEFT, and the
+  fairgrounds relocated to the bottom-RIGHT (kept empty for attractions). Center starting setup
+  unchanged. Also: use the 3 tree designs, add a few benches that make sense, and more cars. Chosen
+  approach: keep the buy-to-build system, reshape the zones (not a fully-pre-built world).
+- **What changed (`CatoCapitalismGame_v4.html`):**
+  - **Fairgrounds → bottom-right corner.** `placeZones()` fairgrounds rect moved from the full bottom
+    band `{150,2360,3470,2800}` to `{2700,2320,3500,2800}` (right of the river); the 12
+    `TOWN_ATTRACTIONS` default coords regridded into that corner (6 cols × 2 rows, bases 2540/2780);
+    the FAIRGROUNDS ghost label moved to (3100, 2455).
+  - **Apartment band → bottom-left.** Replaced the 10 spread-out promenade rowhouses with a fuller
+    two-row band on the left: 8 columns (x250–1690) × 2 rows straddling the promenade road — upper
+    row base 2560 (h176, tops clear the south-homes bottoms at 2280), lower row base 2795 (h150,
+    tops clear the y2620 road band); tints alternate across the six apartment defs.
+  - **Right-of-river homes.** Added a house row along the y1580 side street (x2850–3500) below the
+    east shop district.
+  - **Offices full-width.** North office rows extended from x300–3300 to x160–3480 so B spans the
+    entire top edge; `row()` still skips the river corridor and vertical-road bands.
+  - **Benches + cars.** Added four benches on the grass strip between the south homes and the new
+    apartment band (a residents' green). Traffic raised from 4 to 10 cars — added opposing pairs on
+    the top street (y220), the second bottom street (y2280), and the fairgrounds promenade (y2620).
+    The 3 illustrated tree designs already rotate through the scatter (unchanged).
+- **Why it matters:** the town now matches the user's intended layout — a clear civic/commercial/
+  residential zoning read (offices up top, shops by the river, homes filling the neighborhoods,
+  apartments massed bottom-left) with the fairgrounds as its own corner — while preserving the
+  "buy the land, then build" economic lesson intact.
+- **Verification:** reconstructed the full OneDrive file in the sandbox (the mount served a
+  tail-truncated snapshot) and ran the jsdom ground-truth harness — clean load with zero errors,
+  `buildWorld()` builds, all 12 shop kinds present exactly once, 16 apartments placed, fairgrounds
+  label at the bottom-right. Rasterized the rendered world to PNG and visually confirmed it against
+  the hand-drawn plan: offices span the top, shops sit right of the river in the exact drawn order
+  (Café, Pharmacy, Bakery / Bookshop, Toy, Grocer / Pizza, Ice Cream, Flowers / Diner, Music,
+  Hardware), homes fill left/center and right-of-river-below-shops, apartments mass bottom-left,
+  fairgrounds empty bottom-right, center untouched. The whole script parsed under jsdom, so the
+  10-car array edit is syntactically valid (cars don't instance in headless because `GFX.lowPower`
+  suppresses `carsSVG` off-screen).

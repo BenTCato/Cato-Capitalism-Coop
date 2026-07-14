@@ -1715,3 +1715,25 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 - **One pre-existing polish item (optional, not introduced by the rework):** the river collider starts
   at each bridge centerline, so the south half of every bridge deck reads as over-water; crossing
   still works via the north half. Could inset the river collider ~20px at each crossing.
+
+---
+
+## 2026-07-14, Teacher-portal / co-op server bug test
+
+- **Direction:** "do a bug test on the teacher portal side of the game."
+- **Method:** verified all `coop/` files read fully and pass `node --check` (`duel-bank.json` = valid
+  113-question array); booted `coop-server.js` on a test port and drove it with a real HTTP client —
+  endpoint/auth pass with no Redis, plus an account/PIN pass using an in-memory Redis stub. Findings
+  appended to `BUG-TEST-2026-07-14.md`.
+- **Result: 39/39 checks pass, no bugs.**
+  - Teacher gating enforced: world-rename, tq create/decide/end, and kick all 403 without the room
+    `teacherKey` and succeed with it.
+  - No answer-key leaks: duel wire never carries `best`; student class-question view omits `correct`.
+  - Duel is server-authoritative with zero-sum star deltas; tq answers scored server-side.
+  - Accounts: creation, correct/wrong PIN, save-guarding, data round-trip, and brute-force lockout
+    (429, blocks even the correct PIN during lockout; other accounts unaffected) all correct.
+  - Security headers present; bad JSON → 400; oversized body settles fast (no hang); 404 on unknown.
+  - Dashboard persists + sends the teacherKey on every teacher action; client never holds the key and
+    shows "Not in a class yet" pre-join; privacy links + first-name guidance present.
+- **Design note (not a bug):** the default MAIN world has no teacherKey, so teacher actions there are
+  open (legacy anonymous behavior). Classroom use should always "Start a Class" for a keyed room.

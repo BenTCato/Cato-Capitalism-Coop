@@ -4926,7 +4926,10 @@ function buildExpansion(tiers){
   }
   // SOUTH neighborhood
   if(!ownsDistrict('south')) s+=forSaleSign(1800,2160);
-  else if(ownsDev('south_homes')) [2040,2280].forEach(function(y){ s+=row(y,120,3500,165,function(x,b){return expHouse(x,b,(x*31+b*17)|0);}); s+=row(y,120,3500,165,function(x,b){return expHouse(x,b,(x*31+b*17)|0);},108); });   // step 180→165: fills the long southern streets more evenly
+  else if(ownsDev('south_homes')){ var sfn=function(x,b){return expHouse(x,b,(x*31+b*17)|0);};
+    s+=row(2040,120,3500,165,sfn); s+=row(2040,120,3500,165,sfn,108);   // upper street: both lanes
+    s+=row(2280,120,3500,165,sfn);                                       // lower street: FRONT lane only — the back lane (base ~2388) would overlap the apartment tops (2384), so it is dropped
+  }
   else s+=readySign(1800,2160);
   // NORTH business district (offices)
   if(!ownsDistrict('north')) s+=forSaleSign(1800,330);

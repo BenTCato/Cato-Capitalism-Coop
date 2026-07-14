@@ -1678,3 +1678,22 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
   road is clear and the under-shop block is full. (Sandbox note: OneDrive again served a
   tail-truncated snapshot; the authoritative file is complete and the verified build was reconstructed
   in /tmp.)
+
+---
+
+## 2026-07-14, Complete single-player bug check (parse/boot/geometry/logic/runtime)
+
+- **Direction:** "do a complete bug check on the game."
+- **Method:** four jsdom harnesses against a parse-checked full reconstruction of the file — boot,
+  geometry (all-owned + none-owned), logic fuzz, and a runtime/screens exercise. Full write-up in
+  `BUG-TEST-2026-07-14.md`.
+- **Bug found & fixed (`CatoCapitalismGame_v4.html`):** the south lower-street back-lane houses
+  (base ~2388) overlapped the new apartment-band tops (2384) by ~6px. Dropped that back lane
+  (south = y2040 both lanes + y2280 front lane only). Re-audit: **0 building-vs-building overlaps.**
+- **Everything else clean:** 0 parse/boot/console errors; 0 building-vs-road (the office-collider fix
+  holds); 0 buildings on the fairground; all interaction spots reachable; 493 questions / 1,972 choices
+  all valid; stats always clamp [0,100] with no NaN; economy never goes negative; save/load roundtrips;
+  a 6-term / 60-answer driven playthrough ran with 0 exceptions; all screens + build/place/quiz flows
+  execute cleanly.
+- **Notes (not bugs):** the relocated bottom-right fairground fits ~10 of 12 attractions (overflow
+  can go in the downtown build zone); the river overlaps the 6 road crossings by design (bridges).

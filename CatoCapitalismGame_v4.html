@@ -4716,8 +4716,8 @@ function expHouse(x,y,i){
 // ground-floor center cells are omitted so the entrance door has clear space (no overlap).
 function expOffice(x,y,floors,i){
   var w=108, fh=26, H=22+floors*fh, c=EXP_OFFICE[i%EXP_OFFICE.length], S=1.35;   // uniform 1.35x scale-wrap: offices read as multi-story blocks against the avatar
-  var rx=x+52-(w*S)/2, ry=y-H*S;
-  reg(rx,ry,w*S,H*S); EXP_BR.push({x:rx,y:ry,w:w*S,h:H*S});
+  var rx=x+52-(w*S)/2, ry=y-H*S, colH=Math.min(H*S,108);
+  reg(rx,y-colH,w*S,colH); EXP_BR.push({x:rx,y:ry,w:w*S,h:H*S});   // PLAYER-collision covers only the ground portion (colH) so a tall office never blocks the road or map edge ABOVE it; prop keep-out (EXP_BR) still uses the full visual footprint
   var g='<g transform="translate('+rx+','+ry+') scale('+S+')">'+sh(w/2,H+3,w*0.5,6);
   g+='<rect x="0" y="0" width="'+w+'" height="'+H+'" rx="3" fill="'+c+'"/>';
   g+='<rect x="0" y="0" width="'+w+'" height="'+H+'" rx="3" fill="url(#wallV)"/>';                     // body gradient
@@ -4916,10 +4916,11 @@ function buildExpansion(tiers){
       s+=row(y,2850,2955,999,mk,undefined,true);      // left lane: one storefront, clear of the x2760 street
       s+=row(y,3128,3500,258,mk,undefined,true);      // right lane: two storefronts, clear of the x3080 street -> 3/row x 4 rows = all 12 kinds, airy spacing
     });
-      // right-of-river HOMES below the shop district (per the town plan): a DENSE double-lane block on
-      // the y1580 side street so the neighborhood under the shops reads full, not sparse
-      s+=row(1580,2850,3500,150,function(x,b){return expHouse(x,b,(x*31+b*17)|0);},undefined,true);
-      s+=row(1580,2850,3500,150,function(x,b){return expHouse(x,b,(x*31+b*17)|0);},108,true);
+      // right-of-river HOMES below the shop district: a PACKED neighborhood filling the whole block
+      // between the shops (bottoms ~1296) and the south road (y2040). Hand-placed columns fit two homes
+      // between the x2760 & x3080 streets and three east of x3080 (5 per row), on three rows that
+      // straddle the y1580 side street — a full neighborhood, not a thin line.
+      [1500,1690,1830].forEach(function(yy){ [2860,2970,3170,3300,3420].forEach(function(cx){ s+=expHouse(cx-52,yy,(cx*31+yy*17)|0); }); });
       eastBuilt=true; }   // one storefront centered per block (2895/3295): the old 200-step packed two per right block and left blocks empty   // 3 wider slots x 4 rows = all 12 shop kinds appear (the old spacing had crowded several out entirely)
     if(!eastBuilt) s+=readySign(3150,1200);
   }
@@ -4929,7 +4930,7 @@ function buildExpansion(tiers){
   else s+=readySign(1800,2160);
   // NORTH business district (offices)
   if(!ownsDistrict('north')) s+=forSaleSign(1800,330);
-  else if(ownsDev('north_offices')) [220,420].forEach(function(y){s+=row(y,160,3480,155,function(x,b){return expOffice(x,b,3+((x*7+b)%3),(x*31+b*17)|0);},undefined,true);});   // dense full-width office band (step 155, no vacant lots) with 3-5 floors → a real city skyline; row() skips the river corridor + vertical-road bands
+  else if(ownsDev('north_offices')) [220,420].forEach(function(y){s+=row(y,160,3480,155,function(x,b){return expOffice(x,b,2+((x*7+b)%2),(x*31+b*17)|0);},undefined,true);});   // dense full-width office band (step 155, no vacant lots), 2-3 floors → a busy city skyline by COUNT; ground-only colliders (see expOffice) keep the roads walkable
   else s+=readySign(1800,330);
   // ── FAIRGROUNDS (bottom band): open build land. Attractions render wherever the player placed them.
   //    The FAIRGROUNDS signpost only shows while the land is still empty; once the player builds the

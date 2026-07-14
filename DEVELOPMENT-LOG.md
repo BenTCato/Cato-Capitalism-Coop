@@ -1654,3 +1654,27 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
   apartment district bottom-left, homes across the bottom-centre, empty fairgrounds bottom-right,
   center untouched. (A live Chrome pass on the local file was not possible — the extension can't open
   `file://` URLs and the deployed site still runs the pre-edit build; edits remain local/unpushed.)
+
+---
+
+## 2026-07-14, Fix: tall offices blocked the road; fill the under-shop neighborhood (user report)
+
+- **Direction (from a live look at the pushed build):** the avatar couldn't walk the top road, and
+  the right-of-river neighborhood under the shops still wasn't full of houses.
+- **Root cause (offices):** the previous pass raised offices to 3-5 floors, and `expOffice` registered
+  the FULL building height as the player collider. A tall office on the `y420` row (base ~376) then
+  extended its collider up past `y=240` — across the `y220` road band — so the road read as blocked.
+- **Fixes (`CatoCapitalismGame_v4.html`):**
+  - `expOffice`: player collider capped to the ground portion — `colH=Math.min(H*S,108)`, registered
+    from the base up only; the prop keep-out (`EXP_BR`) still uses the full visual footprint, so the
+    tall tower rises behind without blocking the road or map edge above it. Office floors returned to
+    2-3 (the tall look now comes from COUNT, not height).
+  - Under-shop homes rebuilt as a PACKED block: three rows (y1500/1690/1830) × five hand-placed
+    columns (two fit between the x2760 & x3080 streets, three east of x3080) → a full neighborhood
+    right of the river beneath the 12 shops.
+- **Verification (jsdom ground-truth):** every building collider tested against every road rect —
+  **0 building-vs-road overlaps** (was blocking before); under-shop homes **17** (up from ~4); all 12
+  shop kinds present; 151 expansion buildings; zero load errors. Rasterized render confirms the top
+  road is clear and the under-shop block is full. (Sandbox note: OneDrive again served a
+  tail-truncated snapshot; the authoritative file is complete and the verified build was reconstructed
+  in /tmp.)

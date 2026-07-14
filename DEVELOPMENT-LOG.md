@@ -1323,6 +1323,21 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 
 ---
 
+## 2026-07-13, East district is now shops-only (removed Market Lofts)
+
+- **Direction:** "get rid of the houses by the 12 shops — they aren't needed."
+- **What changed (`CatoCapitalismGame_v4.html`):** removed the `east_homes` / "Market Lofts"
+  development entirely — both the `TOWN_DEVS` entry (so the build-menu button and its +4 happiness
+  bonus are gone) and its render block (the staggered house rows that interleaved with the shops).
+  East ("Market Quarter") is now a pure shopping district with a single development, consistent
+  with west/south/north which each have one dev too.
+- **Why it matters:** the shopping street reads clean — 12 storefronts, one per block, open green
+  space where the houses were. Verified: jsdom all-owned run, 0 overlaps, all 12 shop kinds present,
+  the east band contains only shop-sized (151×84) boxes (no house footprints), and the Lofts option
+  is gone from the menu; confirmed with a live in-browser preview of the full district.
+
+---
+
 ## 2026-07-07, Build anywhere you own + the downtown city center opened for building
 
 - **Direction:** a chain of related requests: first "let people place newly acquired buildings

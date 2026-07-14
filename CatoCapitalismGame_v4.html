@@ -3326,7 +3326,6 @@ var DISTRICT_BONUS={west:{h:2},east:{e:3,f:2},south:{h:1,f:1},north:{e:2,f:1,ed:
 var TOWN_DEVS={
   west_homes:   {dist:'west',  name:'Cottage Row Homes', icon:'🏠', cost:900,  bonus:{h:6,e:1}},
   east_shops:   {dist:'east',  name:'Shopping Street', icon:'🛍️', cost:1400, bonus:{e:7,h:2}},
-  east_homes:   {dist:'east',  name:'Market Lofts',    icon:'🏠', cost:800,  bonus:{h:4}},
   south_homes:  {dist:'south', name:'Riverside Homes', icon:'🏠', cost:900,  bonus:{h:5,e:1,ed:1}},
   north_offices:{dist:'north', name:'Offices & Jobs', icon:'🏢', cost:1600, bonus:{e:7,ed:2}}
 };
@@ -4913,7 +4912,6 @@ function buildExpansion(tiers){
       s+=row(y,2850,2955,999,mk,undefined,true);      // left lane: one storefront, clear of the x2760 street
       s+=row(y,3128,3500,258,mk,undefined,true);      // right lane: two storefronts, clear of the x3080 street -> 3/row x 4 rows = all 12 kinds, airy spacing (a literal 5th row would collide with the east homes at y1580)
     }); eastBuilt=true; }   // one storefront centered per block (2895/3295): the old 200-step packed two per right block and left blocks empty   // 3 wider slots x 4 rows = all 12 shop kinds appear (the old spacing had crowded several out entirely)
-    if(ownsDev('east_homes')){ s+=row(1580,2820,3500,180,function(x,b){return expHouse(x,b,(x*31+b*17)|0);}); [620,860,1100,1340,1580].forEach(function(y){s+=row(y,2600,3500,185,function(x,b){return expHouse(x,b,(x*31+b*17)|0);},108);}); eastBuilt=true; }
     if(!eastBuilt) s+=readySign(3150,1200);
   }
   // SOUTH neighborhood

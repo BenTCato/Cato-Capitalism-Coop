@@ -476,6 +476,11 @@
        --sunSkew/--sunLen/--sunOp so shadows sweep west->east and stretch long at dawn/dusk,
        shorten at noon and fade at night, the day-cycle grounding trick of top-down life sims. */
     .bshadow{transform-box:fill-box;transform-origin:50% 0%;transform:skewX(var(--sunSkew,8deg)) scaleY(var(--sunLen,1));opacity:var(--sunOp,.9);}
+    /* brush-past rustle: canopy shakes off the contact when the player pushes past a trunk or bush */
+    .rustle{animation:rustleK .58s ease-out;transform-box:fill-box;transform-origin:50% 88%;}
+    @keyframes rustleK{0%{transform:rotate(0deg)}26%{transform:rotate(2.4deg)}55%{transform:rotate(-1.9deg)}80%{transform:rotate(1deg)}100%{transform:rotate(0deg)}}
+    /* night light spill: lit windows pour a warm pool onto the ground; the lighting pass drives --spillOp */
+    .winspill{opacity:var(--spillOp,0);pointer-events:none;}
     .town-svg{width:100%;display:block;border-radius:22px;filter:drop-shadow(0 18px 44px rgba(0,0,0,.45));}
     /* chimney smoke: parcels rise, expand and shear downwind (matches the eastward cloud wind), thinning as they mix */
     .smoke{transform-box:fill-box;transform-origin:50% 100%;animation:smokeRise 3.4s ease-out infinite;}
@@ -2832,7 +2837,8 @@ function pickChoice(letter){
   if(finalRound)pts*=2;
   S.score+=pts;
   // Stars are the spendable currency, banked live as each question is answered.
-  const starsEarned=120+(isBest?380:0);   // 120 per answer, plus 380 for a best answer
+  const streakBonus=isBest?Math.min(Math.max(S.streak-1,0)*40,120):0;   // Kahoot-style hot streak: 2nd/3rd/4th+ best answers in a row pay +40/+80/+120
+  const starsEarned=120+(isBest?380:0)+streakBonus;   // 120 per answer, plus 380 for a best answer, plus the streak bonus
   S.starsThisTerm=(S.starsThisTerm||0)+starsEarned;   // track the real total so the Results screen matches what was banked
   if(P){P.stars=(P.stars||0)+starsEarned;saveProfiles();}
   updateScoreHUD();updateBankUI();spawnScorePop(starsEarned,false);spawnStatChips(c.fx);
@@ -4164,11 +4170,15 @@ function worldDefs(){
   '<radialGradient id="gradeG" cx="0.5" cy="0.42" r="0.75"><stop offset="0%" stop-color="#FFE4AA" stop-opacity=".055"/><stop offset="55%" stop-color="#FFE4AA" stop-opacity="0"/><stop offset="100%" stop-color="#1E3264" stop-opacity=".075"/></radialGradient>'+   // cinematic grade: warm key light center, cool falloff (davinci-skill port)
   '</defs>';
 }
+var FOLI=[];   // brushable foliage registry: every tree/bush records its base point + element id
 function ftree(x,y,s){reg(x-12*s,y-8*s,24*s,12*s);
-  // deterministic 3-way pick between the pine / round / oak designs, keyed to position
-  return '<use href="#treeD'+(['','2','3'][(x*7+y)%3])+'" transform="translate('+x+','+y+') scale('+s+')"/>';}
+  // deterministic 3-way pick between the pine / round / oak designs, keyed to position.
+  // The <use> sits inside a positioning <g> so the rustle animation never fights the placement transform.
+  var fid='fol-'+FOLI.length; FOLI.push({x:x,y:y,id:fid,el:null,until:0});
+  return '<g transform="translate('+x+','+y+') scale('+s+')"><use id="'+fid+'" href="#treeD'+(['','2','3'][(x*7+y)%3])+'"/></g>';}
 function fhedge(x,y,w){reg(x,y-12,w,18);return '<g>'+sh(x+w/2,y+8,w*0.55,5)+'<rect x="'+x+'" y="'+(y-12)+'" width="'+w+'" height="20" rx="10" fill="'+AP.tree+'"/><rect x="'+x+'" y="'+(y-12)+'" width="'+w+'" height="10" rx="5" fill="'+AP.tree2+'" opacity=".4"/></g>';}
-function fbush(x,y,s){return '<g transform="translate('+x+','+y+') scale('+s+')">'+sh(0,4,13,4)+'<circle cx="-6" cy="-3" r="8" fill="'+AP.tree2+'"/><circle cx="6" cy="-3" r="8" fill="'+AP.tree2+'"/><circle cx="0" cy="-8" r="9" fill="'+AP.tree+'"/><circle cx="-2" cy="-11" r="5" fill="#ffffff" opacity=".14"/></g>';}
+function fbush(x,y,s){var fid='fol-'+FOLI.length;FOLI.push({x:x,y:y,id:fid,el:null,until:0});
+  return '<g transform="translate('+x+','+y+') scale('+s+')">'+sh(0,4,13,4)+'<g id="'+fid+'"><circle cx="-6" cy="-3" r="8" fill="'+AP.tree2+'"/><circle cx="6" cy="-3" r="8" fill="'+AP.tree2+'"/><circle cx="0" cy="-8" r="9" fill="'+AP.tree+'"/><circle cx="-2" cy="-11" r="5" fill="#ffffff" opacity=".14"/></g></g>';}
 function frock(x,y,s){reg(x-10*s,y-8*s,20*s,11*s);return '<g transform="translate('+x+','+y+') scale('+s+')">'+sh(0,3,11,4)+'<path d="M-10,2 Q-12,-7 -3,-10 Q7,-12 11,-4 Q12,2 6,3 Z" fill="#9AA0A6"/><path d="M-5,-7 Q0,-9 4,-7" stroke="#B8BEC4" stroke-width="2" fill="none"/></g>';}
 function flamp(x,y){reg(x-4,y-6,8,7);return '<g transform="translate('+x+','+y+')">'+sh(0,2,6,2)+(AP.haze?'':'<circle cx="0" cy="-40" r="8" fill="#FFE08A" opacity=".22"/>')+'<rect x="-2" y="-38" width="4" height="40" fill="#4E5660"/><path d="M-7,-44 h14 l-2,-4 h-10 Z" fill="#3E4650"/><rect x="-7" y="-44" width="14" height="8" rx="4" fill="'+(AP.haze?'#5E6670':'#F4D06F')+'"/></g>';}
 function fbench(x,y){reg(x-15,y-10,30,12);return '<g transform="translate('+x+','+y+')">'+sh(0,3,15,3)+'<rect x="-14" y="-7" width="28" height="5" rx="2" fill="#A8794F"/><rect x="-14" y="-13" width="28" height="4" rx="2" fill="#B5865C"/><rect x="-12" y="-2" width="3" height="6" fill="#6E5436"/><rect x="9" y="-2" width="3" height="6" fill="#6E5436"/></g>';}
@@ -4222,6 +4232,7 @@ function urban(x,y,w,floors,cols,t,bodies,winCol,extra){
   s+='<path class="bshadow" d="M2,'+h+' L'+w+','+h+' L'+(w+16)+','+(h+11)+' L18,'+(h+11)+' Z" fill="rgba(14,24,38,.15)"/>';   // directional cast shadow; .bshadow lets the lighting pass swing it with the sun
   s+='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="'+body+'"/>';
   s+='<rect x="0" y="'+(h-3)+'" width="'+w+'" height="3.5" fill="rgba(0,0,0,.18)"/>';                          // ambient-occlusion strip grounds the wall on the earth
+  if(t>0)s+='<ellipse class="winspill" cx="'+(w/2)+'" cy="'+(h+7)+'" rx="'+(w*0.42)+'" ry="8" fill="url(#glowG)"/>';   // lit windows spill warm light onto the ground at night
   s+='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="none" stroke="rgba(30,26,22,.28)" stroke-width="1.4"/>';   // toon outline (shader-skill)
   s+='<path class="snowdrift" d="M0,'+h+' Q'+(w*0.22)+','+(h-8)+' '+(w*0.46)+','+h+' Q'+(w*0.72)+','+(h-6)+' '+w+','+h+' L'+w+','+(h+2)+' L0,'+(h+2)+' Z" fill="#F4F8FC" opacity="0"/>';   // snow banks against the wall with the snowpack
   s+='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="url(#wallV)"/>';                          // body gradient
@@ -4471,7 +4482,7 @@ function roadsUnified(RG){
 }
 // ── world assembly ──
 function buildWorld(tiers){
-  colliders=[];
+  colliders=[];FOLI=[];
   AP=blendAmb(tiers.avgVal!==undefined?tiers.avgVal:[35,55,85][tiers.avg]);
   let w=treeDefs()+worldDefs()+vehicleDefs()+bldDefs();
   w+='<rect width="'+WORLD_W+'" height="'+WORLD_H+'" fill="'+AP.grass+'"/>';
@@ -4869,6 +4880,7 @@ function buildExpansion(tiers){
     var cw=Math.min(h2,96);reg(ax,base-cw,w2,cw);EXP_BR.push({x:ax,y:ay,w:w2,h:h2});
     return '<g transform="translate('+cx+','+base+')">'+sh(0,6,w2*0.55,9)+
       '<path class="bshadow" d="M'+(-w2/2+6)+',2 L'+(w2/2-6)+',2 L'+(w2/2+12)+',13 L'+(-w2/2+22)+',13 Z" fill="rgba(14,24,38,.13)"/>'+   // sun-tracked cast shadow (same sky as urban/bldCivic)
+      '<ellipse class="winspill" cx="0" cy="9" rx="'+(w2*0.4)+'" ry="8" fill="url(#glowG)"/>'+   // night window-light pool
       '<use href="#'+id+'"/></g>';}
   // APARTMENT BAND (bottom-LEFT): per the town plan, apartments cluster in the bottom-left as a full
   // two-row band straddling the fairgrounds promenade road (y2620). The upper row sits ABOVE the road
@@ -5118,6 +5130,7 @@ function renderTown(){
     cloudStr+
     '<g id="npc-layer">'+npcLayer()+'</g>'+
     '<g id="fx-layer"></g>'+
+    '<g id="birds-g">'+birdsSVG()+'</g>'+
     playerSVG()+
     '<g id="fg-layer" transform="translate('+CORE_DX+','+CORE_DY+')">'+fgStr+'</g>'+
     '<rect width="'+WORLD_W+'" height="'+WORLD_H+'" fill="url(#gradeG)" style="pointer-events:none;"/>'+   // constant cinematic grade: warm key light center, cool edge falloff (davinci-skill)
@@ -5235,6 +5248,7 @@ function bldDefs(){
 function bldCivic(id,cx,base,artW,artH,label,labelW,t){
   return '<g transform="translate('+cx+','+base+')">'+sh(0,6,artW*0.55,9)+
     '<path class="bshadow" d="M'+(-artW/2+6)+',2 L'+(artW/2-6)+',2 L'+(artW/2+12)+',13 L'+(-artW/2+22)+',13 Z" fill="rgba(14,24,38,.13)"/>'+   // sun-tracked cast shadow for the illustrated civic art (same sky as urban())
+    (t>0?'<ellipse class="winspill" cx="0" cy="9" rx="'+(artW*0.4)+'" ry="8" fill="url(#glowG)"/>':'')+   // night window-light pool
     '<use href="#'+id+'"/>'+
     (t===0?'<rect x="'+(-artW/2)+'" y="'+(-artH)+'" width="'+artW+'" height="'+artH+'" fill="rgba(22,32,38,.42)"/>':'')+   // neglected tier: the lights are off
     '<g transform="translate('+(-labelW/2)+','+(-artH-8)+')">'+signFlat(labelW,label,t===0?'#4E6260':'#2D6FD6')+'</g>'+
@@ -5331,6 +5345,30 @@ function vehicleDefs(){
     '<rect fill="#29abe2" x="240.92" y="93.82" width="12.42" height="195.47"/><rect fill="#29abe2" x="267.98" y="93.82" width="12.42" height="195.47"/>'+
     '</g>';
   return '<defs>'+A+B+C+D+'</defs>';
+}
+// ── PLAZA PIGEONS: a few birds peck around public spaces, hop now and then, and burst away
+//    when the player charges through (GTA/Zelda-style ambient wildlife). They glide back to
+//    their home patch once the coast is clear.
+var BIRDS=[];
+var BIRD_SPOTS=[[1732,1166],[1878,1298],[2112,1152],[1560,1540],[936,1060],[2530,2120]];
+function birdsSVG(){
+  BIRDS=[];
+  if(GFX.lowPower)return '';
+  BIRDS=BIRD_SPOTS.map(function(p,i){return {hx:p[0],hy:p[1],x:p[0],y:p[1],st:0,t:120+Math.random()*260,fx:0,fy:0,el:null,body:null,face:(i%2?1:-1)};});
+  var s='';
+  BIRDS.forEach(function(b,i){
+    s+='<g id="bird-'+i+'" transform="translate('+b.x+','+b.y+')">'+
+       '<ellipse cx="0" cy="3.5" rx="4.5" ry="1.4" fill="rgba(20,30,40,.18)"/>'+
+       '<g id="bird-b-'+i+'">'+
+       '<rect x="-1.6" y="0" width="1.2" height="3.2" fill="#B0543C"/><rect x="0.6" y="0" width="1.2" height="3.2" fill="#B0543C"/>'+
+       '<ellipse cx="0" cy="-3" rx="5" ry="3.6" fill="#8E98A6"/>'+
+       '<path d="M-4.5,-3.5 Q-1,-6 2.5,-3.4 Q-1,-1.6 -4.5,-3.5 Z" fill="#7A8494"/>'+
+       '<circle cx="4" cy="-6" r="2.6" fill="#6E7888"/>'+
+       '<polygon points="6.3,-6.3 8.6,-5.7 6.3,-5.1" fill="#E8A030"/>'+
+       '<circle cx="4.8" cy="-6.6" r=".6" fill="#20262E"/>'+
+       '</g></g>';
+  });
+  return s;
 }
 function carsSVG(){
   if(GFX.lowPower)return '';
@@ -5574,7 +5612,9 @@ function townTick(){
     if(st>0.02)tint=lerpHex(tint,'#4A5670',st*0.65);                           // storm: overcast slate swallows the warm light
     TC.night.setAttribute('fill',tint);
     TC.night.setAttribute('opacity',String((na*0.38+tw*0.08+st*0.16).toFixed(3)));
-    if(TC.glow)TC.glow.setAttribute('opacity',String(Math.pow(Math.max(na,st*0.5),1.4).toFixed(2)));   // lamps come on in true darkness and in heavy rain
+    const lampOp=Math.pow(Math.max(na,st*0.5),1.4);
+    if(TC.glow)TC.glow.setAttribute('opacity',String(lampOp.toFixed(2)));   // lamps come on in true darkness and in heavy rain
+    if(TC.svg)TC.svg.style.setProperty('--spillOp',(lampOp*0.5).toFixed(3));   // and lit windows pour their light pools onto the ground
     if(TC.svg)TC.svg.style.filter=(TC.baseGrade||'')+' brightness('+(1-na*0.16-st*0.07).toFixed(3)+') saturate('+Math.max(0.55,1-na*0.22+tw*0.12-st*0.18).toFixed(3)+')';
     // storm clouds: the same puffs darken as they fill with water
     var stq=Math.round(st*20);
@@ -5648,6 +5688,10 @@ function townTick(){
         if(dd<2){if(naN>0.62){n.wait=400;}else{n.tx=n.hx+(Math.random()*2-1)*GFX.wanderRange;n.ty=n.hy+(Math.random()*2-1)*GFX.wanderRange*0.6;n.wait=90+Math.random()*200;}}
         else{const sp2=GFX.wanderSpeed*(1+WX.storm*0.9)*dt;const wx=n.x+ddx/dd*sp2,wy=n.y+ddy/dd*sp2;if(collides(wx,wy)){n.tx=n.hx;n.ty=n.hy;}else{n.x=wx;n.y=wy;n.step+=sp2;stepped=true;if(Math.abs(ddx)>0.5)n.face=ddx>0?1:-1;}}
       }
+      // presence: an idle citizen notices you coming and turns to face you, the universal
+      // RPG-villager tell that the townsfolk know you exist (facing stays smoothed below).
+      if(!stepped&&!(n.greet>0)){const fdx3=player.x-n.x,fdy3=player.y-n.y;
+        if(fdx3*fdx3+fdy3*fdy3<85*85&&Math.abs(fdx3)>4)n.face=fdx3>0?1:-1;}
       // soft body collision: citizens occupy space. Walk into one and both ease apart (the citizen
       // yields more than the player), instead of the player ghosting straight through a person.
       var pdx=player.x-n.x,pdy=player.y-n.y,pdd=Math.sqrt(pdx*pdx+pdy*pdy);
@@ -5667,6 +5711,40 @@ function townTick(){
       var nbob=stepped?Math.sin(n.step/9)*1.3:0;
       if(n.bel)n.bel.setAttribute('transform','translate(0,'+nbob.toFixed(2)+') scale('+n.fs.toFixed(3)+',1)');
       if(n.shel)n.shel.setAttribute('rx',(13*(1-nbob*0.05)).toFixed(2));   // contact shadow squashes with each stride, same as the player's
+    }
+  }
+  // brush-past foliage: hurry close past a trunk or bush and its canopy shakes off the contact
+  if(tickFrame%3===0&&player.moving&&FOLI.length&&Math.hypot(player.vx,player.vy)>1.2){
+    for(let fi2=0;fi2<FOLI.length;fi2++){const F=FOLI[fi2];
+      const fdx2=player.x-F.x,fdy2=player.y-F.y;
+      if(fdx2*fdx2+fdy2*fdy2<32*32){
+        const nowMs=Date.now();
+        if(nowMs>F.until){F.until=nowMs+980;
+          const fe=F.el||(F.el=document.getElementById(F.id));
+          if(fe){fe.classList.add('rustle');setTimeout(function(){fe.classList.remove('rustle');},640);}
+        }
+      }
+    }
+  }
+  // pigeons: peck and hop while it's calm, scatter in a flapping burst when the player charges
+  // in, and glide back to their patch once things settle
+  if(BIRDS.length&&!overlaysOpen()){
+    for(let bi2=0;bi2<BIRDS.length;bi2++){const b=BIRDS[bi2];
+      if(!b.el){b.el=document.getElementById('bird-'+bi2);b.body=document.getElementById('bird-b-'+bi2);if(!b.el)continue;}
+      const bdx=player.x-b.x,bdy=player.y-b.y,bd2=bdx*bdx+bdy*bdy;
+      if(b.st===0){
+        if(bd2<58*58){ const bd=Math.sqrt(bd2)||1; b.st=1; b.fx=-bdx/bd*3.1; b.fy=-bdy/bd*1.3-2.1; b.t=0; }
+        else{ b.t-=dt; if(b.t<=0){ b.t=140+Math.random()*300; const hopA=Math.random()*Math.PI*2;
+          const hx2=b.x+Math.cos(hopA)*9,hy2=b.y+Math.sin(hopA)*5;
+          if(Math.abs(hx2-b.hx)<40&&Math.abs(hy2-b.hy)<26&&!collides(hx2,hy2)){b.face=Math.cos(hopA)>=0?1:-1;b.x=hx2;b.y=hy2;} } }
+      } else if(b.st===1){
+        b.x+=b.fx*dt; b.y+=b.fy*dt; b.fy-=0.02*dt; b.t+=dt;
+        if(b.t>90){ b.st=2; b.t=500+Math.random()*500; if(b.el)b.el.style.display='none'; }   // ~1.5s burst, then it's away
+      } else { b.t-=dt; if(b.t<=0&&((player.x-b.hx)*(player.x-b.hx)+(player.y-b.hy)*(player.y-b.hy))>140*140){ b.st=0; b.x=b.hx; b.y=b.hy; b.t=100+Math.random()*120; if(b.el)b.el.style.display=''; } }
+      if(b.el&&b.st!==2){
+        b.el.setAttribute('transform','translate('+b.x.toFixed(1)+','+b.y.toFixed(1)+')');
+        if(b.body)b.body.setAttribute('transform','scale('+(b.st===1?(b.fx>0?1:-1):b.face)+','+(b.st===1?(1+Math.sin(b.t*1.3)*0.3).toFixed(2):'1')+')');   // wing flap = fast vertical squash while airborne
+      }
     }
   }
   // proximity (live positions)

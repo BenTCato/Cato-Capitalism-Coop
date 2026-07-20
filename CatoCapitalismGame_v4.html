@@ -472,6 +472,10 @@
     .cl2{animation-duration:62s;animation-delay:-20s;}
     .cl3{animation-duration:54s;animation-delay:-38s;}
     @keyframes cloudDrift{from{transform:translateX(-420px)}to{transform:translateX(2240px)}}
+    /* sun-tracked cast shadows: every building shadow shares one sky. The lighting pass drives
+       --sunSkew/--sunLen/--sunOp so shadows sweep west->east and stretch long at dawn/dusk,
+       shorten at noon and fade at night, the day-cycle grounding trick of top-down life sims. */
+    .bshadow{transform-box:fill-box;transform-origin:50% 0%;transform:skewX(var(--sunSkew,8deg)) scaleY(var(--sunLen,1));opacity:var(--sunOp,.9);}
     .town-svg{width:100%;display:block;border-radius:22px;filter:drop-shadow(0 18px 44px rgba(0,0,0,.45));}
     /* chimney smoke: parcels rise, expand and shear downwind (matches the eastward cloud wind), thinning as they mix */
     .smoke{transform-box:fill-box;transform-origin:50% 100%;animation:smokeRise 3.4s ease-out infinite;}
@@ -955,7 +959,7 @@
       <button class="gp-x" onclick="closeBank()" title="Close">✕</button>
     </div>
     <div class="gp-body">
-      <div style="font-size:.84rem;color:#5a6a8a;margin-bottom:14px;">Put stars in the bank and they grow <b style="color:var(--gp-green)">5% every 5 minutes</b>. That is compound interest: your saved stars earn more stars, and then those earn even more. Saving pays off.</div>
+      <div style="font-size:.84rem;color:#5a6a8a;margin-bottom:14px;">Put stars in the bank and they grow <b style="color:var(--gp-green)">1% every 5 minutes</b> (interest is paid on your first 50,000 saved). That is compound interest: your saved stars earn more stars, and those earn even more. Saving pays off, steadily.</div>
       <div style="display:flex;gap:12px;margin-bottom:12px;">
         <div class="gp-card" style="flex:1;flex-direction:column;text-align:center;gap:4px;margin:0;"><div style="font-size:.72rem;color:#889;font-weight:800;letter-spacing:.5px;">WALLET</div><div id="bank-wallet" style="font-size:1.3rem;font-weight:900;color:#9A6200;">⭐ 0</div></div>
         <div class="gp-card" style="flex:1;flex-direction:column;text-align:center;gap:4px;margin:0;background:linear-gradient(180deg,#ecfaf1,#ddf3e6);"><div style="font-size:.72rem;color:#1F7A3D;font-weight:800;letter-spacing:.5px;">IN SAVINGS</div><div id="bank-balance-v" style="font-size:1.3rem;font-weight:900;color:#1F7A3D;">⭐ 0</div></div>
@@ -3512,14 +3516,14 @@ function cancelPlace(){
 }
 
 /* ══ SAVINGS BANK: deposit stars, earn compound interest every 5 minutes ══ */
-var BANK_RATE=0.05, BANK_TICK_MS=5*60*1000, BANK_MAX_TICKS=6; /* 5% per 5 min, cap 6 ticks (30 min) per accrual so a long absence cannot mint infinite stars */
+var BANK_RATE=0.01, BANK_TICK_MS=5*60*1000, BANK_MAX_TICKS=3, BANK_EARN_CAP=50000; /* rebalanced: 5%/5min compounding was ~80%/hour and minted multi-million balances that made every price meaningless. 1% per 5 min on the first 50k saved keeps saving worthwhile without runaway wealth (the same fix Animal Crossing shipped for the Bank of Nook). */ /* 5% per 5 min, cap 6 ticks (30 min) per accrual so a long absence cannot mint infinite stars */
 function ensureBank(){ if(!P)return; if(!P.bank||typeof P.bank!=='object')P.bank={balance:0,last:0}; if(!P.bank.last)P.bank.last=Date.now(); if(typeof P.bank.balance!=='number'||P.bank.balance<0)P.bank.balance=0; }
 function accrueBank(){
   if(!P)return; ensureBank();
   var now=Date.now(), ticks=Math.floor((now-P.bank.last)/BANK_TICK_MS);
   if(ticks>0){
     var use=Math.min(ticks,BANK_MAX_TICKS);
-    if(P.bank.balance>0)P.bank.balance=Math.round(P.bank.balance*Math.pow(1+BANK_RATE,use));
+    if(P.bank.balance>0)for(var bi=0;bi<use;bi++)P.bank.balance+=Math.round(Math.min(P.bank.balance,BANK_EARN_CAP)*BANK_RATE);   // interest earns on the first BANK_EARN_CAP only
     P.bank.last=now;
     saveProfiles();
   }
@@ -4215,7 +4219,7 @@ function urban(x,y,w,floors,cols,t,bodies,winCol,extra){
   const body=bodies[t];
   let s='<g transform="translate('+x+','+(y-h)+')">';
   s+=sh(w/2,h+5,w*0.55,8).replace('translate','');
-  s+='<path d="M2,'+h+' L'+w+','+h+' L'+(w+16)+','+(h+11)+' L18,'+(h+11)+' Z" fill="rgba(14,24,38,.15)"/>';   // directional cast shadow, down-right to match the sun every other prop uses
+  s+='<path class="bshadow" d="M2,'+h+' L'+w+','+h+' L'+(w+16)+','+(h+11)+' L18,'+(h+11)+' Z" fill="rgba(14,24,38,.15)"/>';   // directional cast shadow; .bshadow lets the lighting pass swing it with the sun
   s+='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="'+body+'"/>';
   s+='<rect x="0" y="'+(h-3)+'" width="'+w+'" height="3.5" fill="rgba(0,0,0,.18)"/>';                          // ambient-occlusion strip grounds the wall on the earth
   s+='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="none" stroke="rgba(30,26,22,.28)" stroke-width="1.4"/>';   // toon outline (shader-skill)
@@ -4471,7 +4475,17 @@ function buildWorld(tiers){
   AP=blendAmb(tiers.avgVal!==undefined?tiers.avgVal:[35,55,85][tiers.avg]);
   let w=treeDefs()+worldDefs()+vehicleDefs()+bldDefs();
   w+='<rect width="'+WORLD_W+'" height="'+WORLD_H+'" fill="'+AP.grass+'"/>';
-  for(let i=0;i<260;i++){const gx=(i*457)%WORLD_W,gy=(i*331)%WORLD_H;w+='<ellipse cx="'+gx+'" cy="'+gy+'" rx="'+(46+(i%4)*20)+'" ry="'+(20+(i%3)*8)+'" fill="'+AP.grass2+'"/>';}
+  // organic patch scatter (was a fixed lattice of 4 sizes: the repetition read machine-made).
+  // A deterministic hash jitters position, rotation, size and opacity per patch, the way terrain
+  // artists break up tiling: no two patches match and no row lines up.
+  for(let i=0;i<300;i++){
+    const h1=Math.sin(i*127.1+13.7)*43758.5453,h2=Math.sin(i*311.7+91.3)*24634.6345;
+    const r1=h1-Math.floor(h1),r2=h2-Math.floor(h2),r3=(r1*7.31+r2*13.17)%1;
+    const gx=(r1*WORLD_W).toFixed(0),gy=(r2*WORLD_H).toFixed(0);
+    const grx=(30+r3*96).toFixed(1),gry=(13+((r1+r3)%1)*28).toFixed(1);
+    const grot=(r3*48-24).toFixed(1),gop=(0.30+r2*0.55).toFixed(2);
+    w+='<ellipse cx="'+gx+'" cy="'+gy+'" rx="'+grx+'" ry="'+gry+'" fill="'+AP.grass2+'" opacity="'+gop+'" transform="rotate('+grot+' '+gx+' '+gy+')"/>';
+  }
   // ground material stack (multi-octave, shader-skill style): base tint (policy-driven) → mid-octave
   // patches (above) → broad rotated meadow banding (macro) → tuft/fleck detail tile (micro). The two
   // texture layers are alpha-only, so seasonal snow and the policy palette read through them.
@@ -4853,7 +4867,9 @@ function buildExpansion(tiers){
     if(P&&P.town&&P.town.pos){ for(var vk in P.town.pos){ var vp=P.town.pos[vk];
       if(vp&&ax<vp.x+ATTR_W+8&&ax+w2>vp.x-8&&ay<vp.y+8&&base>vp.y-ATTR_H-8) return ''; } }   // never stand on a player-placed venue
     var cw=Math.min(h2,96);reg(ax,base-cw,w2,cw);EXP_BR.push({x:ax,y:ay,w:w2,h:h2});
-    return '<g transform="translate('+cx+','+base+')">'+sh(0,6,w2*0.55,9)+'<use href="#'+id+'"/></g>';}
+    return '<g transform="translate('+cx+','+base+')">'+sh(0,6,w2*0.55,9)+
+      '<path class="bshadow" d="M'+(-w2/2+6)+',2 L'+(w2/2-6)+',2 L'+(w2/2+12)+',13 L'+(-w2/2+22)+',13 Z" fill="rgba(14,24,38,.13)"/>'+   // sun-tracked cast shadow (same sky as urban/bldCivic)
+      '<use href="#'+id+'"/></g>';}
   // APARTMENT BAND (bottom-LEFT): per the town plan, apartments cluster in the bottom-left as a full
   // two-row band straddling the fairgrounds promenade road (y2620). The upper row sits ABOVE the road
   // (base 2560 → top ~2384, clear of the south-homes bottoms at 2280); the lower, shorter row sits
@@ -5218,6 +5234,7 @@ function bldDefs(){
 }
 function bldCivic(id,cx,base,artW,artH,label,labelW,t){
   return '<g transform="translate('+cx+','+base+')">'+sh(0,6,artW*0.55,9)+
+    '<path class="bshadow" d="M'+(-artW/2+6)+',2 L'+(artW/2-6)+',2 L'+(artW/2+12)+',13 L'+(-artW/2+22)+',13 Z" fill="rgba(14,24,38,.13)"/>'+   // sun-tracked cast shadow for the illustrated civic art (same sky as urban())
     '<use href="#'+id+'"/>'+
     (t===0?'<rect x="'+(-artW/2)+'" y="'+(-artH)+'" width="'+artW+'" height="'+artH+'" fill="rgba(22,32,38,.42)"/>':'')+   // neglected tier: the lights are off
     '<g transform="translate('+(-labelW/2)+','+(-artH-8)+')">'+signFlat(labelW,label,t===0?'#4E6260':'#2D6FD6')+'</g>'+
@@ -5516,11 +5533,22 @@ function townTick(){
         // drivers brake smoothly for a pedestrian in their lane ahead, then accelerate back to cruise
         var ahead=(player.x-car.x)*car.dir;
         var mustStop=Math.abs(player.y-car.y)<26&&ahead>0&&ahead<95;
+        var pv=car.v;
         car.v+=((mustStop?0:car.base)-car.v)*Math.min(1,0.09*dt*2);
         car.x+=car.v*car.dir*dt*2;
-        if(car.x>car.x1){car.x=car.x1;car.dir=-1;if(ce.b)ce.b.setAttribute('transform','scale(-1,1)');}
-        if(car.x<car.x0){car.x=car.x0;car.dir=1;if(ce.b)ce.b.setAttribute('transform','scale(1,1)');}
-        ce.g.setAttribute('transform','translate('+car.x.toFixed(1)+','+car.y.toFixed(1)+')');
+        if(car.x>car.x1){car.x=car.x1;car.dir=-1;}
+        if(car.x<car.x0){car.x=car.x0;car.dir=1;}
+        // weight transfer on springs: braking pitches the nose down, pulling away squats the tail,
+        // and at cruise the body rides a faint road bob, so cars stop gliding like stickers.
+        var dvv=(car.v-pv)/Math.max(0.5,dt);
+        car.p=(car.p||0)+((Math.max(-4.5,Math.min(4.5,-dvv*30)))-(car.p||0))*Math.min(1,0.16*dt);
+        var rideBob=Math.sin(now*0.006+cai*1.9)*(0.2+Math.min(1,car.v/Math.max(0.1,car.base))*0.35);
+        if(mustStop&&car.v<0.05)car.wasStop=1;                                   // remember the full stop...
+        if(car.wasStop&&!mustStop&&car.v<car.base*0.7){                          // ...and puff exhaust pulling away
+          if(tickFrame%6===0&&typeof fxSpawn==='function'&&FX.dust)fxSpawn(FX.dust,car.x-car.dir*(car.f+4),car.y+4,-car.dir*0.5,-0.25-Math.random()*0.2,0.55);
+        } else if(car.v>=car.base*0.7)car.wasStop=0;
+        ce.g.setAttribute('transform','translate('+car.x.toFixed(1)+','+(car.y+rideBob).toFixed(1)+')');
+        if(ce.b)ce.b.setAttribute('transform','scale('+car.dir+',1) rotate('+(car.p||0).toFixed(2)+')');
       }
     }
   }
@@ -5532,6 +5560,14 @@ function townTick(){
     const na=nightAmount();
     const st=WX.storm;
     const tphase=(((Date.now()-(GFX.day0||0))/(GFX.daySeconds*1000))%1+1)%1;   // 0=noon, .25=dusk, .5=midnight, .75=dawn
+    // sun-tracked shadows: elevation sets length+strength, azimuth sets the lean. Morning shadows
+    // point west, noon shadows sit short under the wall, evening shadows stretch east, night fades
+    // them out entirely (the lamps and window glow take over as the light sources).
+    const sunE=Math.cos(tphase*2*Math.PI);                                     // sun elevation: 1 noon, -1 midnight
+    const sunSk=(34*Math.sin(tphase*2*Math.PI)).toFixed(1);                    // azimuth lean, +east at dusk / -west at dawn
+    const sunLn=(0.55+1.7*(1-Math.max(0,sunE))).toFixed(2);                    // long near the horizon, short at noon
+    const sunOp=Math.max(0,Math.min(1,(sunE-0.02)/0.3)).toFixed(2);            // below the horizon: no sun, no shadow
+    if(TC.svg){TC.svg.style.setProperty('--sunSkew',sunSk+'deg');TC.svg.style.setProperty('--sunLen',sunLn);TC.svg.style.setProperty('--sunOp',sunOp);}
     const tw=Math.max(0,1-Math.abs(na-0.5)/0.32);                              // twilight strength near sunset/sunrise
     const warm=(tphase<0.5)?'#FF8A3D':'#FF9FB8';                               // sunset amber vs. dawn pink
     let tint=lerpHex(lerpHex('#16214E','#5A3D8F',tw*0.8),warm,tw*0.45);
@@ -5611,6 +5647,17 @@ function townTick(){
         const ddx=n.tx-n.x,ddy=n.ty-n.y,dd=Math.sqrt(ddx*ddx+ddy*ddy);
         if(dd<2){if(naN>0.62){n.wait=400;}else{n.tx=n.hx+(Math.random()*2-1)*GFX.wanderRange;n.ty=n.hy+(Math.random()*2-1)*GFX.wanderRange*0.6;n.wait=90+Math.random()*200;}}
         else{const sp2=GFX.wanderSpeed*(1+WX.storm*0.9)*dt;const wx=n.x+ddx/dd*sp2,wy=n.y+ddy/dd*sp2;if(collides(wx,wy)){n.tx=n.hx;n.ty=n.hy;}else{n.x=wx;n.y=wy;n.step+=sp2;stepped=true;if(Math.abs(ddx)>0.5)n.face=ddx>0?1:-1;}}
+      }
+      // soft body collision: citizens occupy space. Walk into one and both ease apart (the citizen
+      // yields more than the player), instead of the player ghosting straight through a person.
+      var pdx=player.x-n.x,pdy=player.y-n.y,pdd=Math.sqrt(pdx*pdx+pdy*pdy);
+      if(pdd>0.1&&pdd<30){
+        var ov=(30-pdd)/30,ux=pdx/pdd,uy=pdy/pdd;
+        var ppx=Math.max(20,Math.min(WORLD_W-20,player.x+ux*ov*2.2*dt)),ppy=Math.max(20,Math.min(WORLD_H-20,player.y+uy*ov*2.2*dt));
+        if(!collides(ppx,player.y))player.x=ppx;
+        if(!collides(player.x,ppy))player.y=ppy;
+        var nnx=n.x-ux*ov*1.2*dt,nny=n.y-uy*ov*1.2*dt;
+        if(!collides(nnx,nny)){n.x=nnx;n.y=nny;}
       }
       n.el.setAttribute('transform','translate('+n.x.toFixed(1)+','+n.y.toFixed(1)+') scale(0.92)');
       // walk cycle: the body bobs with each stride and faces its travel direction (speech bubble stays

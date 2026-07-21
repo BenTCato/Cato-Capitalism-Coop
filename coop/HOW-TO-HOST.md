@@ -23,12 +23,10 @@ That's it.
 1. **Double-click the launcher** in the project folder:
    - Windows: `Start Co-op Host (Windows).bat`
    - Mac: `Start Co-op Host (Mac).command`
-2. Two browser tabs open automatically:
-   - **Join screen** (a big QR code + link) — put this on the projector.
-   - **Teacher dashboard** — the live leaderboard and grid of every city.
-3. **Students join** by scanning the QR code or typing the link
-   (it looks like `http://192.168.x.x:3000`) into any browser on the same wifi.
-   Phones, tablets, Chromebooks, laptops all work.
+2. The **teacher dashboard** opens automatically (the live leaderboard and grid of every city).
+3. **Students join** by opening the game link in any browser, tapping
+   **"Join a class"** in the header, and entering your class code (create one
+   with "Start a Class" on the dashboard). Phones, tablets, Chromebooks, laptops all work.
 4. Keep the black launcher window **open** during class. Closing it ends the session.
 
 ---
@@ -39,7 +37,6 @@ That's it.
 |------|-----|----------------|
 | `http://<your-ip>:3000`        | Students | The game (their own city) |
 | `http://<your-ip>:3000/host`   | Teacher  | Live leaderboard + every city |
-| `http://<your-ip>:3000/join`   | Projector| Big QR code + join link |
 
 The launcher window prints these exact links when it starts.
 
@@ -67,8 +64,9 @@ city's stats; the shared layer is the other players walking through it.
 
 ## Troubleshooting
 
-- **A student can't connect:** make sure they're on the *same wifi*, and that
-  they typed the full link including `http://` and the `:3000` port. Try the QR code.
+- **A student can't connect:** make sure they're on the *same wifi*, that they
+  typed the full link including `http://` and the `:3000` port, and that they
+  entered the right class code.
 - **"Node.js is not installed":** install it from https://nodejs.org (LTS), then
   double-click the launcher again.
 - **Port already in use:** the host automatically tries 3001, 3002, … — just use
@@ -76,8 +74,6 @@ city's stats; the shared layer is the other players walking through it.
 - **School wifi blocks devices from seeing each other ("client isolation"):**
   some guest networks prevent this. Use a teacher hotspot or a classroom network
   where devices can reach each other.
-- **No QR code on the join screen:** if the host machine is fully offline the QR
-  image can't load, but the typed link still works perfectly.
 
 ---
 

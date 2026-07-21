@@ -139,6 +139,15 @@ const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no easily-confused char
 
 // ── DUEL QUESTION BANK: server-authoritative so a challenger can't supply their own answer key ──
 let DUEL_BANK = [];
+// grade-banked duel banks (built from the game's own QG grade pools), so duel questions match
+// each player's designated reading level instead of a separate one-size bank
+let DUEL_BANKS = {};
+try { DUEL_BANKS = JSON.parse(fs.readFileSync(path.join(COOP_DIR, 'duel-bank-by-grade.json'), 'utf8')) || {}; } catch (e) { DUEL_BANKS = {}; }
+function duelPoolFor(grade) {
+  const g = Math.max(6, Math.min(12, Number(grade) || 8));
+  const bank = DUEL_BANKS[String(g)];
+  return (Array.isArray(bank) && bank.length) ? bank : DUEL_BANK;   // legacy bank only as a fallback
+}
 try {
   DUEL_BANK = JSON.parse(fs.readFileSync(path.join(COOP_DIR, 'duel-bank.json'), 'utf8'));
   if (!Array.isArray(DUEL_BANK)) DUEL_BANK = [];
@@ -237,9 +246,9 @@ const DUEL_DONE_MS    = 60000;   // a finished duel lingers this long so both cl
 
 // build N duel questions from the server bank: copy, shuffle choices, letter them, and record the
 // correct LETTER as the key (identical, unknown-in-advance questions for both players)
-function pickDuelQuestions(n) {
+function pickDuelQuestions(n, grade) {
   const LET = ['A','B','C','D','E','F'];
-  const pool = DUEL_BANK.slice();
+  const pool = duelPoolFor(grade).slice();
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
   return pool.slice(0, n).map(function (q) {
     const idx = q.choices.map(function (_, i) { return i; });
@@ -371,7 +380,8 @@ const server = http.createServer(async (req, res) => {
 
   // join / QR projector page
   if (p === '/join') {
-    return sendFile(res, path.join(COOP_DIR, 'join.html'), 'text/html; charset=utf-8');
+    // the same-wifi QR join screen is retired: students join with the class code inside the game
+    res.writeHead(302, { Location: '/' }); return res.end();
   }
 
   // privacy notice
@@ -476,7 +486,10 @@ const server = http.createServer(async (req, res) => {
     // SERVER-AUTHORITATIVE questions: pick from the bank and build the answer key here so a
     // crafted client can't supply questions whose "best" matches what it will answer.
     const want = Math.max(1, Math.min(5, Number(d.n) || 3));
-    const qs = pickDuelQuestions(want);
+    // both duelists see the same questions, drawn at the more accessible of their two reading levels
+    const chal = rChal && rChal.players.get(String(d.from.id));
+    const gFrom = Number(chal && chal.gradeLevel) || 8, gTo = Number(tgt && tgt.gradeLevel) || 8;
+    const qs = pickDuelQuestions(want, Math.min(gFrom, gTo));
     if (qs.length < 1) return send(res, 200, 'application/json', '{"ok":false,"error":"no questions"}');
     const wager = Math.max(0, Math.min(100000, Number(d.wager) || 0));
     const duel = {
@@ -660,8 +673,7 @@ function banner(port) {
     console.log('   Open your service URL, then add:');
     console.log('     /        -> students (enter the class code)');
     console.log('     /host    -> teacher: Start a Class to get a code');
-    console.log('     /join    -> QR + join screen');
-    console.log(line + '\n');
+      console.log(line + '\n');
     return;
   }
 
@@ -679,7 +691,6 @@ function banner(port) {
   console.log('        ' + base);
   console.log('');
   console.log('   PROJECT THIS so students can join:');
-  console.log('        ' + base + '/join');
   console.log(line);
   console.log('   Keep this window open. Close it to end the session.');
   console.log(line + '\n');

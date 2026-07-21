@@ -753,7 +753,7 @@ function closeHowtoVideo(){var o=document.getElementById('howto-video-overlay');
   <div class="title-hero">
     <span class="emoji">🏛️</span>
     <h1>Freedom Founder</h1>
-    <div class="tag" id="title-tag">Lead a nation. Every choice tests your principles.</div>
+    <div class="tag" id="title-tag" style="display:none;">Lead a nation. Every choice tests your principles.</div>
   </div>
 
   <!-- ══ NATION NAME BUILDER ══ -->
@@ -809,26 +809,9 @@ function closeHowtoVideo(){var o=document.getElementById('howto-video-overlay');
     </div>
   </div>
 
-  <details class="how-card">
-    <summary style="cursor:pointer;font-weight:800;color:var(--navy);font-size:1.1rem;list-style:revert;">❔ How to Play</summary>
-    <button class="btn btn-gold" style="margin-top:12px;" onclick="openHowtoVideo()">🎬 Watch the 2-minute video</button>
-    <p style="margin-top:12px;">Each round gives you a real policy challenge with four possible responses. Pick your <strong>grade level</strong> and the questions are written at that reading level. Your nation has four health bars, <strong>Happiness, Economy, Education, and Freedom</strong>, and every choice nudges them up or down. Help all your citizens to finish a term, then keep governing term after term and climb the class leaderboard.</p>
-    <div class="stat-icons">
-      <div class="stat-icon">😊<strong>Happiness</strong><p>How good life feels for the people in your town. It drops when things get chaotic, run short, or feel unfair.</p></div>
-      <div class="stat-icon">💰<strong>Economy</strong><p>How strong jobs and money are. It reacts to taxes, rules, and how much the government spends.</p></div>
-      <div class="stat-icon">📚<strong>Education</strong><p>How well schools help kids learn. It rises with more choice and falls with too much top-down control.</p></div>
-      <div class="stat-icon">🗽<strong>Freedom</strong><p>How much people can live, speak, and work without being told what to do. Easy to lose, hard to win back.</p></div>
-    </div>
-    <!-- ── Animated HUD Demo ── -->
-    <div class="demo-hud">
-      <div class="demo-hud-title">Live example, watch Individual Freedom drop into the danger zone:</div>
-      <div class="demo-row"><div class="demo-label">😊 Happiness</div><div class="demo-bar-wrap"><div class="demo-bar anim-h"></div></div></div>
-      <div class="demo-row"><div class="demo-label">💰 Economy</div><div class="demo-bar-wrap"><div class="demo-bar anim-e"></div></div></div>
-      <div class="demo-row"><div class="demo-label">📚 Education</div><div class="demo-bar-wrap"><div class="demo-bar anim-ed"></div></div></div>
-      <div class="demo-row"><div class="demo-label">🗽 Freedom</div><div class="demo-bar-wrap"><div class="demo-bar anim-f"></div></div></div>
-      <div class="demo-caption">⚠️ DANGER. Individual Freedom below 25%! Society collapsing…</div>
-    </div>
-  </details>
+  <div class="how-card" style="text-align:center;">
+    <button class="btn btn-gold" onclick="openHowtoVideo()">🎬 How to Play (2-minute video)</button>
+  </div>
 </div>
 
 <!-- ══ TOWN SCREEN ══ -->
@@ -853,8 +836,6 @@ function closeHowtoVideo(){var o=document.getElementById('howto-video-overlay');
     <div id="joystick"><div class="jbase"></div><div class="jknob"></div></div>
     <button id="act-btn" type="button">Talk</button>
   </div>
-  <div class="town-hint">⌨️ <strong>W A S D</strong> to walk · <strong>SPACE</strong> to talk to citizens · the world changes with your choices · visit the <strong>MARKET</strong> to spend your ⭐</div>
-  <div id="town-mobile-hint">🕹️ Drag to walk · tap the gold <strong>button</strong> to interact</div>
   <div id="place-bar" style="display:none;position:fixed;top:150px;left:50%;transform:translateX(-50%);z-index:2500;background:linear-gradient(180deg,#1c3266,#13234a);color:#fff;border-radius:16px;border:2.5px solid var(--gp-gold);padding:10px 14px;align-items:center;gap:10px;box-shadow:0 12px 34px rgba(0,0,0,.5),inset 0 1px 0 rgba(242,178,62,.35);font-family:inherit;flex-wrap:wrap;justify-content:center;max-width:94%;">
     <span style="font-weight:900;white-space:nowrap;">📍 Placing <span id="place-name">Building</span></span>
     <span style="font-size:.78rem;opacity:.85;white-space:nowrap;">Walk to a spot on your land, then build</span>
@@ -3984,7 +3965,7 @@ const SCHOOL_SPOT=[1325+CORE_DX,322+CORE_DY];
 let nearSchool=false;
 const LEARN_HUBS=[
  {icon:'🎓',name:'Cato Home Study Course',tag:'Course',desc:'A free start-from-zero course on the ideas of liberty',url:'https://www.cato.org/cato-home-study-resources'},
- {icon:'📺',name:'Cato Videos and Podcasts',tag:'Video',desc:'Watch and listen to Cato scholars explain policy',url:'https://www.cato.org/multimedia'},
+ {icon:'🎧',name:'Cato Podcasts',tag:'Audio',desc:'Listen to Cato scholars explain policy',url:'https://www.cato.org/podcasts'},
  {icon:'✍️',name:'Cato at Liberty Blog',tag:'Blog',desc:'Short daily posts on the news, in plain language',url:'https://www.cato.org/blog'},
  {icon:'🌍',name:'Libertarianism.org',tag:'Website',desc:'Big ideas of liberty explained from scratch',url:'https://www.libertarianism.org'}
 ];
@@ -4590,10 +4571,6 @@ function buildWorld(tiers){
     w+='<g transform="translate(1197,246)"><g class="kid-bob" style="animation-delay:.6s"><circle r="5" fill="#FFFFFF" stroke="#D9534F" stroke-width="2"/><path d="M-5,0 H5 M0,-5 V5" stroke="#D9534F" stroke-width="1.2"/></g></g>';
   }
   if(tiers.e===2){
-    w+=fperson(1348,648,'#3E8EF7','#E8B88A')+fperson(1376,648,'#6E4E2E','#B5836B','<rect x="-7" y="-9" width="14" height="7" rx="2" fill="#C49A66" stroke="#8A6038" stroke-width="1.2"/>');
-    w+=fcoin(1362,620,0)+fcoin(1392,626,0.9);
-    w+=fperson(722,1044,'#7C3FB8','#F2CFA6','<rect x="-8" y="-8" width="7" height="8" rx="2" fill="#D9534F"/>')+fperson(748,1044,'#2EB872','#A06A3F','<rect x="2" y="-10" width="9" height="8" rx="1.5" fill="#C49A66" stroke="#8A6038" stroke-width="1.2"/>');
-    w+=fcoin(735,1018,0.4);
     w+='<g transform="translate(838,1052)"><g class="stroller">'+sh(0,2,7,2.5).replace('<ellipse','<ellipse class="ns"')+'<rect x="-5" y="-14" width="10" height="11" rx="4" fill="#ED8B00"/><circle cx="0" cy="-18" r="5" fill="#E8B88A"/><rect x="5" y="-12" width="8" height="9" rx="2" fill="#F4D06F" stroke="#C9912E" stroke-width="1.2"/></g></g>';
     w+='<g transform="translate(900,990)"><g class="stroller" style="animation-delay:1.6s;animation-direction:alternate-reverse;"><rect x="-5" y="-14" width="10" height="11" rx="4" fill="#3FA7A0"/><circle cx="0" cy="-18" r="5" fill="#F2CFA6"/><rect x="-12" y="-10" width="8" height="7" rx="2" fill="#7FB069"/></g></g>';
   }

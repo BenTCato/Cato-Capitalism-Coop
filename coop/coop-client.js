@@ -51,7 +51,12 @@
     var av = g('avatar', null);
     var pl = g('player', null);
     var started = !!(S && S.stats);
-    var stats = started ? { h: Math.round(S.stats.h), e: Math.round(S.stats.e), ed: Math.round(S.stats.ed), f: Math.round(S.stats.f) }
+    // report the SAME bars the player sees in their HUD: dispStats() = policy stats + town growth
+    // bonuses. Raw S.stats made the dashboard disagree with the student's screen for anyone who
+    // had built things before joining the class.
+    var statsSrc = S ? S.stats : null;
+    if (started) { try { var df = g('dispStats', null); var ds = (typeof df === 'function') ? df() : null; if (ds && typeof ds.h === 'number') statsSrc = ds; } catch (e) {} }
+    var stats = started ? { h: Math.round(statsSrc.h), e: Math.round(statsSrc.e), ed: Math.round(statsSrc.ed), f: Math.round(statsSrc.f) }
                         : null;
     var grade = null;
     if (started) { try { grade = (g('computeGrade'))().letter; } catch (e) {} }
@@ -75,6 +80,7 @@
       stats: stats,
       score: ((P && P.lifetimeScore) || 0) + ((S && S.score) || 0),
       grade: grade,
+      gradeLevel: g('GRADE_KEY', null),   // reading grade (6-12): the server picks duel questions to match
       lifetimeGrade: lifeGrade,
       termGrades: termGrades,
       term: (S && S.term) || 1,

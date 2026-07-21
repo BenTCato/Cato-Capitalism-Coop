@@ -1,8 +1,9 @@
-# The Policy Game, Development Log
+# Freedom Founder, Development Log
 
-A chronological record of the directions given and the changes made to **The Policy Game**
-, an interactive free-market / capitalism education game built for the Cato Institute,
-Center for Educational Freedom (primary audience: ages 16–25 new to libertarian policy ideas).
+A chronological record of the directions given and the changes made to **Freedom Founder**
+(named "The Policy Game" prior to 2026-07-21), an interactive free-market / capitalism
+education game built for the Cato Institute, Center for Educational Freedom (primary
+audience: ages 16–25 new to libertarian policy ideas).
 
 **Live site:** https://cato-capitalism-coop.onrender.com
 **Teacher dashboard:** https://cato-capitalism-coop.onrender.com/host
@@ -1765,3 +1766,37 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 - **4. Plaza pigeons (life/physics).** Six pigeons peck and hop around the plaza, park, market and promenade; charge at one and it bursts away in a flapping arc (velocity + slight lift, wing-flap squash), disappears into the distance in ~1.5s, and glides back to its patch once the player is well clear. GTA/Zelda-style ambient wildlife that makes public spaces feel inhabited.
 - **5. Hot-streak star bonus (relative game ratios).** Consecutive best answers now pay a Kahoot-style streak bonus: +40/+80/+120 (capped) on the 2nd/3rd/4th+ best-in-a-row, on top of the 120+380 base. Rewards sustained good judgment; per-question payouts verified at 500/540/580/620/620 — modest enough that building prices stay meaningful post-bank-fix.
 - **Verification:** full script passes `node --check`; jsdom boot 0 errors, 300 ticks clean; headless Chromium behavior tests — NPC faces player (left → face −1), rustle triggers at 6px pass distance, birds flee 104px then despawn and respawn, `--spillOp` 0.498 at midnight / sun shadows 0.00, streak payouts exact. Night screenshot confirms the spill pools and shadow fade-out.
+
+## 2026-07-21, Renamed "The Policy Game" to "Freedom Founder"
+
+- **Direction:** brainstorm a new game name (short, fun, includes "freedom" or "liberty", connected to
+  Cato's mission without saying "Cato"), then replace "The Policy Game" everywhere with the chosen name.
+- **Why:** "The Policy Game" undersold the game, it read as a dry classroom label rather than something
+  a player would want to tell a friend about. "Freedom Founder" keeps the liberty theme front and center
+  and matches what the player actually does: found and build a city from nothing, term after term.
+- **Changes:**
+  - Renamed `CatoCapitalismGame_v4.html` → `FreedomFounder_v4.html`; updated its `<title>`, title-screen
+    `<h1>`, and the feedback-form subject line ("Policy Game Feedback" → "Freedom Founder Feedback").
+  - `coop/coop-server.js`: file-detection regex now matches `FreedomFounder*.html` (kept matching the old
+    `CatoCapitalismGame*.html` pattern too, so nothing breaks if an old build is still on disk); updated
+    the header comment and the "game file not found" error text.
+  - `coop/privacy.html`: title and body copy now say "Freedom Founder" instead of "The Policy Game" /
+    "Cato Capitalism Game."
+  - `coop/dashboard.html`: teacher dashboard title and sub-header updated.
+  - `How-To-Play-Walkthrough.html`: title tag, brand bar, and title-screen slide (both the narration title
+    and the rendered SVG text) updated.
+  - `package.json`: package name `cato-capitalism-coop` → `freedom-founder-coop`; description updated.
+  - Launcher scripts (`Start Co-op Host (Mac).command`, `(Windows).bat`) and the example commit message in
+    `coop/DEPLOY.md` updated to the new name.
+  - This log's own title and intro line updated to lead with the new name, noting the prior name for
+    continuity. Older dated entries above were left untouched, they're an accurate record of what the
+    project was called and which filenames existed at the time.
+- **Deliberately left unchanged:** `render.yaml`'s service `name` (still `cato-capitalism-coop`), and the
+  GitHub-repo-naming instructions in `coop/DEPLOY.md`. Those map directly to the live
+  `cato-capitalism-coop.onrender.com` URL; changing them is a real infrastructure decision (could rename,
+  duplicate, or orphan the live service depending on how Render's Blueprint sync treats the name change)
+  that needs to happen deliberately in the Render dashboard / GitHub, not as a side effect of a text
+  find-and-replace.
+- **Follow-up (not yet done):** commit and push these changes from the actual git repo (this session
+  couldn't reach it), and decide separately whether to rename the live Render service / GitHub repo to
+  match.

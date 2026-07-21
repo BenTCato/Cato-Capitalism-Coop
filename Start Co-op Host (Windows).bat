@@ -1,5 +1,5 @@
 @echo off
-title Cato Capitalism Game - Co-op Host
+title Freedom Founder - Co-op Host
 cd /d "%~dp0"
 
 where node >nul 2>nul

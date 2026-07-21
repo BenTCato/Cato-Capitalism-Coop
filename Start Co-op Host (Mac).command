@@ -1,5 +1,5 @@
 #!/bin/bash
-# Cato Capitalism Game - Co-op Host (macOS)
+# Freedom Founder - Co-op Host (macOS)
 cd "$(dirname "$0")"
 
 if ! command -v node >/dev/null 2>&1; then

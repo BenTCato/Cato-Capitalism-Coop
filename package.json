@@ -1,8 +1,8 @@
 {
-  "name": "cato-capitalism-coop",
+  "name": "freedom-founder-coop",
   "version": "1.0.0",
   "private": true,
-  "description": "Co-op / classroom host for the Cato Capitalism Game (zero dependencies).",
+  "description": "Co-op / classroom host for Freedom Founder (zero dependencies).",
   "main": "coop/coop-server.js",
   "scripts": {
     "start": "node coop/coop-server.js"

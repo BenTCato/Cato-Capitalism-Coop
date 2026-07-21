@@ -1,5 +1,5 @@
 /* ──────────────────────────────────────────────────────────────
-   Cato Capitalism Game, Co-op / Classroom Host Server
+   Freedom Founder, Co-op / Classroom Host Server
    Zero dependencies. Pure Node.js (http + os + fs). No npm install.
 
    What it does:
@@ -104,7 +104,7 @@ function gameScore(f) {
   return 1;
 }
 function findGameFile() {
-  const all = fs.readdirSync(ROOT).filter(f => /^CatoCapitalismGame.*\.html$/i.test(f));
+  const all = fs.readdirSync(ROOT).filter(f => /^(FreedomFounder|CatoCapitalismGame).*\.html$/i.test(f));
   if (!all.length) return null;
   if (process.env.GAME_FILE && all.includes(process.env.GAME_FILE)) {
     return path.join(ROOT, process.env.GAME_FILE);
@@ -360,7 +360,7 @@ const server = http.createServer(async (req, res) => {
   if (p === '/' || p === '/play' || p === '/index.html') {
     const html = injectedGame();
     if (!html) return send(res, 500, 'text/plain',
-      'Could not find the game file (CatoCapitalismGame*.html) in the project folder.');
+      'Could not find the game file (FreedomFounder*.html) in the project folder.');
     return send(res, 200, 'text/html; charset=utf-8', html);
   }
 
@@ -649,7 +649,7 @@ function banner(port) {
 
   if (IS_CLOUD) {
     console.log('\n' + line);
-    console.log('   CATO CAPITALISM GAME, CO-OP SERVER (cloud) LIVE');
+    console.log('   FREEDOM FOUNDER, CO-OP SERVER (cloud) LIVE');
     console.log(line);
     console.log('   Game file: ' + (game ? path.basename(game) : 'NOT FOUND'));
     console.log('   Listening on port ' + port);
@@ -664,7 +664,7 @@ function banner(port) {
   const ip = lanIP();
   const base = 'http://' + ip + ':' + port;
   console.log('\n' + line);
-  console.log('   CATO CAPITALISM GAME, CO-OP HOST IS RUNNING');
+  console.log('   FREEDOM FOUNDER, CO-OP HOST IS RUNNING');
   console.log(line);
   console.log('   Game file:   ' + (game ? path.basename(game) : 'NOT FOUND'));
   console.log('');

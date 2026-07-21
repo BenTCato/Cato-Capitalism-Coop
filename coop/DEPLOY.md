@@ -37,7 +37,7 @@ address bar) and run:
 ```bash
 git init
 git add -A
-git commit -m "Cato Capitalism Game co-op"
+git commit -m "Freedom Founder co-op"
 git branch -M main
 git remote add origin https://github.com/YOURNAME/cato-capitalism-coop.git
 git push -u origin main

@@ -118,6 +118,7 @@
     <button id="tq-open" title="Create or review a class question, hidden from the projected leaderboard" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:9px 16px;font-family:inherit;font-weight:800;cursor:pointer;font-size:.9rem;">✏️ Class Question</button>
     <a class="join-pill" href="/join" target="_blank">📺 Join screen</a>
     <a class="join-pill" href="/privacy" target="_blank" style="background:rgba(255,255,255,.12);">🔒 Privacy</a>
+    <button class="join-pill" onclick="var o=document.getElementById('howto-t-overlay');o.style.display='flex';" style="background:rgba(255,255,255,.12);border:none;cursor:pointer;font:inherit;color:#fff;">🎬 Teacher video</button>
   </div>
 </header>
 
@@ -475,5 +476,15 @@ if(gTgt){ gTgt.value=GOALTGT; gTgt.addEventListener('change',function(){ GOALTGT
 poll();
 setInterval(poll,1200);
 </script>
+<!-- teacher setup video, served by the co-op server from the project folder -->
+<div id="howto-t-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,7,28,.92);z-index:9999;align-items:center;justify-content:center;padding:18px;" onclick="if(event.target===this){this.style.display='none';document.getElementById('howto-t-video').pause();}">
+  <div style="width:min(960px,96vw);background:#0e0a24;border-radius:16px;padding:14px;border:1px solid rgba(255,255,255,.18);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <b style="color:#fff;font-size:1.05rem;">🎬 Teacher guide (2 minutes)</b>
+      <button onclick="var o=document.getElementById('howto-t-overlay');o.style.display='none';document.getElementById('howto-t-video').pause();" style="border:2px solid rgba(255,255,255,.3);background:transparent;color:#fff;border-radius:10px;width:34px;height:34px;cursor:pointer;font-weight:800;">✕</button>
+    </div>
+    <video id="howto-t-video" controls preload="metadata" playsinline style="width:100%;border-radius:10px;background:#000;display:block;" src="/howto-teacher.mp4"></video>
+  </div>
+</div>
 </body>
 </html>

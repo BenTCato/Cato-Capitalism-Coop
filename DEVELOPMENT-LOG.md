@@ -1800,3 +1800,12 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 - **Follow-up (not yet done):** commit and push these changes from the actual git repo (this session
   couldn't reach it), and decide separately whether to rename the live Render service / GitHub repo to
   match.
+
+## 2026-07-21, How-to-play tutorial videos (student + teacher), embedded in the game
+
+- **Direction:** "create a video how-to-play tutorial for both students and teachers... incorporate all features of the game... attach the videos to the game (student video on the loading screen, teacher video on the teacher interface)."
+- **Method:** scripted real gameplay in headless Chromium (Playwright screencast at 1280×720, Noto Color Emoji installed so icons render) with an injected caption bar, visible click cursor, and fade transitions; teacher footage runs against a live local co-op server (real class code created, joined, and shown on the dashboard). Segments assembled with ffmpeg into H.264 MP4s with branded title/end cards.
+- **`howto-student.mp4` (2:20):** covers naming a nation, leader builder, grade levels 6–12, name+PIN saves/Save Codes, walking (WASD/joystick), the four stats, citizen questions with feedback/figures, stars + streak bonuses, Build, Bank, Market/emotes, house upgrades, School recaps, minigames, duels, day/night + seasons + weather, world events, and the end-of-term report card.
+- **`howto-teacher.mp4` (1:55):** any-browser/no-install pitch, per-student reading bands, privacy-first accounts, the /join projector screen with QR, Start a Class + class codes on the /host dashboard, the student join flow (recorded live: "Class AJWP · 1 online"), the live leaderboard (cards, sorting, class goal), the Class Question tool with ⭐250 awards, /privacy, and a links recap.
+- **Embedding:** title screen's "How to Play" card gains a 🎬 "Watch the 2-minute video" button opening a modal player (`FreedomFounder_v4.html`); the teacher dashboard header gains a 🎬 "Teacher video" pill with the same modal (`coop/dashboard.html`); `coop/coop-server.js` serves both files at `/howto-student.mp4` and `/howto-teacher.mp4`. Videos load with `preload="metadata"` so they cost nothing until tapped.
+- **Verification:** live local-server test — both routes return 200 `video/mp4` (3.8MB / 2.8MB), both modals open and the players show correct durations; server passes `node --check`; spot-checked frames across all 10 recorded segments for caption/emoji/gameplay correctness.

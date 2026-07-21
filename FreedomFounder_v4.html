@@ -634,6 +634,21 @@
 
 <canvas id="confetti-canvas"></canvas>
 
+<!-- How-to-play tutorial video (howto-student.mp4 ships beside the game file; the co-op server serves it at /howto-student.mp4) -->
+<div id="howto-video-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,7,28,.92);z-index:9999;align-items:center;justify-content:center;padding:18px;" onclick="if(event.target===this)closeHowtoVideo()">
+  <div style="width:min(960px,96vw);background:#0e0a24;border-radius:16px;padding:14px;border:1px solid rgba(255,255,255,.18);box-shadow:0 24px 70px rgba(0,0,0,.55);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <b style="color:#fff;font-size:1.05rem;">🎬 How to Play (2 minutes)</b>
+      <button onclick="closeHowtoVideo()" style="border:2px solid rgba(255,255,255,.3);background:transparent;color:#fff;border-radius:10px;width:34px;height:34px;cursor:pointer;font-weight:800;">✕</button>
+    </div>
+    <video id="howto-video" controls preload="metadata" playsinline style="width:100%;border-radius:10px;background:#000;display:block;" src="howto-student.mp4"></video>
+  </div>
+</div>
+<script>
+function openHowtoVideo(){var o=document.getElementById('howto-video-overlay');if(o)o.style.display='flex';if(typeof sfx==='function')sfx('click');}
+function closeHowtoVideo(){var o=document.getElementById('howto-video-overlay');if(o)o.style.display='none';var v=document.getElementById('howto-video');if(v)v.pause();if(typeof sfx==='function')sfx('click');}
+</script>
+
 <!-- ══ NEWS OVERLAY, no auto-timer, user must click ══ -->
 <div id="paper-overlay" onclick="closePaper()">
   <div class="paper-card" onclick="event.stopPropagation()">
@@ -796,6 +811,7 @@
 
   <details class="how-card">
     <summary style="cursor:pointer;font-weight:800;color:var(--navy);font-size:1.1rem;list-style:revert;">❔ How to Play</summary>
+    <button class="btn btn-gold" style="margin-top:12px;" onclick="openHowtoVideo()">🎬 Watch the 2-minute video</button>
     <p style="margin-top:12px;">Each round gives you a real policy challenge with four possible responses. Pick your <strong>grade level</strong> and the questions are written at that reading level. Your nation has four health bars, <strong>Happiness, Economy, Education, and Freedom</strong>, and every choice nudges them up or down. Help all your citizens to finish a term, then keep governing term after term and climb the class leaderboard.</p>
     <div class="stat-icons">
       <div class="stat-icon">😊<strong>Happiness</strong><p>How good life feels for the people in your town. It drops when things get chaotic, run short, or feel unfair.</p></div>

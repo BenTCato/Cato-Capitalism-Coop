@@ -379,6 +379,10 @@ const server = http.createServer(async (req, res) => {
     return sendFile(res, path.join(COOP_DIR, 'privacy.html'), 'text/html; charset=utf-8');
   }
 
+  // how-to-play tutorial videos (student video on the title screen, teacher video on the dashboard)
+  if (p === '/howto-student.mp4') return sendFile(res, path.join(ROOT, 'howto-student.mp4'), 'video/mp4');
+  if (p === '/howto-teacher.mp4') return sendFile(res, path.join(ROOT, 'howto-teacher.mp4'), 'video/mp4');
+
   // injected client script
   if (p === '/__coop/client.js') {
     return sendFile(res, path.join(COOP_DIR, 'coop-client.js'), 'application/javascript; charset=utf-8');

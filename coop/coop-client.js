@@ -566,7 +566,8 @@
       '<div class="duel-row">' +
         '<button class="duel-btn duel-ghost" id="duel-decline" style="flex:1;">Decline</button>' +
         '<button class="duel-btn duel-go" id="duel-accept" style="flex:1;">Accept ⚔️</button>' +
-      '</div>');
+      '</div>' +
+      '<div style="margin-top:8px;font-size:.74rem;color:#7a88a6;font-weight:700;">Accepting is binding: both players must finish. Leaving forfeits the pot.</div>');
     card.querySelector('#duel-decline').onclick = function () { respondDuel(false); };
     card.querySelector('#duel-accept').onclick = function () { respondDuel(true); };
   }
@@ -590,7 +591,7 @@
     openOv(
       '<div class="duel-sub" style="margin-bottom:6px;">⚔️ Duel · question ' + (qIdx + 1) + ' of ' + d.n + ' · ' + d.wager.toLocaleString() + '⭐</div>' +
       '<div class="duel-q">' + esc(q.body) + '</div>' + opts +
-      '<div class="duel-row" style="margin-top:8px;"><button class="duel-btn duel-ghost" id="duel-quit">Quit duel</button></div>');
+      '<div style="margin-top:8px;font-size:.74rem;color:#7a88a6;font-weight:700;">⚔️ Duels are binding: answer every question. A player who leaves forfeits the pot.</div>');
     card.querySelectorAll('.duel-opt').forEach(function (b) {
       b.onclick = function () {
         myAnswers[qIdx] = b.getAttribute('data-l');
@@ -600,13 +601,11 @@
         trySfx('click');
       };
     });
-    var qb = card.querySelector('#duel-quit'); if (qb) qb.onclick = function () { cancelChallenge(); }; // let a player bail mid-question, voids the duel (no stars moved yet)
   }
   function renderWaitingOpp(d) {
     openOv('<div class="duel-h">✅ Answers in!</div><div class="duel-sub">Waiting for your opponent to finish…</div>' +
       '<div style="font-size:2rem;">⏳</div>' +
-      '<div class="duel-row"><button class="duel-btn duel-ghost" id="duel-leave">Leave duel</button></div>');
-    var lb = card && card.querySelector('#duel-leave'); if (lb) lb.onclick = function () { cancelChallenge(); }; // free the survivor immediately if the opponent vanished
+      '<div style="margin-top:8px;font-size:.74rem;color:#7a88a6;font-weight:700;">Hang tight. If your opponent leaves the duel, you win the pot.</div>');
   }
   function applyResultOnce(d) {
     if (!d.result || applied[d.id]) return;
@@ -643,7 +642,9 @@
     var opC = iAmFrom ? res.toCorrect : res.fromCorrect;
     var opName = iAmFrom ? d.to.name : d.from.name;
     var title, cls, line;
-    if (res.tie) { title = '🤝 Draw'; cls = 'duel-tie'; line = 'Both wagers refunded, no stars change hands.'; }
+    if (res.forfeit && res.winnerId === ID) { title = '🏳️ Opponent left!'; cls = 'duel-win'; line = esc(opName) + ' left the duel, so you take the pot: <b>+' + res.wager.toLocaleString() + '⭐</b>.'; }
+    else if (res.forfeit) { title = '🏳️ You left the duel'; cls = 'duel-lose'; line = 'Leaving forfeits the pot: ' + esc(opName) + ' takes your <b>' + res.wager.toLocaleString() + '⭐</b>.'; }
+    else if (res.tie) { title = '🤝 Draw'; cls = 'duel-tie'; line = 'Both wagers refunded, no stars change hands.'; }
     else if (res.winnerId === ID) { title = '🏆 You win!'; cls = 'duel-win'; line = 'You take <b>' + res.wager.toLocaleString() + '⭐</b> from ' + esc(opName) + '.'; }
     else { title = '💔 You lose'; cls = 'duel-lose'; line = esc(opName) + ' takes your <b>' + res.wager.toLocaleString() + '⭐</b>.'; }
     openOv(

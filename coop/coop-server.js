@@ -306,13 +306,39 @@ function duelView(d, viewerId) {
     result: d.result || null
   };
 }
+// a walk-out settles as a FORFEIT: the player who stays wins the pot
+function settleForfeit(d, winnerId, reason) {
+  const loserId = (winnerId === d.from.id) ? d.to.id : d.from.id;
+  const delta = {}; delta[winnerId] = d.wager; delta[loserId] = -d.wager;
+  const cnt = (id) => { const a = d.answers[id]; if (!a || !a.letters) return 0;
+    let c = 0; for (let i = 0; i < d.questions.length; i++) if (a.letters[i] && a.letters[i] === d.questions[i].best) c++; return c; };
+  d.result = { fromId: d.from.id, toId: d.to.id, fromCorrect: cnt(d.from.id), toCorrect: cnt(d.to.id),
+               winnerId, tie: false, wager: d.wager, delta, forfeit: true, reason: reason || 'left' };
+  d.status = 'done';
+  d.touched = Date.now();
+}
+const DUEL_FORFEIT_MS = 12000;      // a duelist silent this long mid-duel has left (clients sync every 160ms)
+const DUEL_MAX_MS     = 5 * 60000;  // nobody can stall a duel forever either
 function pruneDuels() {
   const now = Date.now();
   for (const [id, d] of duels) {
     if (d.status === 'pending' && now - d.created > DUEL_PENDING_MS) duels.delete(id);
     else if (d.status === 'done' && now - d.touched > DUEL_DONE_MS) duels.delete(id);
     else if ((d.status === 'declined' || d.status === 'cancelled') && now - d.touched > 8000) duels.delete(id);
-    else if (d.status === 'active' && now - d.touched > 90000) duels.delete(id); // opponent vanished mid-duel: void it so the survivor is freed (no stars have moved yet)
+    else if (d.status === 'active') {
+      // BINDING DUELS: presence decides. If one side disappears, the one still here takes the pot.
+      const r = rooms.get(d.room);
+      const here = (pid) => { const pl = r && r.players.get(pid); return !!(pl && now - (pl.lastSeen || 0) < DUEL_FORFEIT_MS); };
+      const fHere = here(d.from.id), tHere = here(d.to.id);
+      const age = now - (d.startedAt || d.created);
+      if (age > 10000 && fHere !== tHere) { settleForfeit(d, fHere ? d.from.id : d.to.id, 'left'); continue; }
+      if (!fHere && !tHere && age > 60000) { duels.delete(id); continue; }   // both gone: void, wagers never moved
+      if (age > DUEL_MAX_MS) {
+        const done = (pid) => !!(d.answers[pid] && d.answers[pid].done);
+        if (done(d.from.id) !== done(d.to.id)) settleForfeit(d, done(d.from.id) ? d.from.id : d.to.id, 'timeout');
+        else duels.delete(id);                                               // neither finished in 5 min: void
+      }
+    }
   }
 }
 
@@ -539,7 +565,10 @@ const server = http.createServer(async (req, res) => {
   if (p === '/__coop/duel/cancel' && req.method === 'POST') {
     const raw = await readBody(req);
     try { const d = JSON.parse(raw); const duel = duels.get(d && d.duelId);
-      if (duel && (duel.from.id === d.id || duel.to.id === d.id) && (duel.status === 'pending' || duel.status === 'active')) { duel.status = 'cancelled'; duel.touched = Date.now(); } // allow leaving an active duel too (no stars have moved before it is 'done')
+      // BINDING DUELS: only a PENDING challenge can be withdrawn (by either side). Once accepted,
+      // nobody backs out; walking away is handled as a forfeit by pruneDuels, and the player who
+      // stays gets the pot.
+      if (duel && (duel.from.id === d.id || duel.to.id === d.id) && duel.status === 'pending') { duel.status = 'cancelled'; duel.touched = Date.now(); }
     } catch (e) {}
     return send(res, 200, 'application/json', '{"ok":true}');
   }

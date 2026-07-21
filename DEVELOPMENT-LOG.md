@@ -1824,3 +1824,9 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 - **9. Title stands alone.** The tagline under "Freedom Founder" on the home screen is hidden.
 - **10. Market/Bank mini-avatars removed.** The decorative people (and their floating coins) at the Market and Bank are gone; the schoolyard kids stay.
 - **Verification:** game passes `node --check` and boots in jsdom with 0 errors (hint bars gone, tagline hidden, podcasts link live, how-to button present); server passes `node --check`; live server test confirms `/join` → 302, dashboard renders logo/green privacy/draft note/no join pill, and the duel API serves grade-banked questions.
+
+## 2026-07-21, Follow-up: market strollers removed + teacher dashboard reorganized
+
+- **Market avatars, round 2 (user re-report):** the first pass removed the fperson() pairs at the Market and Bank, but two ambient "stroller" pedestrians near the market (inline SVG literals at core 838,1052 and 900,990, not drawn through fperson) survived. Both removed; verified with a live screenshot that the market frontage now shows only the stall, produce cart, barrels and crates.
+- **Teacher dashboard reorganization:** header now reads as three clear zones: Cato logo alone top-left; title plus a grouped settings card (World name / Rank by / online count) top-right; and one action row (Class Question / Teacher video / Privacy) that wraps as a unit. Below the header, the class-code panel and the Class Goal card sit side by side in a responsive two-column grid (stacking on narrow screens) instead of two full-width stacked bars, so the leaderboard starts higher on the page.
+- **Verification:** game passes node --check and renders the clean market; dashboard screenshot confirms the new layout with a live class code (logo left, grouped controls right, two-column top row, leaderboard visible without scrolling).

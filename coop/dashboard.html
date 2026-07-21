@@ -23,6 +23,9 @@
   .worldname{background:transparent;border:none;color:var(--gold);font-weight:800;font-size:1.3rem;
     font-family:inherit;border-bottom:2px dashed rgba(255,184,28,.5);max-width:280px;}
   .worldname:focus{outline:none;border-bottom-color:var(--gold);}
+  .toprow{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:18px;}
+  @media(min-width:1020px){.toprow{grid-template-columns:3fr 2fr;align-items:stretch;}}
+  .toprow>#class-bar,.toprow>#goal-card{margin-bottom:0!important;}
   .hd-right{flex:1;justify-content:flex-end;flex-wrap:wrap;row-gap:8px;text-align:right;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
   .stat-pill{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
     padding:6px 14px;border-radius:999px;font-size:.85rem;font-weight:700;}
@@ -106,22 +109,26 @@
       <h1 style="margin:0;font-size:1.35rem;">Class Leaderboard</h1>
       <div class="sub">Freedom Founder · live co-op</div>
     </div>
-    <div>
+    <div style="display:flex;align-items:center;gap:14px;padding:6px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:14px;">
+      <div>
       <div style="font-size:.7rem;color:#B7AEDB;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">World name</div>
       <input id="worldname" class="worldname" value="Class World" maxlength="40" title="Click to rename the world">
     </div>
-    <div>
+      <div>
       <div style="font-size:.7rem;color:#B7AEDB;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Rank by</div>
       <select id="rankmode" class="worldname" style="font-size:1rem;max-width:170px;cursor:pointer;"><option value="lifetime">🏆 Lifetime</option></select>
     </div>
-    <div class="stat-pill"><span class="dot-live"></span> <span id="online">0</span> online</div>
-    <button id="tq-open" title="Create or review a class question, hidden from the projected leaderboard" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:9px 16px;font-family:inherit;font-weight:800;cursor:pointer;font-size:.9rem;">✏️ Class Question</button>
-    <a class="join-pill" href="/privacy" target="_blank" style="background:linear-gradient(180deg,#3ECF6E,#1F9D4D);color:#fff;">🔒 Privacy</a>
-    <button class="join-pill" onclick="var o=document.getElementById('howto-t-overlay');o.style.display='flex';" style="background:rgba(255,255,255,.12);border:none;cursor:pointer;font:inherit;color:#fff;">🎬 Teacher video</button>
-  </div>
-</header>
+      <div class="stat-pill"><span class="dot-live"></span> <span id="online">0</span> online</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button id="tq-open" title="Create or review a class question, hidden from the projected leaderboard" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:9px 16px;font-family:inherit;font-weight:800;cursor:pointer;font-size:.9rem;">✏️ Class Question</button>
+      <button class="join-pill" onclick="var o=document.getElementById('howto-t-overlay');o.style.display='flex';" style="background:rgba(255,255,255,.12);border:none;cursor:pointer;font:inherit;color:#fff;">🎬 Teacher video</button>
+      <a class="join-pill" href="/privacy" target="_blank" style="background:linear-gradient(180deg,#3ECF6E,#1F9D4D);color:#fff;">🔒 Privacy</a>
+    </div>
+  </header>
 
 <div class="wrap">
+  <div class="toprow">
   <div id="class-bar" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:16px 18px;margin-bottom:18px;">
     <div id="class-none">
       <button id="start-class" style="background:linear-gradient(180deg,#FFD43B,#ED8B00);color:#3a2a00;border:none;border-radius:12px;padding:12px 22px;font-family:inherit;font-weight:900;font-size:1.05rem;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.3);">▶ Start a Class</button>
@@ -143,7 +150,6 @@
       </div>
     </div>
   </div>
-
   <div id="goal-card" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:16px 18px;margin-bottom:18px;">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
       <div style="display:flex;align-items:center;gap:8px;font-size:1.05rem;font-weight:800;">🎯 Class Goal:
@@ -162,6 +168,8 @@
     </div>
     <div id="goal-detail" style="margin-top:8px;font-size:.82rem;color:#B7AEDB;font-weight:600;"></div>
   </div>
+  </div>
+
 
   <!-- Class Question is now a teacher-only popup (hidden by default) so projecting the leaderboard never reveals the question or answers. Opened via the ✏️ Class Question button. -->
   <div id="tq-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(8,10,24,.82);overflow:auto;padding:36px 14px;">

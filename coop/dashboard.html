@@ -338,7 +338,7 @@ function render(list){
       '<td title="Stars won in duels: '+((p.duelStarsWon||0).toLocaleString())+'">'+((p.duelWins||p.duelLosses)?('<b style="color:#2EB872">'+(p.duelWins||0)+'W</b> <span style="color:#B7AEDB">/ '+(p.duelLosses||0)+'L</span>'):'<span style="color:#B7AEDB;">-</span>')+'</td>'+
       '<td class="score">⭐ '+((p.stars||0).toLocaleString())+'</td>'+
       '<td>'+(r.score==null?'<span style="color:#B7AEDB;">-</span>':'<span style="color:#B7AEDB;">'+r.score.toLocaleString()+' pts</span>')+'</td>'+
-      '<td>'+(r.grade&&r.grade!=='-'?'<span class="grade '+r.grade+'">'+r.grade+'</span>':'<span style="color:#B7AEDB;">-</span>')+'</td>'+
+      '<td>'+(r.grade&&r.grade!=='-'?'<span class="grade '+esc(r.grade)+'">'+esc(r.grade)+'</span>':'<span style="color:#B7AEDB;">-</span>')+'</td>'+
     '</tr>';
   }).join('');
   document.getElementById('lb-body').innerHTML=rows;
@@ -353,11 +353,11 @@ function render(list){
     return '<div class="city'+(p.started?'':' notstarted')+(p.idleMs>6000?' idle':'')+'">'+
       '<div class="top"><span class="av">'+avatarSVG(p.avatar,42,50)+'</span>'+
         '<div><div class="nm">'+esc(p.name)+'</div>'+
-        '<div class="meta">'+houseIcon(p.houseName)+' '+esc(p.houseName||'New')+' · Term '+(p.term||1)+'</div></div></div>'+
+        '<div class="meta">'+houseIcon(p.houseName)+' '+esc(p.houseName||'New')+' · Term '+(Number(p.term)||1)+'</div></div></div>'+
       '<div class="cbars">'+cb+'</div>'+
       '<div class="foot"><span class="badge-mini">🎩 '+(p.vanity||0)+'/'+(p.vanityTotal||0)+'</span>'+
         '<span class="score" style="color:'+(p.started?'#ED8B00':'#bbb')+'">⭐ '+((p.stars||0).toLocaleString())+'</span>'+
-        (r.grade&&r.grade!=='-'?'<span class="grade '+r.grade+'">'+r.grade+'</span>':'')+'</div>'+
+        (r.grade&&r.grade!=='-'?'<span class="grade '+esc(r.grade)+'">'+esc(r.grade)+'</span>':'')+'</div>'+
     '</div>';
   }).join('');
   document.getElementById('grid').innerHTML=cards;
@@ -461,7 +461,7 @@ function renderTQ(tq){
 
 // ── polling ──────────────────────────────────────────────────────
 function poll(){
-  fetch('/__coop/state?room='+encodeURIComponent(ROOM||'MAIN')).then(function(r){return r.json();}).then(function(d){
+  fetch('/__coop/state?room='+encodeURIComponent(ROOM||'MAIN')+(HOSTKEY?('&key='+encodeURIComponent(HOSTKEY)):'')).then(function(r){return r.json();}).then(function(d){
     if(d.world && document.activeElement!==wn){ wn.value=d.world; }
     render(d.players||[]);
     renderTQ(d.tq||null);

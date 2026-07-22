@@ -89,10 +89,43 @@ function noteAuthFail(key) {
   authFails.set(key, e);
 }
 function noteAuthOk(key) { authFails.delete(key); }
+
+// ── IP-independent per-account cap (audit 2026-07-22) ──
+// The per-(client+name) throttle above keys partly on the client IP, and clientIp() trusts the
+// X-Forwarded-For header, which a direct caller can spoof to a fresh value on every request — that
+// would give every guess its own bucket and defeat the throttle. This second counter is keyed ONLY
+// on the account name, so a single account cannot be guessed past NAME_MAX_FAILS regardless of how
+// many source IPs (real or spoofed) the attempts appear to come from.
+const authFailsByName = new Map();          // lowercased name -> { count, first, blockedUntil }
+const NAME_MAX_FAILS  = 30;                 // generous vs. a real classroom, tiny vs. a 10k-PIN sweep
+const NAME_BLOCK_MS   = 10 * 60 * 1000;
+function nameKey(name) { return String(name || '').toLowerCase().trim(); }
+function nameBlocked(nk) {
+  const e = authFailsByName.get(nk);
+  if (!e) return false;
+  if (e.blockedUntil && Date.now() < e.blockedUntil) return true;
+  if (e.blockedUntil && Date.now() >= e.blockedUntil) authFailsByName.delete(nk);
+  return false;
+}
+function noteNameFail(nk) {
+  const now = Date.now();
+  let e = authFailsByName.get(nk);
+  if (!e || now - e.first > AUTH_WINDOW_MS) e = { count: 0, first: now, blockedUntil: 0 };
+  e.count++;
+  if (e.count >= NAME_MAX_FAILS) e.blockedUntil = now + NAME_BLOCK_MS;
+  authFailsByName.set(nk, e);
+}
+// combined guards used by the account endpoints
+function authBlockedReq(req, name) { return authBlocked(throttleKey(req, name)) || nameBlocked(nameKey(name)); }
+function noteAuthFailReq(req, name) { noteAuthFail(throttleKey(req, name)); noteNameFail(nameKey(name)); }
+function noteAuthOkReq(req, name) { noteAuthOk(throttleKey(req, name)); authFailsByName.delete(nameKey(name)); }
 function pruneAuthFails() {
   const now = Date.now();
   for (const [k, e] of authFails) {
     if ((e.blockedUntil && now >= e.blockedUntil) || (now - e.first > AUTH_WINDOW_MS)) authFails.delete(k);
+  }
+  for (const [k, e] of authFailsByName) {
+    if ((e.blockedUntil && now >= e.blockedUntil) || (now - e.first > AUTH_WINDOW_MS)) authFailsByName.delete(k);
   }
 }
 
@@ -161,7 +194,10 @@ if (!DUEL_BANK.length) {
       choices:['Cut the red tape so it is easy to start one.','Add more permits and inspections first.','Have the town run the businesses.','Pick a few founders to receive grants.'], best:0 }
   ];
 }
-function randToken() { return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10); }
+// teacherKey authorizes every teacher action on a class, so it must be unpredictable. Math.random()
+// is a non-crypto PRNG whose state can be recovered from other values the process emits (class codes,
+// duel/tq ids); use crypto instead (audit 2026-07-22).
+function randToken() { return crypto.randomBytes(24).toString('hex'); }
 // a room's teacher actions are authorized only if the room has a teacherKey AND the caller presents it.
 // rooms with no teacherKey (the open MAIN world) stay open, matching the legacy anonymous behavior.
 function teacherOK(r, d) { return !r || !r.teacherKey || !!(d && d.key && String(d.key) === r.teacherKey); }
@@ -173,6 +209,38 @@ function normCode(c) {
 // belt-and-suspenders XSS guard: strip angle brackets and clamp length from any user-supplied
 // display string before we store/echo it to other clients (the game client is hardened separately)
 function cleanStr(s, max) { return String(s == null ? '' : s).replace(/[<>]/g, '').slice(0, max || 40); }
+// coerce a value to a finite number (with optional clamp); used to strip non-numeric payloads from
+// fields the dashboard/client render into HTML assuming they are numbers.
+function numOr(v, dflt, lo, hi) { let n = Number(v); if (!isFinite(n)) n = dflt; if (lo != null) n = Math.max(lo, n); if (hi != null) n = Math.min(hi, n); return n; }
+// letter grades only — anything else (e.g. an injected tag) collapses to '-'
+function cleanGrade(g) { g = String(g == null ? '' : g).toUpperCase().trim(); return /^[SABCDF][+\-]?$/.test(g) ? g : '-'; }
+// Audit 2026-07-22: the sync body is fully attacker-controlled, and publicList() relays these fields
+// verbatim to every peer and to the teacher dashboard, which interpolates several of them straight
+// into innerHTML. Previously only name/emote were cleaned, so term/grade/etc. were a stored-XSS path
+// into the teacher's (privileged) browser. Sanitize the whole relayed shape at ingest so no crafted
+// value can ever reach a client sink, regardless of how the front end renders it.
+function sanitizePlayerState(d) {
+  if (typeof d.name === 'string') d.name = cleanStr(d.name, 40);
+  if (typeof d.emote === 'string') d.emote = cleanStr(d.emote, 24);
+  if (d.houseName != null) d.houseName = cleanStr(d.houseName, 40);
+  d.stars = numOr(d.stars, 0, 0);
+  d.score = (d.score == null ? null : numOr(d.score, 0, 0));
+  d.house = numOr(d.house, 0, 0);
+  d.vanity = numOr(d.vanity, 0, 0);
+  d.vanityTotal = numOr(d.vanityTotal, 0, 0);
+  d.duelWins = numOr(d.duelWins, 0, 0);
+  d.duelLosses = numOr(d.duelLosses, 0, 0);
+  d.duelStarsWon = numOr(d.duelStarsWon, 0, 0);
+  d.term = numOr(d.term, 1, 0);
+  if (d.grade != null) d.grade = cleanGrade(d.grade);
+  if (d.lifetimeGrade != null) d.lifetimeGrade = cleanGrade(d.lifetimeGrade);
+  if (d.stats && typeof d.stats === 'object') for (const k of Object.keys(d.stats)) d.stats[k] = numOr(d.stats[k], 0, 0, 100);
+  if (d.termGrades && typeof d.termGrades === 'object') for (const k of Object.keys(d.termGrades)) {
+    const t = d.termGrades[k];
+    if (t && typeof t === 'object') { t.grade = cleanGrade(t.grade); t.score = (t.score == null ? null : numOr(t.score, 0, 0)); }
+  }
+  return d;
+}
 function getRoom(code, create) {
   code = normCode(code);
   let r = rooms.get(code);
@@ -186,7 +254,7 @@ function newCode() {
   let code;
   do {
     code = '';
-    for (let i = 0; i < 4; i++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+    for (let i = 0; i < 4; i++) code += CODE_CHARS[crypto.randomInt(CODE_CHARS.length)];
   } while (rooms.has(code));
   return code;
 }
@@ -238,6 +306,15 @@ function tqDashView(tq){
   const resp = Object.keys(tq.responses).map(function(k){ const x = tq.responses[k];
     return { id: k, name: x.name, answer: x.answer, correct: x.correct, decided: x.decided, awarded: x.awarded }; });
   return { id: tq.id, style: tq.style, text: tq.text, choices: tq.choices, correct: tq.correct, reward: tq.reward, responses: resp };
+}
+// Audit 2026-07-22: /__coop/state was returning tqDashView (which includes `correct` and every
+// student's answer/name) to anyone who knew the room code — a live cheat + classmate-data leak.
+// This view is what unauthenticated callers now get: enough for a projector (question + choices +
+// a response count) but no answer key and no per-student responses.
+function tqPublicView(tq){
+  if (!tq) return null;
+  return { id: tq.id, style: tq.style, text: tq.text, choices: tq.choices, reward: tq.reward,
+    responseCount: Object.keys(tq.responses || {}).length };
 }
 
 // ── 1v1 DUELS: wager stars, answer the same questions, most-correct wins ──
@@ -464,18 +541,17 @@ const server = http.createServer(async (req, res) => {
     const name = String((d && d.name) || '').trim(), pin = String((d && d.pin) || '');
     if (name.length < 2 || name.length > 24 || !/^\d{4,6}$/.test(pin)) return send(res, 200, 'application/json', '{"ok":false,"error":"invalid"}');
     if (!STORE_ON) return send(res, 200, 'application/json', '{"ok":false,"error":"storage_off"}');
-    const tkey = throttleKey(req, name);
-    if (authBlocked(tkey)) return send(res, 429, 'application/json', '{"ok":false,"error":"too_many_attempts"}');
+    if (authBlockedReq(req, name)) return send(res, 429, 'application/json', '{"ok":false,"error":"too_many_attempts"}');
     try {
       const key = acctKey(name), want = pinHash(name, pin), cur = await redis(['GET', key]);
       if (!cur) { const rec = { pin: want, display: name, data: null, created: Date.now(), updated: Date.now() };
         await redis(['SET', key, JSON.stringify(rec), 'EX', String(ACCT_TTL_S)]);
-        noteAuthOk(tkey);
+        noteAuthOkReq(req, name);
         return send(res, 200, 'application/json', '{"ok":true,"isNew":true,"data":null}'); }
       let rec = null; try { rec = JSON.parse(cur); } catch (e) {}
       if (!rec) return send(res, 200, 'application/json', '{"ok":false,"error":"corrupt"}');
-      if (!pinMatch(rec.pin, want)) { noteAuthFail(tkey); return send(res, 200, 'application/json', '{"ok":false,"error":"wrong_pin"}'); }
-      noteAuthOk(tkey);
+      if (!pinMatch(rec.pin, want)) { noteAuthFailReq(req, name); return send(res, 200, 'application/json', '{"ok":false,"error":"wrong_pin"}'); }
+      noteAuthOkReq(req, name);
       return send(res, 200, 'application/json', JSON.stringify({ ok: true, isNew: false, data: rec.data || null }));
     } catch (e) { return send(res, 200, 'application/json', '{"ok":false,"error":"store_error"}'); }
   }
@@ -486,12 +562,12 @@ const server = http.createServer(async (req, res) => {
     const name = String((d && d.name) || '').trim(), pin = String((d && d.pin) || '');
     if (!STORE_ON) return send(res, 200, 'application/json', '{"ok":false,"error":"storage_off"}');
     if (name.length < 2 || !/^\d{4,6}$/.test(pin)) return send(res, 200, 'application/json', '{"ok":false,"error":"invalid"}');
-    const tkeyS = throttleKey(req, name);
-    if (authBlocked(tkeyS)) return send(res, 429, 'application/json', '{"ok":false,"error":"too_many_attempts"}');
+    if (authBlockedReq(req, name)) return send(res, 429, 'application/json', '{"ok":false,"error":"too_many_attempts"}');
     try {
       const key = acctKey(name), want = pinHash(name, pin), cur = await redis(['GET', key]);
       let rec = null; try { rec = cur ? JSON.parse(cur) : null; } catch (e) {}
-      if (!rec || !pinMatch(rec.pin, want)) { noteAuthFail(tkeyS); return send(res, 200, 'application/json', '{"ok":false,"error":"auth"}'); }
+      if (!rec || !pinMatch(rec.pin, want)) { noteAuthFailReq(req, name); return send(res, 200, 'application/json', '{"ok":false,"error":"auth"}'); }
+      noteAuthOkReq(req, name);
       rec.data = d.data || null; rec.updated = Date.now();
       await redis(['SET', key, JSON.stringify(rec), 'EX', String(ACCT_TTL_S)]);
       return send(res, 200, 'application/json', '{"ok":true}');
@@ -506,9 +582,8 @@ const server = http.createServer(async (req, res) => {
     const r = getRoom(d.room, true);
     r.touched = Date.now();
     d.lastSeen = Date.now();
-    // sanitize user-supplied display strings before they are stored & echoed to other players
-    if (typeof d.name === 'string') d.name = cleanStr(d.name, 40);
-    if (typeof d.emote === 'string') d.emote = cleanStr(d.emote, 24);
+    // sanitize ALL user-supplied fields before they are stored & echoed to other players / the dashboard
+    sanitizePlayerState(d);
     r.players.set(d.id, d);
     pruneRoom(r);
     const others = [...r.players.values()]
@@ -600,8 +675,10 @@ const server = http.createServer(async (req, res) => {
     pruneAll();
     const r = getRoom(u.searchParams.get('room'), true);
     r.touched = Date.now();
+    // only a caller presenting the room's teacher key sees the answer key + per-student responses
+    const isTeacher = teacherOK(r, { key: u.searchParams.get('key') });
     return send(res, 200, 'application/json',
-      JSON.stringify({ now: Date.now(), world: r.name, room: normCode(u.searchParams.get('room')), count: r.players.size, players: publicList(r), tq: tqDashView(r.tq) }));
+      JSON.stringify({ now: Date.now(), world: r.name, room: normCode(u.searchParams.get('room')), count: r.players.size, players: publicList(r), tq: isTeacher ? tqDashView(r.tq) : tqPublicView(r.tq) }));
   }
 
   // rename a room's world from the dashboard

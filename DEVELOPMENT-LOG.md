@@ -1865,3 +1865,9 @@ reconstructed from commit dates, file timestamps, and the project's own docs.
 - **`howto-teacher.mp4` (1:51, 6.8MB):** 18 steps covering the no-install pitch, grade-leveled play, the /host dashboard, Start a Class + 4-letter code + Copy link, live join counter, per-student leaderboard cards, Rank by + term champion, the duels column, Class Goal, posting a Class Question (MC auto-award + short-answer Award flow), world rename/kick, privacy (first names only), and the Teacher video pill.
 - **Deployment:** replaced `howto-student.mp4` and `howto-teacher.mp4` in place, so both the game modal (`FreedomFounder_v4.html`) and the teacher dashboard pill (`coop/dashboard.html`) plus the server routes serve the new files with no code changes; the title-screen card and button now read "How to Play (4 minutes)" to match the new length.
 - **Verification:** live local-server test — both routes return 200 `video/mp4` (12,911,338 / 6,800,062 bytes), the student modal reports 230.7s and the teacher modal 110.6s, mpdecimate confirms every output frame is unique (no frozen/laggy stretches), and contact-sheet review of all 56 scenes confirmed captions, spotlight rings, emoji, and no em dashes anywhere.
+
+## 2026-07-22, Tutorial videos v2.1: removed the Ken Burns zoom
+
+- **Direction:** "remove the ken burns effect. No need to zoom in and out."
+- **Change:** rebuilt both tutorials from the same 56 captured scenes with each step now shown as a steady full-frame shot (no pan/zoom); kept the 30fps timing, dip-to-black fades, captions, and spotlight rings. Bonus: static frames compress far better, so `howto-student.mp4` dropped 12.9MB → 5.3MB and `howto-teacher.mp4` 6.8MB → 2.0MB at the same visual quality, with durations unchanged (3:51 / 1:51).
+- **Verification:** both server routes return 200 with the new byte sizes, ffprobe confirms durations, and a spot-checked frame shows the full UI steady and uncropped.

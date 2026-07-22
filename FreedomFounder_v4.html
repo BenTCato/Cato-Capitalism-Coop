@@ -3008,7 +3008,7 @@ let nationName='Freedomtopia';
 const NATION_NAMES=['Freedomtopia','Libertalia','Prosperia','Marketview','Goldshore','Eagleton','Virtuevale','Capitalia','Liberty Bay','Frontierra','Meritopia','Innovia','Aurora Republic','Summitland','Brightharbor','Veritas','Concordia','Pioneerton','New Dawnland','Silverport'];
 
 function customNationName(val){
-  const v=val.trim();
+  const v=sanitizeNationName(val);
   nationName=v?v.charAt(0).toUpperCase()+v.slice(1):'Freedomtopia';
   updateNbPreview();
   saveProfiles();renderProfiles();
@@ -3025,7 +3025,7 @@ function updateNbPreview(){
   const preview=document.getElementById('nb-preview-name');
   if(preview)preview.textContent=nationName;
   const btn=document.getElementById('begin-btn');
-  if(btn)btn.innerHTML='Found '+nationName+' &amp; Begin \u2192';
+  if(btn)btn.innerHTML='Found '+escapeHtml(nationName)+' &amp; Begin \u2192';
   const hdr=document.getElementById('header-nation-name');
   if(hdr)hdr.textContent=nationName;
 }
@@ -3579,7 +3579,7 @@ function activateProfile(i,silent){
   P.owned=P.owned||[];P.history=P.history||[];P.house=P.house||0;P.lifetimeScore=P.lifetimeScore||0;P.lifetimeBest=P.lifetimeBest||0;P.lifetimeAnswered=P.lifetimeAnswered||0;P.terms=P.terms||[];P.emotes=P.emotes||[];ensureTown();if(!P.bank||typeof P.bank!=='object')P.bank={balance:0,last:0};
   avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},P.avatar);
   sanitizeAvatar();
-  nationName=P.name||'Freedomtopia';
+  nationName=sanitizeNationName(P.name)||'Freedomtopia';
   const inp=document.getElementById('nb-name-input');
   if(inp)inp.value=nationName==='Freedomtopia'?'':nationName;
   updateNbPreview();renderAvCreator();renderAvatarPreview();renderProfiles();updateBankUI();
@@ -3602,6 +3602,11 @@ function deleteProfile(i,ev){
   saveProfiles();sfx('bad');
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+// Source-level sanitizer for user-supplied nation/leader names (defense in depth).
+// Strips HTML-injection angle brackets and control chars, then clamps length so a
+// stored name stays inert even if a future render sink forgets to escape it.
+// Normal names ("New Libertaria", "O'Brien's Land") are preserved (spaces/apostrophes kept).
+function sanitizeNationName(s){s=String(s==null?'':s).replace(/[<>]/g,'');var out='';for(var i=0;i<s.length;i++){var cc=s.charCodeAt(i);if(cc>=32&&cc!==127)out+=s.charAt(i);}return out.trim().slice(0,40);}
 // ── Save Code: sign in / carry avatar + full progress across devices ──
 function saveCodeString(){
   if(!P)return '';
@@ -3621,7 +3626,7 @@ function applySaveData(data){ // load a decoded Save Code into the active leader
   if(!P||!data||!data.avatar)return false;
   P.owned=Array.isArray(data.owned)?data.owned:(P.owned||[]);
   P.avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},data.avatar);
-  if(typeof data.name==='string'&&data.name)P.name=data.name;
+  if(typeof data.name==='string'&&data.name)P.name=sanitizeNationName(data.name);
   if(typeof data.stars==='number')P.stars=data.stars;
   if(typeof data.house==='number')P.house=data.house;
   if(typeof data.best==='number')P.best=data.best;
@@ -3636,7 +3641,7 @@ function applySaveData(data){ // load a decoded Save Code into the active leader
   if(typeof ensureTown==='function')ensureTown();   // restore any missing town.attr/pos so placed attractions survive an older/partial save
   if(typeof ensureBank==='function')ensureBank();
   avatar=Object.assign({skin:1,hair:0,hairColor:1,eyes:0,beard:0,glasses:0,outfit:0,extra:0},P.avatar);
-  sanitizeAvatar();nationName=P.name||'Freedomtopia';
+  sanitizeAvatar();nationName=sanitizeNationName(P.name)||'Freedomtopia';
   updateNbPreview();renderAvCreator();renderAvatarPreview();renderProfiles();updateBankUI();
   return true;
 }

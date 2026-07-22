@@ -614,9 +614,16 @@
     var won = !res.tie && res.winnerId === ID;
     var lost = !res.tie && res.winnerId !== ID;
     var delta = res.tie ? 0 : (won ? res.wager : -res.wager);
-    if (res.delta && (ID in res.delta)) delta = res.delta[ID];   // prefer the server-authoritative star delta (prevents desync)
+    var hasServerDelta = res.delta && (ID in res.delta);
+    if (hasServerDelta) delta = res.delta[ID];   // prefer the server-authoritative star delta (prevents desync)
+    // The server credits each viewer exactly once and thereafter zeroes THIS viewer's delta.
+    // A zeroed delta on a non-tie result means the reward was already banked (e.g. a reload within
+    // the done-duel window): apply NOTHING — no stars, no win/loss counters — but still show the
+    // result screen (renderResult runs separately). This is the server-authoritative dedupe; the
+    // in-memory `applied{}` guard above remains as a second layer for a single page session.
+    var alreadyBanked = hasServerDelta && !res.tie && delta === 0;
     var P = g('P');
-    if (P) {
+    if (P && !alreadyBanked) {
       if (delta !== 0) P.stars = Math.max(0, (P.stars || 0) + delta);
       if (won) { P.duelWins = (P.duelWins || 0) + 1; P.duelStarsWon = (P.duelStarsWon || 0) + res.wager; }
       else if (lost) { P.duelLosses = (P.duelLosses || 0) + 1; }

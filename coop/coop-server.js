@@ -170,6 +170,9 @@ function normCode(c) {
   c = String(c == null ? '' : c).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
   return c || DEFAULT_ROOM;
 }
+// belt-and-suspenders XSS guard: strip angle brackets and clamp length from any user-supplied
+// display string before we store/echo it to other clients (the game client is hardened separately)
+function cleanStr(s, max) { return String(s == null ? '' : s).replace(/[<>]/g, '').slice(0, max || 40); }
 function getRoom(code, create) {
   code = normCode(code);
   let r = rooms.get(code);
@@ -295,7 +298,23 @@ function scoreDuel(d) {
   d.touched = Date.now();
 }
 // client-facing view (strips the `best` answer so it can't be read off the wire)
-function duelView(d, viewerId) {
+// ONE-SHOT crediting (mirrors tqStudentView): the authoritative star `delta` for a viewer is
+// returned only the FIRST time that viewer is told the result on the sync path (credit=true).
+// Every later report zeroes THIS viewer's delta, so a reload within DUEL_DONE_MS can neither
+// re-bank the pot nor re-inflate duelWins/duelStarsWon. Non-sync callers pass credit falsy: they
+// still return the real delta but never mark credited (the client ignores those response bodies
+// for star application — it only applies from sync — so this keeps crediting aligned with what
+// the client actually banks). Preserves winnerId/tie/wager/fromCorrect/toCorrect/forfeit/reason.
+function duelView(d, viewerId, credit) {
+  let result = d.result || null;
+  if (result) {
+    d.credited = d.credited || {};
+    const already = !!d.credited[viewerId];
+    if (credit && !already) d.credited[viewerId] = true;
+    const delta = Object.assign({}, result.delta || {});
+    if (already) delta[viewerId] = 0;   // viewer has seen the result before → no stars this time
+    result = Object.assign({}, result, { delta });
+  }
   return {
     id: d.id, status: d.status, wager: d.wager, n: d.n,
     from: d.from, to: d.to,
@@ -303,7 +322,7 @@ function duelView(d, viewerId) {
     questions: (d.status === 'active') ? d.questions.map(q => ({ title: q.title, body: q.body, choices: q.choices })) : null,
     youDone: !!(d.answers[viewerId] && d.answers[viewerId].done),
     oppDone: (function () { const o = d.from.id === viewerId ? d.to.id : d.from.id; return !!(d.answers[o] && d.answers[o].done); })(),
-    result: d.result || null
+    result: result
   };
 }
 // a walk-out settles as a FORFEIT: the player who stays wins the pot
@@ -428,7 +447,7 @@ const server = http.createServer(async (req, res) => {
   if (p === '/__coop/create' && req.method === 'POST') {
     const raw = await readBody(req);
     let name = '';
-    try { const d = JSON.parse(raw); if (d && typeof d.name === 'string') name = d.name.slice(0, 40); } catch (e) {}
+    try { const d = JSON.parse(raw); if (d && typeof d.name === 'string') name = cleanStr(d.name, 40); } catch (e) {}
     const code = newCode();
     const teacherKey = randToken();
     const r = { name: name || ('Class ' + code), players: new Map(), touched: Date.now(), teacherKey: teacherKey };
@@ -487,6 +506,9 @@ const server = http.createServer(async (req, res) => {
     const r = getRoom(d.room, true);
     r.touched = Date.now();
     d.lastSeen = Date.now();
+    // sanitize user-supplied display strings before they are stored & echoed to other players
+    if (typeof d.name === 'string') d.name = cleanStr(d.name, 40);
+    if (typeof d.emote === 'string') d.emote = cleanStr(d.emote, 24);
     r.players.set(d.id, d);
     pruneRoom(r);
     const others = [...r.players.values()]
@@ -496,7 +518,7 @@ const server = http.createServer(async (req, res) => {
     pruneDuels();
     const myDuel = duelForPlayer(d.room, d.id);
     return send(res, 200, 'application/json', JSON.stringify({ now: Date.now(), world: r.name, room: normCode(d.room),
-      players: others, duel: myDuel ? duelView(myDuel, d.id) : null, tq: tqStudentView(r.tq, d.id) }));
+      players: others, duel: myDuel ? duelView(myDuel, d.id, true) : null, tq: tqStudentView(r.tq, d.id) }));
   }
 
   // ── duel: a player challenges another (challenger supplies the questions, with answers) ──
@@ -520,8 +542,8 @@ const server = http.createServer(async (req, res) => {
     const wager = Math.max(0, Math.min(100000, Number(d.wager) || 0));
     const duel = {
       id: newDuelId(), room,
-      from: { id: String(d.from.id), name: String(d.from.name || 'Challenger').slice(0, 24) },
-      to:   { id: String(d.to.id),   name: String(d.to.name   || 'Opponent').slice(0, 24) },
+      from: { id: String(d.from.id), name: cleanStr(d.from.name || 'Challenger', 24) },
+      to:   { id: String(d.to.id),   name: cleanStr(d.to.name   || 'Opponent', 24) },
       wager, n: qs.length, questions: qs,
       status: 'pending', answers: {}, result: null,
       created: Date.now(), touched: Date.now()
@@ -587,7 +609,7 @@ const server = http.createServer(async (req, res) => {
     const raw = await readBody(req);
     try { const d = JSON.parse(raw); const r = getRoom(d && d.room, true);
       if (!teacherOK(r, d)) return send(res, 403, 'application/json', '{"ok":false,"error":"not authorized"}');
-      if (d && typeof d.world === 'string') r.name = d.world.slice(0, 40) || r.name;
+      if (d && typeof d.world === 'string') r.name = cleanStr(d.world, 40) || r.name;
       return send(res, 200, 'application/json', JSON.stringify({ ok: true, world: r.name })); } catch (e) {}
     return send(res, 200, 'application/json', JSON.stringify({ ok: false }));
   }
@@ -632,9 +654,9 @@ const server = http.createServer(async (req, res) => {
     if (tq.style === 'mc') {
       const ai = Number(d.answer);
       const correct = (ai === tq.correct);
-      resp = { name: String(d.name || '').slice(0, 24), answer: ai, correct: correct, decided: true, awarded: correct, at: Date.now() };
+      resp = { name: cleanStr(d.name, 24), answer: ai, correct: correct, decided: true, awarded: correct, at: Date.now() };
     } else {
-      resp = { name: String(d.name || '').slice(0, 24), answer: String(d.answer || '').slice(0, 300), correct: null, decided: false, awarded: false, at: Date.now() };
+      resp = { name: cleanStr(d.name, 24), answer: cleanStr(d.answer, 300), correct: null, decided: false, awarded: false, at: Date.now() };
     }
     tq.responses[d.id] = resp;
     return send(res, 200, 'application/json', JSON.stringify({ ok: true, mine: { answer: resp.answer, decided: resp.decided, awarded: resp.awarded, correct: resp.correct }, reward: tq.reward }));

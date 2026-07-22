@@ -482,7 +482,7 @@ var gStat=document.getElementById('goal-stat'), gTgt=document.getElementById('go
 if(gStat){ gStat.value=GOALSTAT; gStat.addEventListener('change',function(){ GOALSTAT=gStat.value; try{localStorage.setItem('coopGoalStat',GOALSTAT);}catch(e){} updateGoal(LAST); }); }
 if(gTgt){ gTgt.value=GOALTGT; gTgt.addEventListener('change',function(){ GOALTGT=Math.max(0,Math.min(100,+gTgt.value||0)); try{localStorage.setItem('coopGoalTarget',GOALTGT);}catch(e){} updateGoal(LAST); }); }
 poll();
-setInterval(poll,1200);
+setInterval(poll,800);   // tighter refresh so bars track the live student HUD closely
 </script>
 <!-- teacher setup video, served by the co-op server from the project folder -->
 <div id="howto-t-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,7,28,.92);z-index:9999;align-items:center;justify-content:center;padding:18px;" onclick="if(event.target===this){this.style.display='none';document.getElementById('howto-t-video').pause();}">
